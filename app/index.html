@@ -657,7 +657,8 @@ async function dailyView(b) {
   const day = state.dailyDay || today;
   const shift = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
   b.innerHTML = `<div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn ghost small" id="dp">‹</button><input type="date" id="dd" value="${day}" style="flex:1;min-width:140px"><button class="btn ghost small" id="dn">›</button><button class="btn ghost small" id="dt">Today</button></div>
-    <div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn small" id="dw">WhatsApp / Share</button><button class="btn ghost small" id="dpr">Print</button><button class="btn ghost small" id="dz">🔍 Zoom</button></div>
+    <div class="row noprint" style="gap:6px;margin-bottom:6px;flex-wrap:wrap"><input id="dwn" type="tel" inputmode="tel" placeholder="WhatsApp no. (khali = WhatsApp kholo)" style="flex:1;min-width:180px"><button class="btn small" id="dw">WhatsApp</button></div>
+    <div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn ghost small" id="dsh">Share</button><button class="btn ghost small" id="dpr">Print</button><button class="btn ghost small" id="dz">🔍 Zoom</button></div><div id="dwm" class="noprint"></div>
     <div id="dr"><p class="muted"><span class="spin"></span></p></div>`;
   const go = (d) => { state.dailyDay = d; dailyView(b); };
   $('#dp', b).onclick = () => go(shift(day, -1)); $('#dn', b).onclick = () => go(shift(day, 1)); $('#dt', b).onclick = () => go(today);
@@ -675,14 +676,37 @@ async function dailyView(b) {
   const zoom = () => { const z = state.dailyZoom; cv.style.width = z ? (cv.width / 2) + 'px' : '100%'; $('#dwr', b).style.overflowX = z ? 'auto' : 'hidden'; $('#dz', b).textContent = z ? '↔ Fit' : '🔍 Zoom'; };
   $('#dz', b).onclick = () => { state.dailyZoom = !state.dailyZoom; zoom(); }; zoom();
   $('#dpr', b).onclick = () => { const w = window.open(''); if (!w) return; w.document.write(`<title>Daily sheet ${dmy}</title><style>@page{size:A4 landscape;margin:8mm}body{margin:0}img{width:100%}</style><img src="${cv.toDataURL('image/png')}" onload="setTimeout(()=>print(),200)">`); w.document.close(); };
-  $('#dw', b).onclick = () => cv.toBlob(async (blob) => {
-    const file = new File([blob], `Daily sheet ${dmy}.png`, { type: 'image/png' });
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Daily sheet ' + dmy }); return; }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
-    $('#dst', b).innerHTML = '<div class="note">Picture download ho gayi – WhatsApp mein attach karke bhejiye.</div>';
-  }, 'image/png');
+  // WhatsApp: a number → the picture is copied and that chat opens (paste it there); no number → WhatsApp / the share menu
+  let savedNo = ''; try { savedNo = localStorage.getItem('dailyWa') || ''; } catch (e) { }
+  $('#dwn', b).value = savedNo;
+  $('#dwn', b).onchange = () => { try { localStorage.setItem('dailyWa', $('#dwn', b).value.trim()); } catch (e) { } };
+  const blobP = () => new Promise(res => cv.toBlob(res, 'image/png'));
+  const fileOf = (blob) => new File([blob], `Daily sheet ${dmy}.png`, { type: 'image/png' });
+  const msg = (h) => { $('#dwm', b).innerHTML = h; };
+  const shareSheet = async () => {
+    const file = fileOf(await blobP());
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Daily sheet ' + dmy }); return true; } }
+    catch (e) { if (e && e.name === 'AbortError') return true; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    msg('<div class="note">Picture download ho gayi – WhatsApp mein attach karke bhejiye.</div>');
+    return false;
+  };
+  $('#dsh', b).onclick = () => shareSheet();
+  $('#dw', b).onclick = async () => {
+    const no = $('#dwn', b).value.replace(/\D/g, '');
+    try { localStorage.setItem('dailyWa', $('#dwn', b).value.trim()); } catch (e) { }
+    if (no.length >= 9) {
+      let copied = false;
+      try { if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP() })]); copied = true; } } catch (e) { }
+      const url = 'https://wa.me/' + wa(no) + (copied ? '' : '?text=' + encodeURIComponent('Daily sheet ' + dmy));
+      if (copied) { msg(`<div class="note">Picture copy ho gayi – WhatsApp chat mein <b>Paste</b> karke bhejiye (message box par dabaye rakhiye → Paste).</div>`); window.open(url, '_blank'); }
+      else { msg(`<div class="note">Is phone par picture copy nahin hoti – share menu se WhatsApp → ${H($('#dwn', b).value)} chuniye.</div>`); await shareSheet(); }
+      return;
+    }
+    // no number: WhatsApp with the picture (share menu → WhatsApp)
+    const ok = await shareSheet();
+    if (!ok) window.open('https://wa.me/', '_blank');
+  };
   const boxes = () => [...b.querySelectorAll('input[type=checkbox][data-i]')].filter(c => c.checked).map(c => r.grid[+c.dataset.i]);
   b.querySelectorAll('input[type=checkbox][data-i]').forEach(c => c.onchange = () => { $('#drm', b).disabled = !boxes().length; });
   const send = async (op, keys, msg) => {
