@@ -72,6 +72,12 @@ a{color:var(--acc)}
 .linkrow code{font-size:12px;color:var(--mute);word-break:break-all}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px}
 @keyframes s{to{transform:rotate(360deg)}}
+.d7wrap{position:relative;overflow:hidden;width:100%}.d7{position:absolute;left:0;top:0;transform-origin:0 0;background:#fff;color:#000;font-family:'Times New Roman',serif}
+.d7gb{position:absolute;border:1px solid #bbb;border-radius:4px}.d7pic{position:absolute;object-fit:fill}
+.d7f{position:absolute;border:1px solid #9ab;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#00008b;overflow:hidden;white-space:nowrap}
+.d7f.e{border-color:#dde;background:transparent}.d7f.notes{font-size:22px;align-items:flex-start;justify-content:flex-end;white-space:normal;text-align:right;direction:rtl;padding:4px}
+.d7lab{position:absolute;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;direction:rtl}
+.d7p{position:absolute;background:#f5f5f5;border:1px solid #ccc}.d7p.on{background:#9acd32}
 </style>
 </head>
 <body>
@@ -389,10 +395,51 @@ function iOrder(o) {
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.GenixInvNo ? `<button class="btn small" id="pdf">Genix invoice ${H(o.GenixInvNo)} PDF</button>` : ''}${j.rows.length ? '<button class="btn ghost small" id="jo">Open in Jameel</button>' : ''}</div><div id="pdfst"></div></div>
     <h2>Details</h2><div class="card">${kv(o, ['CustomerNameAr', 'Mobile1'])}</div>
     <h2>Fabrics</h2><div class="card">${fab.rows.length ? `<table><tr><th>Fabric</th><th class="n">Thobes</th><th class="n">Price</th></tr>${fab.rows.map(f => `<tr><td class="ar">${H(f.name || f.TextId)}${N(f.Source) === 2 ? ' <span class="pill">own fabric</span>' : ''}</td><td class="n">${H(f.qty)}</td><td class="n">${f.Price != null ? money(f.Price) : '–'}</td></tr>`).join('')}</table>` : '<p class="muted">No fabrics</p>'}</div>
-    ${meas.rows.length ? `<h2>Measurements (D7)</h2><div class="card">${kv(meas.rows[0], ['OrderId', 'custid', 'k'])}</div>` : ''}`;
+    ${meas.rows.length ? `<h2>Measurements – المقاسات</h2><div class="card" style="padding:6px">${d7Html(meas.rows[0])}</div>` : ''}`;
+    d7Fit(m);
     if (o.GenixInvNo) $('#pdf', m).onclick = () => pdfJob(o.GenixInvNo, $('#pdfst', m));
     if (j.rows.length) $('#jo', m).onclick = () => jOrder(j.rows[0]);
   });
+}
+
+
+// ---------------------------------------------------------------- InvProject measurement page (Designfrm7): same drawing, same places
+const D7 = {"gb":[172,198,1527,852],"p11":[179,112,1132,84],"pic":[10,20,868,891],"f":{"m1":["gb",1279,458,67,56],"m10":["gb",428,540,71,52],"m11":["gb",787,24,76,70],"m12":["gb",681,90,64,56],"m13":["gb",613,90,64,56],"m14":["gb",748,618,125,82],"m15":["gb",566,167,64,56],"m17":["gb",758,235,64,56],"m16":["gb",660,202,64,56],"m18":["gb",768,325,64,56],"m20":["gb",351,371,150,52],"m21":["gb",644,633,64,56],"m22":["gb",324,32,146,56],"m23":["gb",324,99,148,56],"m24":["gb",441,249,64,56],"m25":["gb",334,237,64,56],"m27":["gb",351,427,148,51],"m26":["gb",334,300,64,56],"m28":["gb",351,484,148,51],"m29":["gb",351,541,73,52],"m30":["gb",349,598,148,55],"m31":["gb",351,659,148,46],"m32":["gb",799,426,64,56],"m34":["gb",232,182,64,56],"m35":["gb",117,224,64,56],"m37":["gb",138,312,64,56],"m36":["gb",29,265,64,56],"m38":["gb",152,390,77,78],"m39":["gb",29,492,64,56],"m40":["gb",128,551,74,56],"m41":["gb",644,300,64,56],"m42":["gb",551,272,64,56],"m43":["p11",38,26,64,54],"m1_2":["gb",1350,458,67,56],"m1_3":["gb",1421,458,67,56],"m56":["p11",198,26,124,54],"m47":["p11",949,26,162,48],"m55":["p11",119,26,64,54],"m54":["p11",470,26,64,54],"m53":["p11",549,26,64,54],"m52":["p11",632,26,64,54],"m51":["p11",714,26,64,54],"m50":["p11",791,26,64,54],"m49":["p11",868,26,64,54],"m48":["p11",326,26,124,54],"m46":["gb",1055,289,64,56],"m45":["gb",1051,137,111,71],"m44":["gb",896,17,64,56]},"lab":[["gb","رقم الأزرار",787,587,82,23],["p11","الطول",239,6,40,17],["p11","أسفل",51,6,42,17],["p11","أسفل",132,6,42,17],["p11","كرسي",488,6,49,17],["p11","خصر",563,6,34,17],["p11","الصدر",634,6,39,17],["p11","الكم",735,6,32,17],["p11","الكتف",799,6,40,17],["p11","الرقبة",883,6,40,17],["p11","الطول",364,6,40,17]],"panels":{"mType1":{"1":[[1337,33,183,40],["باين",7,10,36,23],["D7_C1",49,1,130,39]],"2":[[1151,33,183,40],["مخفي",2,10,46,23],["D7_C2",54,1,130,39]],"3":[[964,33,183,40],["سحاب",2,10,50,23],["D7_C3",49,1,130,39]]},"mType2":{"1":[[1338,89,161,82],["بدون\r\nكسر",3,21,42,46],["D7_S1",46,14,106,59]],"2":[[1166,89,149,82],["مربع",5,24,41,23],["D7_S2",48,11,92,59]],"3":[[1338,175,160,82],["مشطوف",2,29,64,23],["D7__S3",69,10,91,59]],"4":[[1166,175,149,82],["مدور",8,29,43,23],["D7_S4",48,10,98,59]]},"mType3":{"1":[[1382,261,117,119],["عادي",45,87,46,23],["D7_D3",14,16,92,69]],"2":[[1248,261,117,119],["مدور",47,89,43,23],["D7_D2",14,16,92,69]],"3":[[1127,259,117,119],["مربع",42,93,41,23],["D7_D1",14,16,92,69]]},"mType4":{"1":[[1262,390,247,63],["قلاب",18,22,40,23],["D7_E2v2",94,8,121,48]],"2":[[995,390,229,54],["مدور",11,19,43,23],["D7_E3",56,2,147,43]],"3":[[995,448,229,54],["مردعة",5,13,53,23],["D7_E1",63,2,140,43]]}},"notes":[1037,519,448,166]};
+const D7_MIRROR = false;   // InvProject's form is right-to-left: true = boxes mirrored like the screen
+function d7Html(r) {
+  const FW = 1696, P = { gb: D7.gb, p11: D7.p11 };
+  const place = (par, x, y, w, h) => {   // a box inside groupBox / panel → page coordinates
+    const p = P[par]; let px = p[0], cx = x;
+    if (D7_MIRROR) { px = FW - p[0] - p[2]; cx = p[2] - x - w; }
+    return [px + cx, p[1] + y, w, h];
+  };
+  const gbx = D7_MIRROR ? FW - D7.gb[0] - D7.gb[2] : D7.gb[0], p11x = D7_MIRROR ? FW - D7.p11[0] - D7.p11[2] : D7.p11[0];
+  const X0 = Math.min(gbx, p11x) - 4, Y0 = D7.p11[1] - 4, W = Math.max(gbx + D7.gb[2], p11x + D7.p11[2]) - X0 + 4, Hh = D7.gb[1] + D7.gb[3] - Y0 + 4;
+  const st = (b) => `left:${b[0] - X0}px;top:${b[1] - Y0}px;width:${b[2]}px;height:${b[3]}px`;
+  const v = (k) => { const x = r[k]; return x === null || x === undefined ? '' : String(x).trim(); };
+  let h = `<div class="d7" style="width:${W}px;height:${Hh}px">`;
+  h += `<div class="d7gb" style="${st([gbx, D7.gb[1], D7.gb[2], D7.gb[3]])}"></div><div class="d7gb" style="${st([p11x, D7.p11[1], D7.p11[2], D7.p11[3]])}"></div>`;
+  h += `<img class="d7pic" src="../img/d7/Design_D7.png" style="${st(place('gb', ...D7.pic))}">`;
+  for (const [par, t, x, y, w, hh] of D7.lab) h += `<div class="d7lab" style="${st(place(par, x, y, w, hh))}">${H(t)}</div>`;
+  for (const [k, b] of Object.entries(D7.f)) { const val = v(k); h += `<div class="d7f${val ? '' : ' e'}" style="${st(place(b[0], b[1], b[2], b[3], b[4]))}">${H(val)}</div>`; }
+  for (const [t, opts] of Object.entries(D7.panels)) for (const [val, [pb, lb, pic]] of Object.entries(opts)) {
+    const on = String(r[t]) === String(val);
+    const pp = place('gb', ...pb);
+    h += `<div class="d7p${on ? ' on' : ''}" style="${st(pp)}"><div class="d7lab" style="left:${lb[1]}px;top:${lb[2]}px;width:${lb[3]}px;height:${lb[4]}px">${H(lb[0])}</div><img src="../img/d7/${pic[0]}.png" style="position:absolute;left:${pic[1]}px;top:${pic[2]}px;width:${pic[3]}px;height:${pic[4]}px;object-fit:contain"></div>`;
+  }
+  h += `<div class="d7f notes" style="${st(place('gb', ...D7.notes))}">${H(v('Note')).replace(/\n/g, '<br>')}</div>`;
+  return `<div class="row" style="justify-content:flex-end;margin:0 0 6px"><button class="btn ghost small d7z">🔍 Zoom</button></div><div class="d7wrap">${h}</div></div>`;
+}
+function d7Fit(root) {
+  const fit = () => root.querySelectorAll('.d7wrap').forEach(w => {
+    const d = w.firstElementChild, z = w.dataset.z === '1';
+    const s = z ? Math.max(0.55, w.clientWidth / d.offsetWidth) : w.clientWidth / d.offsetWidth;
+    d.style.transform = `scale(${s})`; w.style.height = d.offsetHeight * s + 'px';
+    w.style.overflowX = z ? 'auto' : 'hidden'; d.style.position = z ? 'relative' : 'absolute'; d.style.marginBottom = z ? (-d.offsetHeight * (1 - s)) + 'px' : '0';
+    if (z) { w.style.height = ''; d.style.marginRight = (-d.offsetWidth * (1 - s)) + 'px'; } else d.style.marginRight = '0';
+  });
+  root.querySelectorAll('.d7z').forEach(b => b.onclick = () => { const w = b.parentElement.nextElementSibling; w.dataset.z = w.dataset.z === '1' ? '' : '1'; b.textContent = w.dataset.z ? '↔ Fit' : '🔍 Zoom'; fit(); if (w.dataset.z) w.scrollLeft = 0; });
+  fit(); setTimeout(fit, 50); addEventListener('resize', fit);
 }
 
 // ---------------------------------------------------------------- Genix
