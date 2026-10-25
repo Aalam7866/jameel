@@ -551,7 +551,7 @@ function jCustomer(c) {
 
 // ---------------------------------------------------------------- InvProject
 const iOrderItem = (o) => `<div class="no">${H(o.OrderId)}</div><div class="main"><div class="t ar">${H(o.CustomerNameAr)}</div><div class="s">${H(o.Mobile1)} · ${d10(o.OrderDate)} → ${d10(o.FinishDate)}</div></div>
-  <div class="r"><div><span class="pill">${H(o.StatusDesc || '')}</span></div>${o.GenixInvNo ? `<div class="muted" style="font-size:12px">Genix ${H(o.GenixInvNo)}</div>` : ''}</div>`;
+  <div class="r">${o.GenixInvNo ? `<div class="muted" style="font-size:12px">Genix ${H(o.GenixInvNo)}</div>` : ''}</div>`;
 async function invView() {
   const m = shell('InvProject');
   const [cur, b] = subTabs(m, 'inv', [['orders', 'Orders (أوامر التشغيل)'], ['customers', 'Customers']]);
