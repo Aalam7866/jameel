@@ -81,6 +81,12 @@ a{color:var(--acc)}
 .d7i{font-family:inherit;padding:0;text-align:center;outline:none}.d7i:focus{background:#fffbd0;border:2px solid #0f5c5d}textarea.d7i{resize:none;padding:4px}
 .frac{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;position:sticky;bottom:-24px;background:var(--bg);padding:8px 0;z-index:2;border-top:1px solid var(--line)}.frac button{min-width:40px;padding:6px 8px;font-size:18px}
 .tap{cursor:pointer}.tap:active{opacity:.7}
+.dsheet{background:#fff;color:#000;border-radius:10px;padding:8px;border:1px solid var(--line)}.dsh{text-align:center;font-size:18px;margin:4px 0 8px}
+.dsw{overflow-x:auto}.dst{border-collapse:collapse;font-size:13px;white-space:nowrap;width:100%}.dst th,.dst td{border:1px solid #999;padding:4px 6px}.dst th{background:#dfe9f5;font-size:12px}
+.dst td.n{text-align:right}.dst .dm{background:#f3ecfa}.dst .dmn{color:#6b2fa3;font-weight:700}.dty-deliver{color:#0a7a2f;font-weight:700}.dty-return{color:#8b0000;font-weight:700}
+.dstot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px}.dstot div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #bbb}
+.dstot .tl{background:#dfe9f5}.dstot .lav{background:#ece4f7}.dstot .peach{background:#fde3d3}
+@media print{nav,header,.noprint,.tabs,#back{display:none!important}body{background:#fff}main{padding:0}.dsw{overflow:visible}}
 </style>
 </head>
 <body>
@@ -233,6 +239,7 @@ async function homeView() {
     <button class="btn" id="qn">+ New Genix invoice</button>
     <button class="btn ghost" id="qo">+ New InvProject order</button>
     <button class="btn ghost" id="qd">Deliveries due</button>
+    <button class="btn ghost" id="qr">Daily report</button>
   </div>
   <div class="row" style="justify-content:space-between;align-items:center;margin-top:18px"><h2 style="margin:0">Data sync${s.meta.some(x => x.err) ? ' <span class="pill bad">error</span>' : ''}</h2><button class="btn ghost small" id="ds">${dsOpen() ? 'Hide' : 'Show'}</button></div>
   <div class="card" id="dsc" style="margin-top:8px"${dsOpen() ? '' : ' hidden'}><table><tr><th>Data</th><th class="n">Rows</th><th>Updated</th></tr>
@@ -243,6 +250,7 @@ async function homeView() {
   $('#ds').onclick = () => { const o = !dsOpen(); try { localStorage.setItem('dsOpen', o ? '1' : ''); } catch (e) { } $('#dsc').hidden = !o; $('#ds').textContent = o ? 'Hide' : 'Show'; };
   $('#qd').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'due'; render(); };
   m.querySelectorAll('[data-go]').forEach(el => el.onclick = () => homeGo(el.dataset.go, s));
+  $('#qr').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'daily'; render(); };
 }
 function dsOpen() { try { return localStorage.getItem('dsOpen') === '1'; } catch (e) { return false; } }
 function newInvOrder() {
@@ -494,13 +502,89 @@ const jOrderItem = (o) => {
 };
 async function jameelView() {
   const m = shell('Jameel Al Hindam');
-  const [cur, b] = subTabs(m, 'jameel', [['orders', 'Orders'], ['due', 'Delivery due'], ['unpaid', 'Unpaid'], ['customers', 'Customers'], ['payments', 'Payments'], ['alts', 'Alterations']]);
+  const [cur, b] = subTabs(m, 'jameel', [['orders', 'Orders'], ['daily', 'Daily report'], ['due', 'Delivery due'], ['unpaid', 'Unpaid'], ['customers', 'Customers'], ['payments', 'Payments'], ['alts', 'Alterations']]);
   if (cur === 'orders') return listView(b, 'j_orders', jOrderItem, { open: jOrder });
+  if (cur === 'daily') return dailyView(b);
   if (cur === 'due') return listView(b, 'j_orders', jOrderItem, { open: jOrder, f: ['open:1'], asc: true, sort: 'delivery_date', key: 'due', ph: 'Orders not yet delivered (oldest delivery first)' });
   if (cur === 'unpaid') return listView(b, 'j_orders', jOrderItem, { open: jOrder, f: ['unpaid:1'], key: 'unpaid', ph: 'Orders with balance due' });
   if (cur === 'customers') return listView(b, 'j_customers', c => `<div class="no">${H(c.customer_no)}</div><div class="main"><div class="t ar">${H(c.name)}</div><div class="s">${H(c.mobile)}</div></div>`, { open: jCustomer });
   if (cur === 'payments') return listView(b, 'j_payments', p => `<div class="no">${H(p.order_no)}</div><div class="main"><div class="t">${H(p.kind)} · ${H(p.method)}</div><div class="s">${H(p.date)} · ${H(p.created_by)}</div></div><div class="r">${money(p.amount)}</div>`, { open: p => jOrderByNo(p.order_no) });
   if (cur === 'alts') return listView(b, 'j_alts', a => `<div class="no">${H(a.alt_no)}</div><div class="main"><div class="t ar">${H(a.customer_name)}</div><div class="s">${H(a.details)}</div></div><div class="r"><span class="pill">${H(a.status)}</span><div class="muted" style="font-size:12px">${H(a.ready_date)}</div></div>`, { open: a => openDetail('Alteration ' + a.alt_no, async (d) => d.innerHTML = `<div class="card">${kv(a)}</div>`) });
+}
+// ---------------------------------------------------------------- JAMEEL daily sheet (TailorShop → Daily report: the same rows, columns and totals)
+async function dailySheet(day) {
+  const [jo, jp, jr, jh, jl] = await Promise.all(['j_orders', 'j_payments', 'j_returns', 'j_hidden', 'j_links'].map(n => loadDs(n).catch(() => ({ rows: [] }))));
+  const hid = new Set(jh.rows.map(x => String(x.key)));
+  const ord = {}; jo.rows.forEach(o => ord[o.order_no] = o);
+  const S = (v) => v === null || v === undefined ? '' : String(v);
+  const pay = jp.rows.filter(p => S(p.date) === day && !hid.has('P:' + p.id)).sort((a, b) => N(a.id) - N(b.id));
+  const lines = [];
+  // SELL: orders booked that day, or with a down payment that day
+  const downs = pay.filter(p => p.kind === 'DOWN');
+  const downOrders = new Set(downs.map(p => String(p.order_no)));
+  const sold = jo.rows.filter(o => (S(o.booking_date) === day || downOrders.has(String(o.order_no))) && !hid.has('O:' + o.order_no))
+    .sort((a, b) => ((a.invoice_no == null ? 0 : 1) - (b.invoice_no == null ? 0 : 1)) || (a.invoice_no == null ? 0 : cmpv(a.invoice_no, b.invoice_no)) || cmpv(a.order_no, b.order_no));
+  for (const o of sold) {
+    const ds = downs.filter(p => String(p.order_no) === String(o.order_no));
+    const down = ds.reduce((a, p) => a + N(p.amount), 0);
+    const first = ds.find(p => N(p.amount) !== 0);
+    lines.push({ inv: S(o.invoice_no), order: S(o.order_no), name: S(o.customer_name), total: N(o.total), down: down === 0 ? null : down, due: 0, method: first ? S(first.method) : '', sell: 'SELL', type: 'SELL', src: 'SELL', no: o.order_no });
+  }
+  // PAY / DELIVER: the other payments of the day
+  for (const p of pay.filter(p => p.kind !== 'DOWN')) {
+    const a = N(p.amount), st = S(p.status).trim().toUpperCase(), o = ord[p.order_no] || {};
+    const method = a === 0 ? (Math.abs(N(p.balance_after)) < 0.5 ? 'Paid' : '') : S(p.method);
+    const deliver = st === 'DELIVER' || st === 'SAMPLE' ? true : N(p.delivered_qty) > 0;
+    lines.push({ inv: S(o.invoice_no), order: S(p.order_no), name: S(o.customer_name), total: null, down: null, due: a, method, sell: st.length > 0 ? st : 'PAY', type: deliver ? 'DELIVER' : 'PAY', src: a === 0 ? '' : 'PAY', no: p.order_no });
+  }
+  // RETURN
+  for (const r of jr.rows.filter(r => S(r.date) === day && !hid.has('R:' + r.return_no)).sort((a, b) => N(a.return_no) - N(b.return_no)))
+    lines.push({ inv: S(r.invoice_no), order: S(r.order_no), name: S(r.customer_name), total: null, down: null, due: -N(r.refund), method: S(r.method), sell: 'RETURN', type: 'RETURN', src: 'REFUND', no: r.order_no });
+  // money by method
+  const link = jl.rows[0] || {};
+  const span = new Set(S(link.SpanMethods).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  if (!span.size) span.add('span');
+  const group = (m) => { if (span.has(m.toLowerCase())) return 'SPAN'; if (m.toLowerCase() === 'bank transfer') return 'Bank Transfer'; return m.trim().toUpperCase(); };
+  const methods = [['Bank Transfer', 0, 0], ['SPAN', 0, 0], ['CASH', 0, 0], ['TABBY', 0, 0], ['TAMARA', 0, 0], ['FREE GIFT', 0, 0]];
+  for (const p of pay.filter(p => N(p.amount) !== 0)) {
+    let g = group(S(p.method)); if (!g.length) g = '-';
+    let i = methods.findIndex(x => x[0] === g);
+    if (i < 0) { methods.push([g, 0, 0]); i = methods.length - 1; }
+    methods[i][1] += N(p.amount); methods[i][2] += 1;
+  }
+  const paid = (m) => methods.filter(x => x[0] === m).reduce((a, x) => a + x[1], 0);
+  return {
+    day, lines, methods,
+    totals: { sell: lines.reduce((a, l) => a + (l.total || 0), 0), down: lines.reduce((a, l) => a + (l.down || 0), 0), due: lines.filter(l => l.src === 'PAY').reduce((a, l) => a + (l.due || 0), 0), tabby: paid('TABBY'), tamara: paid('TAMARA') },
+  };
+}
+const n0 = (v) => { v = Number(v) || 0; return Math.abs(v % 1) >= 0.005 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'); };
+async function dailyView(b) {
+  const today = riyadh().slice(0, 10);
+  const day = state.dailyDay || today;
+  const shift = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  b.innerHTML = `<div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn ghost small" id="dp">‹</button><input type="date" id="dd" value="${day}" style="flex:1;min-width:140px"><button class="btn ghost small" id="dn">›</button><button class="btn ghost small" id="dt">Today</button><button class="btn ghost small" id="dpr">Print</button></div><div id="dr"><p class="muted"><span class="spin"></span></p></div>`;
+  const go = (d) => { state.dailyDay = d; dailyView(b); };
+  $('#dp', b).onclick = () => go(shift(day, -1)); $('#dn', b).onclick = () => go(shift(day, 1)); $('#dt', b).onclick = () => go(today);
+  $('#dd', b).onchange = (e) => e.target.value && go(e.target.value);
+  $('#dpr', b).onclick = () => window.print();
+  const r = await dailySheet(day);
+  const dmy = day.split('-').reverse().join('-');
+  const rowsN = Math.max(r.lines.length, r.methods.length);
+  let t = `<div class="dsheet"><div class="dsh"><b>Daily sheet ${H(dmy)}</b></div><div class="dsw"><table class="dst"><thead><tr><th>S.No</th><th>Invoice.No</th><th>Order NO</th><th>Name</th><th>Total</th><th>Down<br>Payment</th><th>Pay Due<br>Amount</th><th>Mathod</th><th>Sell / deliver</th><th class="dm">Total Mathod</th><th class="dm">Total Paid</th><th class="dm">Paid<br>Customer</th><th>Type</th><th>Source</th></tr></thead><tbody>`;
+  for (let i = 0; i < rowsN; i++) {
+    const l = r.lines[i], m = r.methods[i];
+    t += `<tr${l ? ` data-o="${H(l.no)}" class="tap"` : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? n0(l.total) : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
+      + (m ? `<td class="dm dmn">${H(m[0])}</td><td class="dm n">${m[1] === 0 ? '-' : m[1].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="dm n">${m[2] ? m[2] : '-'}</td>` : '<td class="dm"></td><td class="dm"></td><td class="dm"></td>')
+      + (l ? `<td class="dty dty-${H(l.type.toLowerCase())}">${H(l.type)}</td><td>${H(l.src)}</td>` : '<td></td><td></td>') + '</tr>';
+  }
+  t += `</tbody></table></div><div class="dstot">
+    <div class="tl"><span>TOTAL SELL</span><b>${n0(r.totals.sell)}</b></div><div class="lav"><span>TOTAL DOWN PAYMENT</span><b>${n0(r.totals.down)}</b></div>
+    <div class="peach"><span>TOTAL DUE PAYMENT</span><b>${n0(r.totals.due)}</b></div>
+    ${r.totals.tabby ? `<div class="lav"><span>TABBY</span><b>${n0(r.totals.tabby)}</b></div>` : ''}${r.totals.tamara ? `<div class="lav"><span>TAMARA</span><b>${n0(r.totals.tamara)}</b></div>` : ''}</div>
+    ${r.lines.length ? '' : '<p class="muted center">Is din ka koi kaam nahin</p>'}</div>`;
+  $('#dr', b).innerHTML = t;
+  $('#dr', b).querySelectorAll('tr[data-o]').forEach(el => el.onclick = () => jOrderByNo(el.dataset.o));
 }
 async function jOrderByNo(no) {
   const r = await rows('j_orders', { f: ['order_no:' + no], limit: 1 });
