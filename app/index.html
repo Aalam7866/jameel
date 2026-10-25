@@ -78,6 +78,8 @@ a{color:var(--acc)}
 .d7f.e{border-color:#dde;background:transparent}.d7f.notes{font-size:22px;align-items:flex-start;justify-content:flex-end;white-space:normal;text-align:right;direction:rtl;padding:4px}
 .d7lab{position:absolute;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;direction:rtl}
 .d7p{position:absolute;background:#f5f5f5;border:1px solid #ccc}.d7p.on{background:#9acd32}
+.d7i{font-family:inherit;padding:0;text-align:center;outline:none}.d7i:focus{background:#fffbd0;border:2px solid #0f5c5d}textarea.d7i{resize:none;padding:4px}
+.frac{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;position:sticky;bottom:-24px;background:var(--bg);padding:8px 0;z-index:2;border-top:1px solid var(--line)}.frac button{min-width:40px;padding:6px 8px;font-size:18px}
 </style>
 </head>
 <body>
@@ -242,11 +244,133 @@ function dsOpen() { try { return localStorage.getItem('dsOpen') === '1'; } catch
 function newInvOrder() {
   const s = document.createElement('div'); s.className = 'sheet';
   s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">New InvProject order · أمر تشغيل جديد</h2><button class="x" id="cl">×</button></div>
-  <p>InvProject ka online order abhi ban raha hai. Tayyar hone par yahin se order seedha InvProject me save hoga (customer, kapda, naap, advance, Genix invoice).</p>
-  <p class="muted">Tab tak InvProject me hi order banaiye.</p></div>`;
+  <div class="note" id="mode">Order shop PC par InvProject mein save hoga – bilkul InvProject jaise (order, kapda, naap, Genix invoice, Jameel). Shop PC on hona chahiye.</div>
+  <label class="muted">Customer – العميل</label><input id="cq" placeholder="Name ya mobile likhiye"><div class="sug" id="cs" hidden></div>
+  <div id="cv" style="margin:6px 0 4px"></div>
+  <details id="nc"><summary class="muted" style="cursor:pointer">+ Naya customer</summary>
+    <div class="row" style="margin-top:6px"><input id="nn" class="ar" placeholder="اسم العميل" style="flex:2"><input id="nm" placeholder="05xxxxxxxx" inputmode="tel" style="flex:1"></div></details>
+  <h3 style="margin:14px 0 6px">Thobe – الثياب</h3><div id="ls"></div>
+  <div class="row" style="flex-wrap:wrap;gap:6px"><input id="iq" placeholder="+ Kapda add: code ya naam (جيب الهندام…)" style="flex:1"><button class="btn ghost small" id="own">+ Customer ka kapda (قماش خارجي)</button></div><div class="sug" id="is" hidden></div>
+  <label class="muted" style="display:block;margin-top:10px">Order notes (InvProject ملاحظات)</label><textarea id="no" rows="2" class="ar" style="width:100%"></textarea>
+  <div class="row" style="margin-top:8px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><label class="muted">Delivery – موعد التسليم</label><input id="dl" type="date"><div class="muted" style="font-size:12px">Khali = Jameel plan se apne aap</div></div>
+    <div style="flex:1;min-width:120px"><label class="muted">Cash</label><input id="ca" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+    <div style="flex:1;min-width:120px"><label class="muted">Network (مصرف الانماء)</label><input id="ne" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div></div>
+  <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="gx" checked style="width:auto"> <b>فاتورة جينكس</b> <span class="muted">– naap save hote hi asli tax invoice (ZATCA)</span></label>
+  <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px"><h3 style="margin:0">Naap – المقاسات</h3>
+    <div class="row" style="gap:6px"><button class="btn ghost small" id="cp" disabled>Pichhla naap copy</button><button class="btn ghost small" id="nz">Naap nahin</button></div></div>
+  <div id="mz"></div>
+  <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><span>Total (VAT ke saath)</span><b id="tt">0</b></div><div class="row muted" style="justify-content:space-between"><span>Baaki (آجل)</span><span id="bl">0</span></div></div>
+  <div id="er"></div><button class="btn" id="go" style="width:100%">Order save karein – حفظ</button><div id="rs"></div></div>`;
   document.body.appendChild(s);
-  s.querySelector('#cl').onclick = () => s.remove();
-  s.onclick = (e) => { if (e.target === s) s.remove(); };
+  const st = { cust: null, lines: [], d7: { Note: 'جيب قلم + جيب جوال' }, noD7: false, notesTouched: false };
+  $('#cl', s).onclick = () => s.remove();
+  getDoc(doc(db, 'sys', 'agent')).then(a => { const d = a.exists() ? a.data() : {}; if (d.invOrderTest) $('#mode', s).innerHTML = `<b>TEST mode:</b> order InvProject ki test copy (${H(d.invOrderDb)}) mein jayega – asli InvProject, Genix aur Jameel mein kuch nahin badlega.`; }).catch(() => { });
+  let services = [];
+  rows('i_services', { limit: 20, asc: true }).then(r => { services = r.rows; draw(); });
+  const srvName = (id) => (services.find(x => +x.SrvId === +id) || {}).SrvDescAr || ('#' + id);
+  // customer
+  const setCust = (c) => {
+    st.cust = c; $('#cq', s).value = '';
+    $('#cv', s).innerHTML = c ? `<span class="pill">${H(c.CustomerID)}</span> <b class="ar">${H(c.CustomerNameAr)}</b> <span class="muted">${H(c.Mobile1)}</span> <button class="x" id="cx">×</button>` : '';
+    if (c) { $('#cx', s).onclick = () => setCust(null); $('#nc', s).open = false; }
+    $('#cp', s).disabled = !c;
+  };
+  suggest($('#cq', s), $('#cs', s), 'i_customers', c => `${H(c.CustomerNameAr)} <span class="muted">${H(c.Mobile1)} · ${H(c.CustomerID)}</span>`, setCust);
+  // thobe lines
+  const autoNotes = () => {
+    const shop = st.lines.filter(l => l.src === 1), own = st.lines.filter(l => l.src === 2);
+    const parts = [];
+    if (shop.length) {
+      const q = shop.reduce((a, l) => a + N(l.qty), 0);
+      parts.push(shop.map(l => `${l.code} عدد ${N(l.qty)}`).join(' + ') + ' / ' + `عدد ${q} ` + [...new Set(shop.map(l => srvName(l.srv).replace('خياطة ', '')))].join(' + '));
+    }
+    for (const [srv, q] of Object.entries(own.reduce((a, l) => (a[l.srv] = (a[l.srv] || 0) + N(l.qty), a), {}))) parts.push(`عدد ${q} ${srvName(srv)}`);
+    return parts.join('\n');
+  };
+  const draw = () => {
+    const opts = (v) => services.map(x => `<option value="${H(x.SrvId)}"${+x.SrvId === +v ? ' selected' : ''}>${H(x.SrvDescAr)}</option>`).join('');
+    $('#ls', s).innerHTML = st.lines.map((l, i) => `<div class="card" style="padding:8px 10px;margin-bottom:6px"><div class="row" style="justify-content:space-between"><div class="ar"><b>${H(l.name)}</b> <span class="muted">${l.src === 2 ? 'قماش خارجي' : H(l.code)}</span></div><button class="x" data-del="${i}">×</button></div>
+      <div class="row" style="gap:6px;margin-top:6px"><select data-i="${i}" data-f="srv" style="flex:2">${opts(l.srv)}</select>
+      <label style="flex:1">Thobe<input type="number" min="1" step="1" inputmode="numeric" value="${l.qty}" data-i="${i}" data-f="qty"></label>
+      <label style="flex:1.3">Price/thobe<input type="number" min="0" step="0.01" inputmode="decimal" value="${l.price}" data-i="${i}" data-f="price"></label></div></div>`).join('') || '<p class="muted">Upar se kapda chuniye</p>';
+    $('#ls', s).querySelectorAll('[data-f]').forEach(el => el.oninput = el.onchange = () => { const l = st.lines[+el.dataset.i]; l[el.dataset.f] = el.dataset.f === 'srv' ? +el.value : el.value; if (!st.notesTouched) $('#no', s).value = autoNotes(); sum(); });
+    $('#ls', s).querySelectorAll('[data-del]').forEach(el => el.onclick = () => { st.lines.splice(+el.dataset.del, 1); draw(); });
+    if (!st.notesTouched) $('#no', s).value = autoNotes();
+    sum();
+  };
+  $('#no', s).oninput = () => { st.notesTouched = true; };
+  const total = () => st.lines.reduce((a, l) => a + N(l.qty) * N(l.price), 0);
+  const sum = () => { const t = total(); $('#tt', s).textContent = money(t); $('#bl', s).textContent = money(t - N($('#ca', s).value) - N($('#ne', s).value)); };
+  $('#ca', s).oninput = sum; $('#ne', s).oninput = sum;
+  const defSrv = () => (services[0] || {}).SrvId || 1;
+  suggest($('#iq', s), $('#is', s), 'i_textures', t => `${H(t.DescAr)} <span class="muted">${H(t.TextCode || t.TextId)} · ${money(t.LastPrice || t.Price)}</span>`, t => {
+    $('#iq', s).value = '';
+    if (st.lines.some(l => l.text === +t.TextId && l.src === 1)) return alert('Yeh kapda pehle se hai – thobe ki ginti badhaiye');
+    st.lines.push({ text: +t.TextId, src: 1, code: String(t.TextCode || t.TextId), name: t.DescAr, srv: defSrv(), qty: 1, price: N(t.LastPrice || t.Price) || '' }); draw();
+  });
+  $('#own', s).onclick = async () => {
+    if (st.lines.some(l => l.src === 2)) return alert('Customer ka kapda pehle se hai – thobe ki ginti badhaiye');
+    const own = (await rows('i_textures', { f: ['TextId:1167'], limit: 1 })).rows[0] || {};
+    const gi = (await rows('g_items', { f: ['barcode:1167'], limit: 1 })).rows[0] || {};
+    st.lines.push({ text: 1167, src: 2, code: '1167', name: own.DescAr || 'قماش خارجي', srv: defSrv(), qty: 1, price: N(own.LastPrice) || N(gi.sale_price) || '' }); draw();
+  };
+  // measurements: InvProject's page, to fill in
+  const drawD7 = () => {
+    if (st.noD7) { $('#mz', s).innerHTML = '<p class="muted">Naap nahin – InvProject mein baad mein dalenge (Genix invoice tab banega).</p>'; return; }
+    $('#mz', s).innerHTML = d7Html(st.d7, true) + `<div class="frac">${'⅛ ¼ ⅜ ½ ⅝ ¾ ⅞'.split(' ').map(f => `<button class="btn ghost small" data-frac="${f}">${f}</button>`).join('')}<button class="btn ghost small" data-fclr="1">⌫</button></div>`;
+    const w = $('.d7wrap', s); w.dataset.z = '1'; const zb = $('.d7z', s); if (zb) zb.textContent = '↔ Fit';
+    d7Fit(s); d7Edit(s);
+  };
+  $('#nz', s).onclick = () => { if (!st.noD7) st.d7 = d7Read(s); st.noD7 = !st.noD7; $('#nz', s).textContent = st.noD7 ? 'Naap dalein' : 'Naap nahin'; drawD7(); };
+  $('#cp', s).onclick = async () => {
+    if (!st.cust) return;
+    const r = await rows('i_meas', { f: ['custid:' + st.cust.CustomerID], limit: 1, sort: 'OrderId' });
+    if (!r.rows.length) return alert('Is customer ka pichhla naap nahin mila');
+    const m = Object.assign({}, r.rows[0]);
+    m.Note = String(m.Note || '').split(/\r?\n/).filter(x => x.trim() && !x.startsWith('موعد التسليم')).slice(0, 1).join('\n') || 'جيب قلم + جيب جوال';
+    st.d7 = m; st.noD7 = false; drawD7();
+  };
+  drawD7();
+  $('#go', s).onclick = async () => {
+    const er = $('#er', s); er.innerHTML = '';
+    const fail = (m) => { er.innerHTML = `<div class="err">${H(m)}</div>`; };
+    let cust;
+    if (st.cust) cust = { id: +st.cust.CustomerID };
+    else {
+      const name = $('#nn', s).value.trim(), mobile = $('#nm', s).value.replace(/\D/g, '');
+      if (!name || mobile.length < 9) return fail('Customer chuniye, ya naye customer ka naam aur mobile likhiye');
+      cust = { name, mobile };
+    }
+    if (!st.lines.length) return fail('Kapda / thobe add kijiye');
+    const lines = st.lines.map(l => ({ srv: +l.srv, text: l.text, src: l.src, qty: Math.round(N(l.qty)), price: Math.round(N(l.price) * 100) / 100 }));
+    if (lines.some(l => !(l.qty >= 1) || !(l.price > 0))) return fail('Har line ki thobe ginti aur price likhiye');
+    const t = total(), cash = N($('#ca', s).value), network = N($('#ne', s).value);
+    if (cash < 0 || network < 0 || cash + network > t + 0.001) return fail('Paid amount total se zyada hai');
+    const d7 = st.noD7 ? null : d7Read(s);
+    const want = $('#gx', s).checked;
+    const who = st.cust ? st.cust.CustomerNameAr : cust.name;
+    const test = /TEST/.test($('#mode', s).textContent);
+    if (!confirm(`${test ? 'TEST copy mein ' : ''}InvProject order save karein?\n${who}\n${lines.reduce((a, l) => a + l.qty, 0)} thobe · ${money(t)} SAR` + (want && d7 && !test ? '\n\nفاتورة جينكس: asli tax invoice banega (ZATCA).' : ''))) return;
+    const go = $('#go', s); go.disabled = true;
+    const rs = $('#rs', s);
+    try {
+      let j = await jobNew('inv_order', { data: JSON.stringify({ cust, lines, notes: $('#no', s).value.trim(), delivery: $('#dl', s).value || '', d7, want, cash, network }), who });
+      rs.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC par InvProject mein order save ho raha hai…</p>';
+      const t0 = Date.now();
+      while (j.status === 'new' || j.status === 'running') {
+        if (Date.now() - t0 > 240000) { rs.innerHTML = `<div class="note">Request #${j.id} save hai. Shop PC abhi jawab nahin de raha – PC on hote hi (12 ghante ke andar) order ban jayega. More → Jobs mein dekhein.</div>`; return; }
+        await new Promise(r => setTimeout(r, 3000));
+        j = await jobGet(j.id);
+      }
+      if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+      const r = j.result;
+      rs.innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>${r.test ? 'TEST: ' : ''}أمر التشغيل ${H(r.order)} save ho gaya ✓</b>
+        ${r.no ? `<div>Genix invoice ${H(r.no)}</div>` : ''}${r.file ? `<p>${fileBtn(r.file)}</p>` : ''}
+        ${r.warn ? `<div class="muted" style="font-size:13px;margin-top:6px">${H(r.warn)}</div>` : ''}</div>`;
+      go.hidden = true;
+    } catch (e) { go.disabled = false; rs.innerHTML = `<div class="err">${H(e.message)}</div>`; }
+  };
+  draw();
 }
 async function summary() {
   const now = riyadh(), today = now.slice(0, 10);
@@ -418,7 +542,7 @@ function iOrder(o) {
 // ---------------------------------------------------------------- InvProject measurement page (Designfrm7): same drawing, same places
 const D7 = {"gb":[172,198,1527,852],"p11":[179,112,1132,84],"pic":[10,20,868,891],"f":{"m1":["gb",1279,458,67,56],"m10":["gb",428,540,71,52],"m11":["gb",787,24,76,70],"m12":["gb",681,90,64,56],"m13":["gb",613,90,64,56],"m14":["gb",748,618,125,82],"m15":["gb",566,167,64,56],"m17":["gb",758,235,64,56],"m16":["gb",660,202,64,56],"m18":["gb",768,325,64,56],"m20":["gb",351,371,150,52],"m21":["gb",644,633,64,56],"m22":["gb",324,32,146,56],"m23":["gb",324,99,148,56],"m24":["gb",441,249,64,56],"m25":["gb",334,237,64,56],"m27":["gb",351,427,148,51],"m26":["gb",334,300,64,56],"m28":["gb",351,484,148,51],"m29":["gb",351,541,73,52],"m30":["gb",349,598,148,55],"m31":["gb",351,659,148,46],"m32":["gb",799,426,64,56],"m34":["gb",232,182,64,56],"m35":["gb",117,224,64,56],"m37":["gb",138,312,64,56],"m36":["gb",29,265,64,56],"m38":["gb",152,390,77,78],"m39":["gb",29,492,64,56],"m40":["gb",128,551,74,56],"m41":["gb",644,300,64,56],"m42":["gb",551,272,64,56],"m43":["p11",38,26,64,54],"m1_2":["gb",1350,458,67,56],"m1_3":["gb",1421,458,67,56],"m56":["p11",198,26,124,54],"m47":["p11",949,26,162,48],"m55":["p11",119,26,64,54],"m54":["p11",470,26,64,54],"m53":["p11",549,26,64,54],"m52":["p11",632,26,64,54],"m51":["p11",714,26,64,54],"m50":["p11",791,26,64,54],"m49":["p11",868,26,64,54],"m48":["p11",326,26,124,54],"m46":["gb",1055,289,64,56],"m45":["gb",1051,137,111,71],"m44":["gb",896,17,64,56]},"lab":[["gb","رقم الأزرار",787,587,82,23],["p11","الطول",239,6,40,17],["p11","أسفل",51,6,42,17],["p11","أسفل",132,6,42,17],["p11","كرسي",488,6,49,17],["p11","خصر",563,6,34,17],["p11","الصدر",634,6,39,17],["p11","الكم",735,6,32,17],["p11","الكتف",799,6,40,17],["p11","الرقبة",883,6,40,17],["p11","الطول",364,6,40,17]],"panels":{"mType1":{"1":[[1337,33,183,40],["باين",7,10,36,23],["D7_C1",49,1,130,39]],"2":[[1151,33,183,40],["مخفي",2,10,46,23],["D7_C2",54,1,130,39]],"3":[[964,33,183,40],["سحاب",2,10,50,23],["D7_C3",49,1,130,39]]},"mType2":{"1":[[1338,89,161,82],["بدون\r\nكسر",3,21,42,46],["D7_S1",46,14,106,59]],"2":[[1166,89,149,82],["مربع",5,24,41,23],["D7_S2",48,11,92,59]],"3":[[1338,175,160,82],["مشطوف",2,29,64,23],["D7__S3",69,10,91,59]],"4":[[1166,175,149,82],["مدور",8,29,43,23],["D7_S4",48,10,98,59]]},"mType3":{"1":[[1382,261,117,119],["عادي",45,87,46,23],["D7_D3",14,16,92,69]],"2":[[1248,261,117,119],["مدور",47,89,43,23],["D7_D2",14,16,92,69]],"3":[[1127,259,117,119],["مربع",42,93,41,23],["D7_D1",14,16,92,69]]},"mType4":{"1":[[1262,390,247,63],["قلاب",18,22,40,23],["D7_E2v2",94,8,121,48]],"2":[[995,390,229,54],["مدور",11,19,43,23],["D7_E3",56,2,147,43]],"3":[[995,448,229,54],["مردعة",5,13,53,23],["D7_E1",63,2,140,43]]}},"notes":[1037,519,448,166]};
 const D7_MIRROR = false;   // InvProject's form is right-to-left: true = boxes mirrored like the screen
-function d7Html(r) {
+function d7Html(r, edit) {
   const FW = 1696, P = { gb: D7.gb, p11: D7.p11 };
   const place = (par, x, y, w, h) => {   // a box inside groupBox / panel → page coordinates
     const p = P[par]; let px = p[0], cx = x;
@@ -433,14 +557,35 @@ function d7Html(r) {
   h += `<div class="d7gb" style="${st([gbx, D7.gb[1], D7.gb[2], D7.gb[3]])}"></div><div class="d7gb" style="${st([p11x, D7.p11[1], D7.p11[2], D7.p11[3]])}"></div>`;
   h += `<img class="d7pic" src="../img/d7/Design_D7.png" style="${st(place('gb', ...D7.pic))}">`;
   for (const [par, t, x, y, w, hh] of D7.lab) h += `<div class="d7lab" style="${st(place(par, x, y, w, hh))}">${H(t)}</div>`;
-  for (const [k, b] of Object.entries(D7.f)) { const val = v(k); h += `<div class="d7f${val ? '' : ' e'}" style="${st(place(b[0], b[1], b[2], b[3], b[4]))}">${H(val)}</div>`; }
+  for (const [k, b] of Object.entries(D7.f)) {
+    const val = v(k), bx = st(place(b[0], b[1], b[2], b[3], b[4]));
+    h += edit ? `<input class="d7f d7i" data-k="${k}" maxlength="50" autocomplete="off" style="${bx}" value="${H(val)}">` : `<div class="d7f${val ? '' : ' e'}" style="${bx}">${H(val)}</div>`;
+  }
   for (const [t, opts] of Object.entries(D7.panels)) for (const [val, [pb, lb, pic]] of Object.entries(opts)) {
     const on = String(r[t]) === String(val);
     const pp = place('gb', ...pb);
-    h += `<div class="d7p${on ? ' on' : ''}" style="${st(pp)}"><div class="d7lab" style="left:${lb[1]}px;top:${lb[2]}px;width:${lb[3]}px;height:${lb[4]}px">${H(lb[0])}</div><img src="../img/d7/${pic[0]}.png" style="position:absolute;left:${pic[1]}px;top:${pic[2]}px;width:${pic[3]}px;height:${pic[4]}px;object-fit:contain"></div>`;
+    h += `<div class="d7p${on ? ' on' : ''}" data-t="${t}" data-v="${val}" style="${st(pp)}${edit ? ';cursor:pointer' : ''}"><div class="d7lab" style="left:${lb[1]}px;top:${lb[2]}px;width:${lb[3]}px;height:${lb[4]}px">${H(lb[0])}</div><img src="../img/d7/${pic[0]}.png" style="position:absolute;left:${pic[1]}px;top:${pic[2]}px;width:${pic[3]}px;height:${pic[4]}px;object-fit:contain"></div>`;
   }
-  h += `<div class="d7f notes" style="${st(place('gb', ...D7.notes))}">${H(v('Note')).replace(/\n/g, '<br>')}</div>`;
+  h += edit ? `<textarea class="d7f notes d7i" data-k="Note" maxlength="600" style="${st(place('gb', ...D7.notes))}">${H(v('Note'))}</textarea>`
+    : `<div class="d7f notes" style="${st(place('gb', ...D7.notes))}">${H(v('Note')).replace(/\n/g, '<br>')}</div>`;
   return `<div class="row" style="justify-content:flex-end;margin:0 0 6px"><button class="btn ghost small d7z">🔍 Zoom</button></div><div class="d7wrap">${h}</div></div>`;
+}
+function d7Read(root) {
+  const o = {};
+  root.querySelectorAll('.d7i').forEach(el => { o[el.dataset.k] = el.value.trim(); });
+  root.querySelectorAll('.d7p.on').forEach(el => { o[el.dataset.t] = +el.dataset.v; });
+  return o;
+}
+function d7Edit(root) {
+  let last = null;
+  root.querySelectorAll('.d7i').forEach(el => el.addEventListener('focus', () => { last = el; }));
+  root.querySelectorAll('.d7p').forEach(el => el.onclick = () => {
+    const was = el.classList.contains('on');
+    root.querySelectorAll(`.d7p[data-t="${el.dataset.t}"]`).forEach(x => x.classList.remove('on'));
+    if (!was) el.classList.add('on');
+  });
+  root.querySelectorAll('[data-frac]').forEach(b => b.onclick = (e) => { e.preventDefault(); if (!last) return; last.value = last.value.replace(/[⅛¼⅜½⅝¾⅞]$/, '') + b.dataset.frac; last.focus(); });
+  root.querySelectorAll('[data-fclr]').forEach(b => b.onclick = (e) => { e.preventDefault(); if (last) { last.value = ''; last.focus(); } });
 }
 function d7Fit(root) {
   const fit = () => root.querySelectorAll('.d7wrap').forEach(w => {
@@ -610,7 +755,7 @@ async function moreView() {
     const j = { rows: [] };
     js.forEach(x => { const d = x.data(); j.rows.push({ id: x.id.slice(0, 5), kind: d.kind, status: d.st, data: d, result: d, created: d.ts && d.ts.toDate ? riyadh(d.ts.toDate()) : '' }); });
     const pill = (s) => `<span class="pill ${s === 'done' ? 'ok' : s === 'error' || s === 'cancelled' ? 'bad' : 'warn'}">${H(s)}</span>`;
-    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : H(x.kind)}
+    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : x.kind === 'inv_order' ? `InvProject order · <span class="ar">${H(x.data.who || '')}</span>${x.result.order ? ` → <b>${x.result.test ? 'TEST ' : ''}${H(x.result.order)}</b>` : ''}` : H(x.kind)}
       ${x.result && x.result.no ? `<div class="muted">→ invoice ${H(x.result.no)}</div>` : ''}${x.result && x.result.file ? ' ' + fileBtn(x.result.file, 'PDF') : ''}${x.result && x.result.error ? `<div style="color:var(--bad);font-size:13px">${H(x.result.error)}</div>` : ''}</td>
       <td>${pill(x.status)}</td><td class="muted" style="font-size:12px">${H(x.created.slice(5, 16))}</td></tr>`).join('')}</table>` : '<p class="muted">Abhi koi kaam nahin</p>'}</div>`;
     return;
