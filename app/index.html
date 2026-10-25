@@ -330,7 +330,7 @@ function jOrder(o) {
     const [lines, pays, meas, inv] = await Promise.all([
       rows('j_lines', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
       rows('j_payments', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
-      rows('j_meas', { f: ['order_no:' + o.order_no], limit: 3 }),
+      rows('i_meas', { f: ['OrderId:' + o.order_no], limit: 1 }),
       rows('i_orders', { f: ['OrderId:' + o.order_no], limit: 1 }),
     ]);
     const due = N(o.total) - N(o.paid);
@@ -345,10 +345,11 @@ function jOrder(o) {
     <h2>Details</h2><div class="card">${kv(o, ['customer_name', 'mobile', 'customer_no', 'paid', 'open', 'unpaid'])}</div>
     <h2>Items</h2><div class="card">${lines.rows.length ? `<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>${lines.rows.map(l => `<tr><td class="ar">${H(l.item || l.code)}${l.fabric ? `<div class="muted">${H(l.fabric)}</div>` : ''}</td><td class="n">${H(l.qty)}</td><td class="n">${money(l.rate)}</td><td class="n">${money(l.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No lines</p>'}</div>
     <h2>Payments</h2><div class="card">${pays.rows.length ? `<table><tr><th>Date</th><th>Kind</th><th>Method</th><th class="n">Amount</th></tr>${pays.rows.map(p => `<tr><td>${H(p.date)}</td><td>${H(p.kind)}</td><td>${H(p.method)}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No payments</p>'}</div>
-    ${meas.rows.length ? `<h2>Measurements</h2><div class="card">${measHtml(meas.rows[0])}</div>` : ''}
+    ${meas.rows.length ? `<h2>Measurements – المقاسات</h2><div class="card" style="padding:6px">${d7Html(meas.rows[0])}</div>` : ''}
     ${inv.rows.length ? `<h2>InvProject</h2><div class="card"><button class="btn ghost small" id="io">Open InvProject order ${H(o.order_no)}</button></div>` : ''}`;
     if (o.invoice_no) $('#pdf', m).onclick = () => pdfJob(o.invoice_no, $('#pdfst', m));
     if (inv.rows.length) $('#io', m).onclick = () => iOrder(inv.rows[0]);
+    d7Fit(m);
   });
 }
 function measHtml(x) {
