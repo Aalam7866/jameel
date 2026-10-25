@@ -226,16 +226,27 @@ async function homeView() {
   <h2>Quick</h2>
   <div class="row" style="flex-wrap:wrap">
     <button class="btn" id="qn">+ New Genix invoice</button>
-    <button class="btn ghost" id="qo">+ New Jameel order</button>
+    <button class="btn ghost" id="qo">+ New InvProject order</button>
     <button class="btn ghost" id="qd">Deliveries due</button>
   </div>
-  <h2>Data sync</h2>
-  <div class="card"><table><tr><th>Data</th><th class="n">Rows</th><th>Updated</th></tr>
+  <div class="row" style="justify-content:space-between;align-items:center;margin-top:18px"><h2 style="margin:0">Data sync${s.meta.some(x => x.err) ? ' <span class="pill bad">error</span>' : ''}</h2><button class="btn ghost small" id="ds">${dsOpen() ? 'Hide' : 'Show'}</button></div>
+  <div class="card" id="dsc" style="margin-top:8px"${dsOpen() ? '' : ' hidden'}><table><tr><th>Data</th><th class="n">Rows</th><th>Updated</th></tr>
   ${s.meta.map(x => `<tr><td>${H(DSNAME[x.ds] || x.ds)}${x.err ? `<div class="err" style="margin:4px 0 0;font-size:12px">${H(x.err)}</div>` : ''}</td><td class="n">${x.n}</td><td class="muted">${H(String(x.at || '').slice(5, 16))}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Abhi koi data nahin aaya – shop PC par ShopSync chalaiye</td></tr>'}
   </table></div>`;
   $('#qn').onclick = () => newInvoice();
-  $('#qo').onclick = () => openOrderPage();
+  $('#qo').onclick = () => newInvOrder();
+  $('#ds').onclick = () => { const o = !dsOpen(); try { localStorage.setItem('dsOpen', o ? '1' : ''); } catch (e) { } $('#dsc').hidden = !o; $('#ds').textContent = o ? 'Hide' : 'Show'; };
   $('#qd').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'due'; render(); };
+}
+function dsOpen() { try { return localStorage.getItem('dsOpen') === '1'; } catch (e) { return false; } }
+function newInvOrder() {
+  const s = document.createElement('div'); s.className = 'sheet';
+  s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">New InvProject order · أمر تشغيل جديد</h2><button class="x" id="cl">×</button></div>
+  <p>InvProject ka online order abhi ban raha hai. Tayyar hone par yahin se order seedha InvProject me save hoga (customer, kapda, naap, advance, Genix invoice).</p>
+  <p class="muted">Tab tak InvProject me hi order banaiye.</p></div>`;
+  document.body.appendChild(s);
+  s.querySelector('#cl').onclick = () => s.remove();
+  s.onclick = (e) => { if (e.target === s) s.remove(); };
 }
 async function summary() {
   const now = riyadh(), today = now.slice(0, 10);
