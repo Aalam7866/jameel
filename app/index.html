@@ -80,6 +80,7 @@ a{color:var(--acc)}
 .d7p{position:absolute;background:#f5f5f5;border:1px solid #ccc}.d7p.on{background:#9acd32}
 .d7i{font-family:inherit;padding:0;text-align:center;outline:none}.d7i:focus{background:#fffbd0;border:2px solid #0f5c5d}textarea.d7i{resize:none;padding:4px}
 .frac{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;position:sticky;bottom:-24px;background:var(--bg);padding:8px 0;z-index:2;border-top:1px solid var(--line)}.frac button{min-width:40px;padding:6px 8px;font-size:18px}
+.tap{cursor:pointer}.tap:active{opacity:.7}
 </style>
 </head>
 <body>
@@ -211,19 +212,19 @@ async function homeView() {
   const agoMin = ag ? Math.round((new Date(s.now.replace(' ', 'T')) - new Date(ag.at.replace(' ', 'T'))) / 60000) : null;
   const online = agoMin !== null && agoMin <= 3;
   m.innerHTML = `
-  <div class="card row" style="justify-content:space-between"><div><b>Shop PC</b><div class="muted" style="font-size:13px">${ag ? 'Last contact ' + H(ag.at.slice(5, 16)) + (online ? '' : ` · ${agoMin} min ago`) : 'Never connected yet'}</div></div>
+  <div class="card row tap" data-go="jobs" style="justify-content:space-between"><div><b>Shop PC</b><div class="muted" style="font-size:13px">${ag ? 'Last contact ' + H(ag.at.slice(5, 16)) + (online ? '' : ` · ${agoMin} min ago`) : 'Never connected yet'}</div></div>
   <span class="pill ${online ? 'ok' : 'warn'}">${online ? 'Online' : 'Offline'}</span></div>
   ${s.pendingJobs ? `<div class="note">${s.pendingJobs} kaam shop PC ka intezaar kar rahe hain (More → Jobs)</div>` : ''}
   <h2>Jameel · today ${H(s.today)}</h2>
   <div class="grid">
-    <div class="stat"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
-    <div class="stat"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
-    <div class="stat"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
-    <div class="stat"><b>${money(s.dueRecv.amt)}</b><span>Due received today – purane orders (${s.dueRecv.n})</span></div>
-    <div class="stat"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – aaj ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
-    <div class="stat"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
-    <div class="stat"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
-    <div class="stat"><b>${money(s.genixToday.amt)}</b><span>Genix invoices today (${s.genixToday.n})</span></div>
+    <div class="stat tap" data-go="booked"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
+    <div class="stat tap" data-go="booked"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
+    <div class="stat tap" data-go="paid"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
+    <div class="stat tap" data-go="duerecv"><b>${money(s.dueRecv.amt)}</b><span>Due received today – purane orders (${s.dueRecv.n})</span></div>
+    <div class="stat tap" data-go="advance"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – aaj ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
+    <div class="stat tap" data-go="due"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
+    <div class="stat tap" data-go="unpaid"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
+    <div class="stat tap" data-go="genix"><b>${money(s.genixToday.amt)}</b><span>Genix invoices today (${s.genixToday.n})</span></div>
   </div>
   <h2>Quick</h2>
   <div class="row" style="flex-wrap:wrap">
@@ -239,6 +240,7 @@ async function homeView() {
   $('#qo').onclick = () => newInvOrder();
   $('#ds').onclick = () => { const o = !dsOpen(); try { localStorage.setItem('dsOpen', o ? '1' : ''); } catch (e) { } $('#dsc').hidden = !o; $('#ds').textContent = o ? 'Hide' : 'Show'; };
   $('#qd').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'due'; render(); };
+  m.querySelectorAll('[data-go]').forEach(el => el.onclick = () => homeGo(el.dataset.go, s));
 }
 function dsOpen() { try { return localStorage.getItem('dsOpen') === '1'; } catch (e) { return false; } }
 function newInvOrder() {
@@ -252,12 +254,12 @@ function newInvOrder() {
   <h3 style="margin:14px 0 6px">Thobe – الثياب</h3><div id="ls"></div>
   <div class="row" style="flex-wrap:wrap;gap:6px"><input id="iq" placeholder="+ Kapda add: code ya naam (جيب الهندام…)" style="flex:1"><button class="btn ghost small" id="own">+ Customer ka kapda (قماش خارجي)</button></div><div class="sug" id="is" hidden></div>
   <label class="muted" style="display:block;margin-top:10px">Order notes (InvProject ملاحظات)</label><textarea id="no" rows="2" class="ar" style="width:100%"></textarea>
-  <div class="row" style="margin-top:8px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><label class="muted">Delivery – موعد التسليم</label><input id="dl" type="date"><div class="muted" style="font-size:12px">Khali = Jameel plan se apne aap</div></div>
+  <div class="row" style="margin-top:8px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><label class="muted">Delivery – موعد التسليم</label><input id="dl" type="date"><div class="muted" style="font-size:12px" id="dlh">Jameel plan se apne aap</div></div>
     <div style="flex:1;min-width:120px"><label class="muted">Cash</label><input id="ca" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
     <div style="flex:1;min-width:120px"><label class="muted">Network (مصرف الانماء)</label><input id="ne" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div></div>
   <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="gx" checked style="width:auto"> <b>فاتورة جينكس</b> <span class="muted">– naap save hote hi asli tax invoice (ZATCA)</span></label>
   <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px"><h3 style="margin:0">Naap – المقاسات</h3>
-    <div class="row" style="gap:6px"><button class="btn ghost small" id="cp" disabled>Pichhla naap copy</button><button class="btn ghost small" id="nz">Naap nahin</button></div></div>
+    <div class="row" style="gap:6px"><select id="cp" disabled style="max-width:210px;padding:6px"><option value="">Purana naap chuniye…</option></select><button class="btn ghost small" id="nz">Naap nahin</button></div></div>
   <div id="mz"></div>
   <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><span>Total (VAT ke saath)</span><b id="tt">0</b></div><div class="row muted" style="justify-content:space-between"><span>Baaki (آجل)</span><span id="bl">0</span></div></div>
   <div id="er"></div><button class="btn" id="go" style="width:100%">Order save karein – حفظ</button><div id="rs"></div></div>`;
@@ -273,7 +275,26 @@ function newInvOrder() {
     st.cust = c; $('#cq', s).value = '';
     $('#cv', s).innerHTML = c ? `<span class="pill">${H(c.CustomerID)}</span> <b class="ar">${H(c.CustomerNameAr)}</b> <span class="muted">${H(c.Mobile1)}</span> <button class="x" id="cx">×</button>` : '';
     if (c) { $('#cx', s).onclick = () => setCust(null); $('#nc', s).open = false; }
-    $('#cp', s).disabled = !c;
+    loadOldMeas(c);
+  };
+  // the customer's earlier measurements (InvProject D7), newest first – pick one to start from
+  let oldMeas = [];
+  const loadOldMeas = async (c) => {
+    const sel = $('#cp', s);
+    sel.innerHTML = '<option value="">Purana naap chuniye…</option>'; sel.disabled = true; oldMeas = [];
+    if (!c) return;
+    const [r, o] = await Promise.all([rows('i_meas', { f: ['custid:' + c.CustomerID], limit: 30, sort: 'OrderId' }), rows('i_orders', { f: ['CustomerID:' + c.CustomerID], limit: 100 })]);
+    const dt = {}; o.rows.forEach(x => dt[x.OrderId] = d10(x.OrderDate));
+    oldMeas = r.rows;
+    sel.innerHTML = (oldMeas.length ? `<option value="">Purana naap chuniye (${oldMeas.length})…</option>` : '<option value="">Purana naap nahin</option>') +
+      oldMeas.map((m, i) => `<option value="${i}">Order ${H(m.OrderId)}${dt[m.OrderId] ? ' · ' + H(dt[m.OrderId]) : ''}${m.m11 ? ' · ' + H(m.m11) : ''}</option>`).join('');
+    sel.disabled = !oldMeas.length;
+    if (oldMeas.length && !st.noD7 && !Object.keys(d7Read(s)).some(k => k.startsWith('m') && !k.startsWith('mType') && d7Read(s)[k])) { sel.value = '0'; useOld(0); }
+  };
+  const useOld = (i) => {
+    const m = Object.assign({}, oldMeas[i]);
+    m.Note = String(m.Note || '').split(/\r?\n/).filter(x => x.trim() && !x.startsWith('موعد التسليم')).slice(0, 1).join('\n') || 'جيب قلم + جيب جوال';
+    st.d7 = m; st.noD7 = false; $('#nz', s).textContent = 'Naap nahin'; drawD7();
   };
   suggest($('#cq', s), $('#cs', s), 'i_customers', c => `${H(c.CustomerNameAr)} <span class="muted">${H(c.Mobile1)} · ${H(c.CustomerID)}</span>`, setCust);
   // thobe lines
@@ -300,7 +321,7 @@ function newInvOrder() {
   };
   $('#no', s).oninput = () => { st.notesTouched = true; };
   const total = () => st.lines.reduce((a, l) => a + N(l.qty) * N(l.price), 0);
-  const sum = () => { const t = total(); $('#tt', s).textContent = money(t); $('#bl', s).textContent = money(t - N($('#ca', s).value) - N($('#ne', s).value)); };
+  const sum = () => { const t = total(); $('#tt', s).textContent = money(t); $('#bl', s).textContent = money(t - N($('#ca', s).value) - N($('#ne', s).value)); if (typeof planDate === 'function') planDate(); };
   $('#ca', s).oninput = sum; $('#ne', s).oninput = sum;
   const defSrv = () => (services[0] || {}).SrvId || 1;
   suggest($('#iq', s), $('#is', s), 'i_textures', t => `${H(t.DescAr)} <span class="muted">${H(t.TextCode || t.TextId)} · ${money(t.LastPrice || t.Price)}</span>`, t => {
@@ -322,14 +343,17 @@ function newInvOrder() {
     d7Fit(s); d7Edit(s);
   };
   $('#nz', s).onclick = () => { if (!st.noD7) st.d7 = d7Read(s); st.noD7 = !st.noD7; $('#nz', s).textContent = st.noD7 ? 'Naap dalein' : 'Naap nahin'; drawD7(); };
-  $('#cp', s).onclick = async () => {
-    if (!st.cust) return;
-    const r = await rows('i_meas', { f: ['custid:' + st.cust.CustomerID], limit: 1, sort: 'OrderId' });
-    if (!r.rows.length) return alert('Is customer ka pichhla naap nahin mila');
-    const m = Object.assign({}, r.rows[0]);
-    m.Note = String(m.Note || '').split(/\r?\n/).filter(x => x.trim() && !x.startsWith('موعد التسليم')).slice(0, 1).join('\n') || 'جيب قلم + جيب جوال';
-    st.d7 = m; st.noD7 = false; drawD7();
+  $('#cp', s).onchange = (e) => { if (e.target.value !== '') useOld(+e.target.value); };
+  // the delivery date: JAMEEL's plan for this many thobes (the shop PC keeps it in sys/delivery), as InvProject takes it
+  let plan = {}, dlTouched = false;
+  getDoc(doc(db, 'sys', 'delivery')).then(x => { plan = x.exists() ? x.data() : {}; planDate(); }).catch(() => { });
+  const planDate = () => {
+    const n = Math.max(1, Math.min(10, st.lines.reduce((a, l) => a + Math.round(N(l.qty)), 0) || 1));
+    const d = plan['t' + n];
+    if (!dlTouched) $('#dl', s).value = d || '';
+    $('#dlh', s).textContent = d ? `Jameel plan (${n} thobe): ${d.split('-').reverse().join('-')}` : 'Jameel plan se apne aap (PC par)';
   };
+  $('#dl', s).oninput = () => { dlTouched = true; };
   drawD7();
   $('#go', s).onclick = async () => {
     const er = $('#er', s); er.innerHTML = '';
@@ -372,6 +396,23 @@ function newInvOrder() {
   };
   draw();
 }
+// home tiles → the rows behind the number
+function homeGo(k, s) {
+  const tabTo = (tab, sub) => { state.tab = tab; if (sub) state.sub[tab] = sub; render(); };
+  if (k === 'due') return tabTo('jameel', 'due');
+  if (k === 'unpaid') return tabTo('jameel', 'unpaid');
+  if (k === 'jobs') return tabTo('more', 'jobs');
+  const list = (title, arr, item, open) => openDetail(title, async (m) => {
+    m.innerHTML = `<div class="card list">${arr.map((x, i) => `<div class="it" data-i="${i}">${item(x)}</div>`).join('') || '<p class="muted center">Aaj kuch nahin</p>'}</div>`;
+    m.querySelectorAll('.it').forEach(el => el.onclick = () => open(arr[+el.dataset.i]));
+  });
+  const pay = p => `<div class="no">${H(p.order_no)}</div><div class="main"><div class="t">${H(p.kind)} · ${H(p.method)}</div><div class="s">${H(p.date)} · ${H(p.created_by)}</div></div><div class="r">${money(p.amount)}</div>`;
+  if (k === 'booked') return list('Aaj ke orders', s.lists.booked, jOrderItem, jOrder);
+  if (k === 'paid') return list('Aaj mila – Received today', s.lists.paid, pay, p => jOrderByNo(p.order_no));
+  if (k === 'duerecv') return list('Due received – purane orders', s.lists.duerecv, pay, p => jOrderByNo(p.order_no));
+  if (k === 'advance') return list('Advance – aaj ke orders', s.lists.advance, pay, p => jOrderByNo(p.order_no));
+  if (k === 'genix') return list('Aaj ke Genix invoices', s.lists.genix, gInvItem, gInvoice);
+}
 async function summary() {
   const now = riyadh(), today = now.slice(0, 10);
   const soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
@@ -383,6 +424,8 @@ async function summary() {
   const pt = jp.rows.filter(p => p.date === today);
   const un = jo.rows.filter(o => N(o.total) - N(o.paid) > 0.01);
   const gt = gi.rows.filter(v => String(v.date || '').slice(0, 10) === today);
+  const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || '');
+  const dl = pt.filter(p => (bd[p.order_no] || today) < today); const dueList = () => dl;
   const meta = [];
   metas.forEach(x => { const d = x.data(); meta.push({ ds: x.id, n: d.n || 0, err: d.err || '', at: d.at && d.at.toDate ? riyadh(d.at.toDate()) : '' }); });
   const a = ag.exists() ? ag.data() : null;
@@ -390,7 +433,8 @@ async function summary() {
     today, now,
     booked: { n: bk.length, pcs: bk.reduce((s, o) => s + N(o.pcs), 0), amt: bk.reduce((s, o) => s + N(o.total), 0) },
     paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
-    dueRecv: (() => { const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || ''); const d = pt.filter(p => (bd[p.order_no] || today) < today); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
+    dueRecv: (() => { const d = dueList(); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
+    lists: { booked: bk, paid: pt, duerecv: dueList(), advance: pt.filter(p => !dueList().includes(p)), genix: gt },
     dueSoon: jo.rows.filter(o => N(o.open) === 1 && o.delivery_date && o.delivery_date <= soon).length,
     unpaid: { n: un.length, due: un.reduce((s, o) => s + N(o.total) - N(o.paid), 0) },
     genixToday: { n: gt.length, amt: gt.reduce((s, v) => s + N(v.tot_net), 0) },
@@ -507,7 +551,7 @@ function jCustomer(c) {
 
 // ---------------------------------------------------------------- InvProject
 const iOrderItem = (o) => `<div class="no">${H(o.OrderId)}</div><div class="main"><div class="t ar">${H(o.CustomerNameAr)}</div><div class="s">${H(o.Mobile1)} · ${d10(o.OrderDate)} → ${d10(o.FinishDate)}</div></div>
-  <div class="r"><div>${money(o.NetTotal)}</div><div><span class="pill">${H(o.StatusDesc || '')}</span></div>${o.GenixInvNo ? `<div class="muted" style="font-size:12px">Genix ${H(o.GenixInvNo)}</div>` : ''}</div>`;
+  <div class="r"><div><span class="pill">${H(o.StatusDesc || '')}</span></div>${o.GenixInvNo ? `<div class="muted" style="font-size:12px">Genix ${H(o.GenixInvNo)}</div>` : ''}</div>`;
 async function invView() {
   const m = shell('InvProject');
   const [cur, b] = subTabs(m, 'inv', [['orders', 'Orders (أوامر التشغيل)'], ['customers', 'Customers']]);
@@ -531,8 +575,10 @@ function iOrder(o) {
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.GenixInvNo ? `<button class="btn small" id="pdf">Genix invoice ${H(o.GenixInvNo)} PDF</button>` : ''}${j.rows.length ? '<button class="btn ghost small" id="jo">Open in Jameel</button>' : ''}</div><div id="pdfst"></div></div>
     <h2>Details</h2><div class="card">${kv(o, ['CustomerNameAr', 'Mobile1'])}</div>
     <h2>Fabrics</h2><div class="card">${fab.rows.length ? `<table><tr><th>Fabric</th><th class="n">Thobes</th><th class="n">Price</th></tr>${fab.rows.map(f => `<tr><td class="ar">${H(f.name || f.TextId)}${N(f.Source) === 2 ? ' <span class="pill">own fabric</span>' : ''}</td><td class="n">${H(f.qty)}</td><td class="n">${f.Price != null ? money(f.Price) : '–'}</td></tr>`).join('')}</table>` : '<p class="muted">No fabrics</p>'}</div>
-    ${meas.rows.length ? `<h2>Measurements – المقاسات</h2><div class="card" style="padding:6px">${d7Html(meas.rows[0])}</div>` : ''}`;
+    <div class="row" style="justify-content:space-between;align-items:center;margin-top:18px"><h2 style="margin:0">Measurements – المقاسات</h2><button class="btn ghost small" id="me">✎ ${meas.rows.length ? 'Naap edit' : 'Naap dalein'}</button></div>
+    ${meas.rows.length ? `<div class="card" style="padding:6px;margin-top:8px">${d7Html(meas.rows[0])}</div>` : '<p class="muted">Is order ka naap abhi nahin hai</p>'}`;
     d7Fit(m);
+    $('#me', m).onclick = () => editMeas(o, meas.rows[0]);
     if (o.GenixInvNo) $('#pdf', m).onclick = () => pdfJob(o.GenixInvNo, $('#pdfst', m));
     if (j.rows.length) $('#jo', m).onclick = () => jOrder(j.rows[0]);
   });
@@ -597,6 +643,54 @@ function d7Fit(root) {
   });
   root.querySelectorAll('.d7z').forEach(b => b.onclick = () => { const w = b.parentElement.nextElementSibling; w.dataset.z = w.dataset.z === '1' ? '' : '1'; b.textContent = w.dataset.z ? '↔ Fit' : '🔍 Zoom'; fit(); if (w.dataset.z) w.scrollLeft = 0; });
   fit(); setTimeout(fit, 50); addEventListener('resize', fit);
+}
+
+// an InvProject order's measurements, changed online → the shop PC saves them as InvProject's measurement window (تعديل → حفظ)
+function editMeas(o, cur) {
+  const s = document.createElement('div'); s.className = 'sheet';
+  s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">Naap – المقاسات · ${H(o.OrderId)}</h2><button class="x" id="cl">×</button></div>
+  <div class="note" id="mode"><span class="ar">${H(o.CustomerNameAr)}</span> · shop PC par InvProject mein save hoga${cur ? '' : ' (naya naap – ticked ho to Genix invoice bhi banega)'}.</div>
+  <div class="row" style="justify-content:flex-end;margin-bottom:6px"><select id="cp" style="max-width:240px;padding:6px"><option value="">Purana naap chuniye…</option></select></div>
+  <div id="mz"></div><div id="er"></div><button class="btn" id="go" style="width:100%;margin-top:10px">Naap save karein – حفظ</button><div id="rs"></div></div>`;
+  document.body.appendChild(s);
+  $('#cl', s).onclick = () => s.remove();
+  getDoc(doc(db, 'sys', 'agent')).then(a => { const d = a.exists() ? a.data() : {}; if (d.invOrderTest) $('#mode', s).insertAdjacentHTML('beforeend', ` <b>TEST mode (${H(d.invOrderDb)})</b> – asli InvProject nahin badlega.`); }).catch(() => { });
+  const draw = (r) => {
+    $('#mz', s).innerHTML = d7Html(r || { Note: 'جيب قلم + جيب جوال' }, true) + `<div class="frac">${'⅛ ¼ ⅜ ½ ⅝ ¾ ⅞'.split(' ').map(f => `<button class="btn ghost small" data-frac="${f}">${f}</button>`).join('')}<button class="btn ghost small" data-fclr="1">⌫</button></div>`;
+    const w = $('.d7wrap', s); w.dataset.z = '1'; const zb = $('.d7z', s); if (zb) zb.textContent = '↔ Fit';
+    d7Fit(s); d7Edit(s);
+  };
+  draw(cur);
+  let old = [];
+  Promise.all([rows('i_meas', { f: ['custid:' + o.CustomerID], limit: 30, sort: 'OrderId' }), rows('i_orders', { f: ['CustomerID:' + o.CustomerID], limit: 100 })]).then(([r, os]) => {
+    const dt = {}; os.rows.forEach(x => dt[x.OrderId] = d10(x.OrderDate));
+    old = r.rows.filter(x => String(x.OrderId) !== String(o.OrderId));
+    $('#cp', s).innerHTML = (old.length ? `<option value="">Purana naap chuniye (${old.length})…</option>` : '<option value="">Purana naap nahin</option>') + old.map((m, i) => `<option value="${i}">Order ${H(m.OrderId)}${dt[m.OrderId] ? ' · ' + H(dt[m.OrderId]) : ''}</option>`).join('');
+  });
+  $('#cp', s).onchange = (e) => {
+    if (e.target.value === '') return;
+    const keepNote = (d7Read(s).Note || '');
+    const m = Object.assign({}, old[+e.target.value]); m.Note = keepNote; draw(m);
+  };
+  $('#go', s).onclick = async () => {
+    const d7 = d7Read(s);
+    if (!confirm(`Order ${o.OrderId} ka naap InvProject mein save karein?`)) return;
+    const go = $('#go', s); go.disabled = true; const rs = $('#rs', s);
+    try {
+      let j = await jobNew('inv_meas', { data: JSON.stringify({ order: +o.OrderId, d7 }), who: o.CustomerNameAr });
+      rs.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC par naap save ho raha hai…</p>';
+      const t0 = Date.now();
+      while (j.status === 'new' || j.status === 'running') {
+        if (Date.now() - t0 > 240000) { rs.innerHTML = `<div class="note">Request #${j.id} save hai – PC on hote hi naap save ho jayega (More → Jobs).</div>`; return; }
+        await new Promise(r => setTimeout(r, 3000));
+        j = await jobGet(j.id);
+      }
+      if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+      const r = j.result;
+      rs.innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>${r.test ? 'TEST: ' : ''}Order ${H(r.order)} ka naap save ho gaya ✓</b>${r.no ? `<div>Genix invoice ${H(r.no)}</div>` : ''}${r.warn ? `<div class="muted" style="font-size:13px">${H(r.warn)}</div>` : ''}<div class="muted" style="font-size:13px">App mein 2–3 minute baad dikhega.</div></div>`;
+      go.hidden = true;
+    } catch (e) { go.disabled = false; rs.innerHTML = `<div class="err">${H(e.message)}</div>`; }
+  };
 }
 
 // ---------------------------------------------------------------- Genix
@@ -755,7 +849,7 @@ async function moreView() {
     const j = { rows: [] };
     js.forEach(x => { const d = x.data(); j.rows.push({ id: x.id.slice(0, 5), kind: d.kind, status: d.st, data: d, result: d, created: d.ts && d.ts.toDate ? riyadh(d.ts.toDate()) : '' }); });
     const pill = (s) => `<span class="pill ${s === 'done' ? 'ok' : s === 'error' || s === 'cancelled' ? 'bad' : 'warn'}">${H(s)}</span>`;
-    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : x.kind === 'inv_order' ? `InvProject order · <span class="ar">${H(x.data.who || '')}</span>${x.result.order ? ` → <b>${x.result.test ? 'TEST ' : ''}${H(x.result.order)}</b>` : ''}` : H(x.kind)}
+    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : x.kind === 'inv_meas' ? `Naap edit · order ${H(x.result.order || '')} <span class="ar">${H(x.data.who || '')}</span>` : x.kind === 'inv_order' ? `InvProject order · <span class="ar">${H(x.data.who || '')}</span>${x.result.order ? ` → <b>${x.result.test ? 'TEST ' : ''}${H(x.result.order)}</b>` : ''}` : H(x.kind)}
       ${x.result && x.result.no ? `<div class="muted">→ invoice ${H(x.result.no)}</div>` : ''}${x.result && x.result.file ? ' ' + fileBtn(x.result.file, 'PDF') : ''}${x.result && x.result.error ? `<div style="color:var(--bad);font-size:13px">${H(x.result.error)}</div>` : ''}</td>
       <td>${pill(x.status)}</td><td class="muted" style="font-size:12px">${H(x.created.slice(5, 16))}</td></tr>`).join('')}</table>` : '<p class="muted">Abhi koi kaam nahin</p>'}</div>`;
     return;
