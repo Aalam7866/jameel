@@ -94,6 +94,8 @@ const $ = (s, e = document) => e.querySelector(s);
 const H = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const N = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const money = (v) => N(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+// a balance under 1 SAR (rounding) counts as paid everywhere
+const DUE_MIN = 1;
 const d10 = (v) => String(v ?? '').slice(0, 10);
 const state = { tab: 'home', sub: {}, q: {} };
 
@@ -422,7 +424,7 @@ async function summary() {
   ]);
   const bk = jo.rows.filter(o => o.booking_date === today);
   const pt = jp.rows.filter(p => p.date === today);
-  const un = jo.rows.filter(o => N(o.total) - N(o.paid) > 0.01);
+  const un = jo.rows.filter(o => N(o.total) - N(o.paid) >= DUE_MIN);
   const gt = gi.rows.filter(v => String(v.date || '').slice(0, 10) === today);
   const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || '');
   const dl = pt.filter(p => (bd[p.order_no] || today) < today); const dueList = () => dl;
@@ -488,7 +490,7 @@ function jStatus(o) {
 const jOrderItem = (o) => {
   const due = N(o.total) - N(o.paid);
   return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)} · ${N(o.pcs)} pcs</div></div>
-  <div class="r"><div>${money(o.total)}</div>${due > 0.01 ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
+  <div class="r"><div>${money(o.total)}</div>${due >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
 };
 async function jameelView() {
   const m = shell('Jameel Al Hindam');
@@ -517,7 +519,7 @@ function jOrder(o) {
     <div class="card"><div class="row" style="justify-content:space-between"><div><div class="ar" style="font-size:18px;font-weight:600">${H(o.customer_name)}</div>
     <div class="muted">${H(o.mobile)} · customer ${H(o.customer_no)}</div></div>${jStatus(o)}</div>
     <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(o.total)}</b><span>Total (VAT ${money(o.vat)})</span></div><div class="stat"><b>${money(o.paid)}</b><span>Paid</span></div>
-    <div class="stat"><b style="color:${due > 0.01 ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
+    <div class="stat"><b style="color:${due >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.invoice_no ? `<button class="btn small" id="pdf">Invoice ${H(o.invoice_no)} PDF</button>` : ''}
     ${o.mobile ? `<a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a>` : ''}</div>
     <div id="pdfst"></div></div>
@@ -695,7 +697,7 @@ function editMeas(o, cur) {
 
 // ---------------------------------------------------------------- Genix
 const gInvItem = (v) => `<div class="no">${H(v.id)}</div><div class="main"><div class="t ar">${H(v.name)}</div><div class="s">${H(String(v.date || '').slice(0, 10))} · ${N(v.inv_type) === 1 ? 'آجلة credit' : 'نقدية cash'}${v.mobile ? ' · ' + H(v.mobile) : ''}</div></div>
-  <div class="r"><div>${money(v.tot_net)}</div>${N(v.tot_net) - N(v.paid_all) > 0.01 ? `<div style="font-size:12px;color:var(--bad)">due ${money(N(v.tot_net) - N(v.paid_all))}</div>` : '<span class="pill ok">Paid</span>'}</div>`;
+  <div class="r"><div>${money(v.tot_net)}</div>${N(v.tot_net) - N(v.paid_all) >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(N(v.tot_net) - N(v.paid_all))}</div>` : '<span class="pill ok">Paid</span>'}</div>`;
 async function genixView() {
   const m = shell('Genix');
   const [cur, b] = subTabs(m, 'genix', [['inv', 'Invoices'], ['rec', 'Receipts'], ['cust', 'Customers'], ['items', 'Items']]);

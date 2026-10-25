@@ -342,6 +342,8 @@ async function aOrders(key, pin) {
   s.forEach(x => parts.push([Number(x.id), J(x.data().v, [])]));
   parts.sort((a, b) => a[0] - b[0]);
   const rows = parts.flatMap(p => p[1]).map(x => x.map(v => String(v ?? '')));
+  // a balance under 1 SAR (rounding) is not shown as due
+  for (const x of rows) if (x.length > 14 && Math.abs(Number(x[14]) || 0) < 1) x[14] = '0';
   const pend = {};
   if (r.s) {
     const sp = await getDoc(doc(db, 'sp', r.s));
