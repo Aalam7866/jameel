@@ -81,12 +81,7 @@ a{color:var(--acc)}
 .d7i{font-family:inherit;padding:0;text-align:center;outline:none}.d7i:focus{background:#fffbd0;border:2px solid #0f5c5d}textarea.d7i{resize:none;padding:4px}
 .frac{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;position:sticky;bottom:-24px;background:var(--bg);padding:8px 0;z-index:2;border-top:1px solid var(--line)}.frac button{min-width:40px;padding:6px 8px;font-size:18px}
 .tap{cursor:pointer}.tap:active{opacity:.7}
-.dsheet{background:#fff;color:#000;border-radius:10px;padding:8px;border:1px solid var(--line)}.dsh{text-align:center;font-size:18px;margin:4px 0 8px}
-.dsw{overflow-x:auto}.dst{border-collapse:collapse;font-size:13px;white-space:nowrap;width:100%}.dst th,.dst td{border:1px solid #999;padding:4px 6px}.dst th{background:#dfe9f5;font-size:12px}
-.dst td.n{text-align:right}.dst .dm{background:#f3ecfa}.dst .dmn{color:#6b2fa3;font-weight:700}.dty-deliver{color:#0a7a2f;font-weight:700}.dty-return{color:#8b0000;font-weight:700}
-.dstot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px}.dstot div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #bbb}
-.dstot .tl{background:#dfe9f5}.dstot .lav{background:#ece4f7}.dstot .peach{background:#fde3d3}
-@media print{nav,header,.noprint,.tabs,#back{display:none!important}body{background:#fff}main{padding:0}.dsw{overflow:visible}}
+.dwrap{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.dimg{display:block;width:100%;height:auto}
 </style>
 </head>
 <body>
@@ -511,10 +506,12 @@ async function jameelView() {
   if (cur === 'payments') return listView(b, 'j_payments', p => `<div class="no">${H(p.order_no)}</div><div class="main"><div class="t">${H(p.kind)} · ${H(p.method)}</div><div class="s">${H(p.date)} · ${H(p.created_by)}</div></div><div class="r">${money(p.amount)}</div>`, { open: p => jOrderByNo(p.order_no) });
   if (cur === 'alts') return listView(b, 'j_alts', a => `<div class="no">${H(a.alt_no)}</div><div class="main"><div class="t ar">${H(a.customer_name)}</div><div class="s">${H(a.details)}</div></div><div class="r"><span class="pill">${H(a.status)}</span><div class="muted" style="font-size:12px">${H(a.ready_date)}</div></div>`, { open: a => openDetail('Alteration ' + a.alt_no, async (d) => d.innerHTML = `<div class="card">${kv(a)}</div>`) });
 }
-// ---------------------------------------------------------------- JAMEEL daily sheet (TailorShop → Daily report: the same rows, columns and totals)
+// ---------------------------------------------------------------- JAMEEL daily sheet (TailorShop → Daily report: the same rows, columns, totals and picture)
+const dailyOverlay = { add: new Set(), clear: new Set() };   // removed / put back here, until the shop PC's copy shows it
 async function dailySheet(day) {
   const [jo, jp, jr, jh, jl] = await Promise.all(['j_orders', 'j_payments', 'j_returns', 'j_hidden', 'j_links'].map(n => loadDs(n).catch(() => ({ rows: [] }))));
-  const hid = new Set(jh.rows.map(x => String(x.key)));
+  const hid = new Set(jh.rows.filter(x => !(dailyOverlay.clear.has(String(x.day)))).map(x => String(x.key)));
+  dailyOverlay.add.forEach(k => hid.add(k));
   const ord = {}; jo.rows.forEach(o => ord[o.order_no] = o);
   const S = (v) => v === null || v === undefined ? '' : String(v);
   const pay = jp.rows.filter(p => S(p.date) === day && !hid.has('P:' + p.id)).sort((a, b) => N(a.id) - N(b.id));
@@ -538,7 +535,8 @@ async function dailySheet(day) {
     lines.push({ inv: S(o.invoice_no), order: S(p.order_no), name: S(o.customer_name), total: null, down: null, due: a, method, sell: st.length > 0 ? st : 'PAY', type: deliver ? 'DELIVER' : 'PAY', src: a === 0 ? '' : 'PAY', no: p.order_no });
   }
   // RETURN
-  for (const r of jr.rows.filter(r => S(r.date) === day && !hid.has('R:' + r.return_no)).sort((a, b) => N(a.return_no) - N(b.return_no)))
+  const rets = jr.rows.filter(r => S(r.date) === day && !hid.has('R:' + r.return_no)).sort((a, b) => N(a.return_no) - N(b.return_no));
+  for (const r of rets)
     lines.push({ inv: S(r.invoice_no), order: S(r.order_no), name: S(r.customer_name), total: null, down: null, due: -N(r.refund), method: S(r.method), sell: 'RETURN', type: 'RETURN', src: 'REFUND', no: r.order_no });
   // money by method
   const link = jl.rows[0] || {};
@@ -553,38 +551,140 @@ async function dailySheet(day) {
     methods[i][1] += N(p.amount); methods[i][2] += 1;
   }
   const paid = (m) => methods.filter(x => x[0] === m).reduce((a, x) => a + x[1], 0);
+  // the lines TailorShop's Daily report lets you remove (its grid): payments, orders without a down payment, returns
+  const anyDown = new Set(jp.rows.filter(p => p.kind === 'DOWN').map(p => String(p.order_no)));
+  const grid = [];
+  for (const p of pay) { const o = ord[p.order_no] || {}; grid.push({ key: 'P:' + p.id + (p.kind === 'DOWN' ? ',O:' + p.order_no : ''), order: S(p.order_no), name: S(o.customer_name), type: p.kind === 'DOWN' ? 'SELL' : (S(p.status) || 'PAY'), amount: N(p.amount), method: S(p.method) }); }
+  for (const o of jo.rows.filter(o => S(o.booking_date) === day && !hid.has('O:' + o.order_no) && !anyDown.has(String(o.order_no)))) grid.push({ key: 'O:' + o.order_no, order: S(o.order_no), name: S(o.customer_name), type: 'SELL (no payment)', amount: 0, method: '' });
+  for (const r of rets) grid.push({ key: 'R:' + r.return_no, order: S(r.order_no), name: S(r.customer_name), type: 'RETURN', amount: -N(r.refund), method: S(r.method) });
+  const hiddenCount = jh.rows.filter(x => String(x.day) === day && !dailyOverlay.clear.has(day)).length + [...dailyOverlay.add].filter(k => !jh.rows.some(x => String(x.key) === k)).length;
   return {
-    day, lines, methods,
+    day, lines, methods, grid, hiddenCount,
     totals: { sell: lines.reduce((a, l) => a + (l.total || 0), 0), down: lines.reduce((a, l) => a + (l.down || 0), 0), due: lines.filter(l => l.src === 'PAY').reduce((a, l) => a + (l.due || 0), 0), tabby: paid('TABBY'), tamara: paid('TAMARA') },
   };
 }
 const n0 = (v) => { v = Number(v) || 0; return Math.abs(v % 1) >= 0.005 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'); };
+// TailorShop's DailySheet.Draw, line for line: sizes, colours and fonts of the picture the shop sends on WhatsApp
+function dailyCanvas(r) {
+  const COLS = [['S.No', 75], ['Invoice.No', 85], ['Order NO', 75], ['Name', 230], ['Total', 78], ['Down\nPayment', 83], ['Pay Due\nAmount', 124], ['Mathod', 56], ['Sell / deliver', 85], ['Total Mathod', 141], ['Total Paid', 82], ['Paid\nCustomer', 62], ['Type', 64], ['Source', 68]];
+  const PURPLE = 'rgb(76,40,80)', LAV = 'rgb(241,237,248)', GRID = 'rgb(200,200,200)', BAND = 'rgb(232,232,232)', PEACH = 'rgb(252,228,214)', TOTL = 'rgb(246,246,246)';
+  const rowsN = Math.max(12, r.lines.length + 3, r.methods.length + 1);
+  const x = [0]; COLS.forEach((c, i) => x.push(x[i] + c[1]));
+  const W = x[COLS.length], Hh = 145 + rowsN * 30 + 150 + 4;
+  const sc = 2, cv = document.createElement('canvas'); cv.width = W * sc; cv.height = Hh * sc;
+  const g = cv.getContext('2d'); g.scale(sc, sc);
+  const F = (px, bold, fam) => `${bold ? 'bold ' : ''}${px}px ${fam || 'Calibri, Carlito, "Segoe UI", Arial, sans-serif'}`;
+  const fTitle = F(30, 1), fHead = F(13.5, 1), fCell = F(16.5, 1), fName = F(15, 0, '"Segoe UI", Tahoma, Arial, sans-serif'), fSmall = F(13.5, 1), fTot = F(12.5, 1), fTotBig = F(15.5, 1);
+  const text = (t, font, color, rx, ry, rw, rh, align = 'center') => {
+    t = String(t ?? ''); if (!t) return;
+    g.save(); g.beginPath(); g.rect(rx, ry, rw, rh); g.clip();
+    g.font = font; g.fillStyle = color; g.textBaseline = 'middle';
+    const ls = t.split('\n'), lh = parseFloat(font.match(/([\d.]+)px/)[1]) * 1.15;
+    ls.forEach((l, i) => {
+      let s = l; while (s.length > 1 && g.measureText(s).width > rw) s = s.slice(0, -2) + '…';
+      const ax = align === 'left' ? rx : align === 'right' ? rx + rw : rx + rw / 2;
+      g.textAlign = align; g.fillText(s, ax, ry + rh / 2 + (i - (ls.length - 1) / 2) * lh);
+    });
+    g.restore();
+  };
+  const line = (color, w, x1, y1, x2, y2) => { g.strokeStyle = color; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, Hh);
+  g.fillStyle = BAND; g.fillRect(0, 0, W, 70);
+  text(r.day.split('-').reverse().join('-'), fTitle, '#000', 0, 0, x[10], 70);
+  line('#000', 1.6, x[13] - 2, 0, x[13] - 2, 70);
+  let y = 70;
+  g.fillStyle = PURPLE; g.fillRect(0, y, W, 75);
+  line('rgb(70,140,200)', 2, 0, y, W, y);
+  COLS.forEach((c, i) => text(c[0], fHead, '#fff', x[i] + 2, y, c[1] - 4, 75));
+  y += 75;
+  const top = y;
+  const C = (i, ry) => [x[i], ry, COLS[i][1], 30];
+  for (let i = 0; i < rowsN; i++) {
+    const ry = y + i * 30;
+    if (i % 2 === 1) { g.fillStyle = LAV; g.fillRect(0, ry, x[9], 30); g.fillRect(x[10], ry, W - x[10], 30); }
+    if (i < r.methods.length) { g.fillStyle = LAV; g.fillRect(x[9], ry, COLS[9][1], 30); }
+    const l = r.lines[i];
+    if (l) {
+      text(i + 1, fCell, '#000', ...C(0, ry)); text(l.inv, fCell, '#000', ...C(1, ry)); text(l.order, fCell, '#000', ...C(2, ry));
+      text(l.name, fName, '#000', ...C(3, ry));
+      if (l.total) text(n0(l.total), fCell, '#000', ...C(4, ry));
+      if (l.down != null) text(n0(l.down), fCell, '#000', ...C(5, ry));
+      if (l.due != null) text(n0(l.due), fCell, l.due < 0 ? 'rgb(139,0,0)' : '#000', ...C(6, ry));
+      text(l.method, fCell, '#000', ...C(7, ry)); text(l.sell, fCell, '#000', ...C(8, ry));
+      text(l.type, l.type.length > 5 ? fSmall : fCell, '#000', x[12], ry, COLS[12][1], 30);
+      text(l.src, fCell, '#000', ...C(13, ry));
+    }
+    const m = r.methods[i];
+    if (m) {
+      text(m[0], fSmall, PURPLE, x[9] + 8, ry, COLS[9][1] - 10, 30, 'left');
+      text(m[1] === 0 ? '-' : m[1].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), fCell, '#000', ...C(10, ry));
+      text(m[2] ? m[2] : '-', fCell, '#000', ...C(11, ry));
+    }
+    line(GRID, 1, 0, ry + 30, W, ry + 30);
+  }
+  const bottom = y + rowsN * 30;
+  for (let i = 1; i < COLS.length; i++) line(GRID, 1, x[i], top, x[i], bottom);
+  g.strokeStyle = '#000'; g.lineWidth = 1.6; g.strokeRect(0.8, 70, W - 1.6, bottom - 70);
+  line('#000', 1.6, x[13], top - 75, x[13], bottom);
+  line('#000', 1.6, x[3], top, x[3], bottom);
+  const T = r.totals;
+  const tot = [['TOTAL SELL', n0(T.sell), TOTL, 0], ['TOTAL DOWN PAYMENT', n0(T.down), LAV, 0], ['TOTAL DUE PAYMENT', n0(T.due), PEACH, 0],
+    ['TABBY', T.tabby === 0 ? '' : n0(T.tabby), LAV, 1], ['TAMARA', T.tamara === 0 ? '' : n0(T.tamara), LAV, 0]];
+  let ty = bottom;
+  tot.forEach(([lab, val, col, big], i) => {
+    g.fillStyle = col; g.fillRect(x[9], ty, COLS[9][1], 30);
+    g.fillStyle = i === 0 ? BAND : col; g.fillRect(x[10], ty, COLS[10][1], 30);
+    text(lab, big ? fTotBig : fTot, i < 3 ? '#000' : PURPLE, x[9] + 2, ty, COLS[9][1] - 6, 30, 'right');
+    text(val, fTot, '#000', x[10], ty, COLS[10][1] - 4, 30, 'right');
+    line(GRID, 1, x[9], ty + 30, x[11], ty + 30);
+    ty += 30;
+  });
+  g.strokeStyle = '#000'; g.lineWidth = 1.6; g.strokeRect(x[9], bottom, COLS[9][1] + COLS[10][1], ty - bottom);
+  line(GRID, 1, x[10], bottom, x[10], ty);
+  return cv;
+}
 async function dailyView(b) {
   const today = riyadh().slice(0, 10);
   const day = state.dailyDay || today;
   const shift = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
-  b.innerHTML = `<div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn ghost small" id="dp">‹</button><input type="date" id="dd" value="${day}" style="flex:1;min-width:140px"><button class="btn ghost small" id="dn">›</button><button class="btn ghost small" id="dt">Today</button><button class="btn ghost small" id="dpr">Print</button></div><div id="dr"><p class="muted"><span class="spin"></span></p></div>`;
+  b.innerHTML = `<div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn ghost small" id="dp">‹</button><input type="date" id="dd" value="${day}" style="flex:1;min-width:140px"><button class="btn ghost small" id="dn">›</button><button class="btn ghost small" id="dt">Today</button></div>
+    <div class="row noprint" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"><button class="btn small" id="dw">WhatsApp / Share</button><button class="btn ghost small" id="dpr">Print</button><button class="btn ghost small" id="dz">🔍 Zoom</button></div>
+    <div id="dr"><p class="muted"><span class="spin"></span></p></div>`;
   const go = (d) => { state.dailyDay = d; dailyView(b); };
   $('#dp', b).onclick = () => go(shift(day, -1)); $('#dn', b).onclick = () => go(shift(day, 1)); $('#dt', b).onclick = () => go(today);
   $('#dd', b).onchange = (e) => e.target.value && go(e.target.value);
-  $('#dpr', b).onclick = () => window.print();
   const r = await dailySheet(day);
+  const cv = dailyCanvas(r);
   const dmy = day.split('-').reverse().join('-');
-  const rowsN = Math.max(r.lines.length, r.methods.length);
-  let t = `<div class="dsheet"><div class="dsh"><b>Daily sheet ${H(dmy)}</b></div><div class="dsw"><table class="dst"><thead><tr><th>S.No</th><th>Invoice.No</th><th>Order NO</th><th>Name</th><th>Total</th><th>Down<br>Payment</th><th>Pay Due<br>Amount</th><th>Mathod</th><th>Sell / deliver</th><th class="dm">Total Mathod</th><th class="dm">Total Paid</th><th class="dm">Paid<br>Customer</th><th>Type</th><th>Source</th></tr></thead><tbody>`;
-  for (let i = 0; i < rowsN; i++) {
-    const l = r.lines[i], m = r.methods[i];
-    t += `<tr${l ? ` data-o="${H(l.no)}" class="tap"` : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? n0(l.total) : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
-      + (m ? `<td class="dm dmn">${H(m[0])}</td><td class="dm n">${m[1] === 0 ? '-' : m[1].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="dm n">${m[2] ? m[2] : '-'}</td>` : '<td class="dm"></td><td class="dm"></td><td class="dm"></td>')
-      + (l ? `<td class="dty dty-${H(l.type.toLowerCase())}">${H(l.type)}</td><td>${H(l.src)}</td>` : '<td></td><td></td>') + '</tr>';
-  }
-  t += `</tbody></table></div><div class="dstot">
-    <div class="tl"><span>TOTAL SELL</span><b>${n0(r.totals.sell)}</b></div><div class="lav"><span>TOTAL DOWN PAYMENT</span><b>${n0(r.totals.down)}</b></div>
-    <div class="peach"><span>TOTAL DUE PAYMENT</span><b>${n0(r.totals.due)}</b></div>
-    ${r.totals.tabby ? `<div class="lav"><span>TABBY</span><b>${n0(r.totals.tabby)}</b></div>` : ''}${r.totals.tamara ? `<div class="lav"><span>TAMARA</span><b>${n0(r.totals.tamara)}</b></div>` : ''}</div>
-    ${r.lines.length ? '' : '<p class="muted center">Is din ka koi kaam nahin</p>'}</div>`;
-  $('#dr', b).innerHTML = t;
-  $('#dr', b).querySelectorAll('tr[data-o]').forEach(el => el.onclick = () => jOrderByNo(el.dataset.o));
+  cv.className = 'dimg';
+  $('#dr', b).innerHTML = `<div class="dwrap" id="dwr"></div>
+    <div class="noprint"><div class="row" style="justify-content:space-between;align-items:center;margin-top:16px"><h2 style="margin:0">Lines – remove / put back</h2>
+    <div class="row" style="gap:6px"><button class="btn ghost small" id="drm" disabled>Remove selected</button><button class="btn ghost small" id="dpb"${r.hiddenCount ? '' : ' disabled'}>Put back (${r.hiddenCount})</button></div></div>
+    <p class="muted" style="font-size:13px;margin:6px 0">Sirf daily report badalti hai – order aur payment wahi rehte hain (TailorShop jaisa).</p>
+    <div class="card list">${r.grid.map((x, i) => `<label class="it" style="cursor:pointer"><input type="checkbox" data-i="${i}" style="width:auto;margin:0 8px 0 0"><div class="main"><div class="t"><span class="ar">${H(x.name)}</span></div><div class="s">Order ${H(x.order)} · ${H(x.type)}${x.method ? ' · ' + H(x.method) : ''}</div></div><div class="r">${n0(x.amount)}</div></label>`).join('') || '<p class="muted center">Koi line nahin</p>'}</div><div id="dst"></div></div>`;
+  $('#dwr', b).appendChild(cv);
+  const zoom = () => { const z = state.dailyZoom; cv.style.width = z ? (cv.width / 2) + 'px' : '100%'; $('#dwr', b).style.overflowX = z ? 'auto' : 'hidden'; $('#dz', b).textContent = z ? '↔ Fit' : '🔍 Zoom'; };
+  $('#dz', b).onclick = () => { state.dailyZoom = !state.dailyZoom; zoom(); }; zoom();
+  $('#dpr', b).onclick = () => { const w = window.open(''); if (!w) return; w.document.write(`<title>Daily sheet ${dmy}</title><style>@page{size:A4 landscape;margin:8mm}body{margin:0}img{width:100%}</style><img src="${cv.toDataURL('image/png')}" onload="setTimeout(()=>print(),200)">`); w.document.close(); };
+  $('#dw', b).onclick = () => cv.toBlob(async (blob) => {
+    const file = new File([blob], `Daily sheet ${dmy}.png`, { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Daily sheet ' + dmy }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+    $('#dst', b).innerHTML = '<div class="note">Picture download ho gayi – WhatsApp mein attach karke bhejiye.</div>';
+  }, 'image/png');
+  const boxes = () => [...b.querySelectorAll('input[type=checkbox][data-i]')].filter(c => c.checked).map(c => r.grid[+c.dataset.i]);
+  b.querySelectorAll('input[type=checkbox][data-i]').forEach(c => c.onchange = () => { $('#drm', b).disabled = !boxes().length; });
+  const send = async (op, keys, msg) => {
+    if (!confirm(msg)) return;
+    if (op === 'hide') { dailyOverlay.clear.delete(day); keys.forEach(k => dailyOverlay.add.add(k)); }
+    else { dailyOverlay.clear.add(day); [...dailyOverlay.add].forEach(k => { const g = r.grid.find(x => x.key.split(',').includes(k)); dailyOverlay.add.delete(k); }); }
+    try { await jobNew('daily_hide', { day, op, keys }); } catch (e) { alert('Save nahin hua: ' + e.message); }
+    dailyView(b);
+  };
+  $('#drm', b).onclick = () => { const sel = boxes(); const keys = [...new Set(sel.flatMap(x => x.key.split(',')).filter(k => k.length > 2))]; send('hide', keys, `${dmy} ki daily report se hatayein?\n\n${sel.map(x => `Order ${x.order}  ${x.name}  ${x.type}`).join('\n')}\n\nSirf daily report badlegi – order aur payment wahi rahenge.`); };
+  $('#dpb', b).onclick = () => send('unhide', [], `${r.hiddenCount} hataayi hui line(s) ${dmy} ki daily report mein wapas layein?`);
 }
 async function jOrderByNo(no) {
   const r = await rows('j_orders', { f: ['order_no:' + no], limit: 1 });
@@ -935,7 +1035,7 @@ async function moreView() {
     const j = { rows: [] };
     js.forEach(x => { const d = x.data(); j.rows.push({ id: x.id.slice(0, 5), kind: d.kind, status: d.st, data: d, result: d, created: d.ts && d.ts.toDate ? riyadh(d.ts.toDate()) : '' }); });
     const pill = (s) => `<span class="pill ${s === 'done' ? 'ok' : s === 'error' || s === 'cancelled' ? 'bad' : 'warn'}">${H(s)}</span>`;
-    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : x.kind === 'inv_meas' ? `Naap edit · order ${H(x.result.order || '')} <span class="ar">${H(x.data.who || '')}</span>` : x.kind === 'inv_order' ? `InvProject order · <span class="ar">${H(x.data.who || '')}</span>${x.result.order ? ` → <b>${x.result.test ? 'TEST ' : ''}${H(x.result.order)}</b>` : ''}` : H(x.kind)}
+    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : x.kind === 'daily_hide' ? `Daily report ${H(x.data.day || '')} · ${x.data.op === 'unhide' ? 'put back' : 'remove ' + H((x.data.keys || []).join(' '))}` : x.kind === 'inv_meas' ? `Naap edit · order ${H(x.result.order || '')} <span class="ar">${H(x.data.who || '')}</span>` : x.kind === 'inv_order' ? `InvProject order · <span class="ar">${H(x.data.who || '')}</span>${x.result.order ? ` → <b>${x.result.test ? 'TEST ' : ''}${H(x.result.order)}</b>` : ''}` : H(x.kind)}
       ${x.result && x.result.no ? `<div class="muted">→ invoice ${H(x.result.no)}</div>` : ''}${x.result && x.result.file ? ' ' + fileBtn(x.result.file, 'PDF') : ''}${x.result && x.result.error ? `<div style="color:var(--bad);font-size:13px">${H(x.result.error)}</div>` : ''}</td>
       <td>${pill(x.status)}</td><td class="muted" style="font-size:12px">${H(x.created.slice(5, 16))}</td></tr>`).join('')}</table>` : '<p class="muted">Abhi koi kaam nahin</p>'}</div>`;
     return;
