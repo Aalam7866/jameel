@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f6f1e3; color: #222; font-size: 16px; }
+  .card { max-width: 760px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 10px #0002; }
+  h1 { font-size: 21px; margin: 0 0 2px; color: #8a6d00; }
+  h3 { margin: 0 0 10px; font-size: 18px; color: #0b5d4b; }
+  .muted { color: #777; font-size: 14px; }
+  button { font: inherit; font-size: 17px; padding: 11px 14px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
+  .b1 { background: #0b5d4b; color: #fff; } .b2 { background: #eee; color: #333; }
+  .wide { width: 100%; margin-top: 8px; }
+  input { font: inherit; font-size: 20px; padding: 10px; border: 2px solid #0b5d4b; border-radius: 10px; width: 100%; text-align: center; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+  .tile { background: #f6f1e3; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .tile b { display: block; font-size: 24px; color: #0b5d4b; } .tile span { font-size: 13px; color: #555; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 7px 4px; border-bottom: 1px solid #eee; font-size: 15px; vertical-align: top; }
+  tr.new td { background: #fff3cd; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+  .tag.w { background: #fff3cd; } .tag.ok { background: #d7f0df; color: #0b5d4b; } .tag.bad { background: #fde8e7; color: #b3261e; }
+  #banner { display: none; position: sticky; top: 0; z-index: 5; max-width: 760px; margin: 0 auto 12px; background: #0b5d4b; color: #fff;
+            border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 14px #0004; white-space: pre-line; font-weight: bold; }
+  #banner button { margin-top: 8px; background: #fff; color: #0b5d4b; padding: 7px 12px; font-size: 15px; }
+  .on { color: #1a7f37; font-weight: bold; } .off { color: #b3261e; font-weight: bold; }
+  .srch { display: flex; gap: 8px; } .srch input { flex: 1; font-size: 18px; text-align: right; border-color: #d9c27a; }
+  .oc { border: 1px solid #eee; border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+  .oc .hd { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .oc .no { font-size: 20px; font-weight: bold; color: #0b5d4b; }
+  .pr { display: grid; grid-template-columns: 110px 1fr 70px; gap: 8px; align-items: center; margin-top: 6px; font-size: 14px; }
+  .bar { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #0b5d4b; } .bar i.part { background: #bf9000; }
+  .pd { color: #bf9000; font-size: 12px; }
+  .card.big { max-width: 1250px; }
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #eee; border-radius: 10px; max-height: 70vh; overflow-y: auto; }
+  table.st { border-collapse: collapse; min-width: 980px; font-size: 14px; }
+  table.st th { position: sticky; top: 0; background: #0b5d4b; color: #fff; padding: 8px 6px; white-space: nowrap; font-weight: bold; z-index: 1; }
+  table.st td { padding: 6px; border-bottom: 1px solid #eee; white-space: nowrap; text-align: center; }
+  table.st td.l { text-align: right; }
+  table.st tr:nth-child(even) td { background: #faf8f1; }
+  .c-ok { color: #1a7f37; font-weight: bold; } .c-part { color: #a87400; font-weight: bold; } .c-no { color: #999; } .c-late { color: #b3261e; font-weight: bold; }
+  button.act { font-size: 15px; padding: 6px 10px; background: #bf9000; color: #fff; border-radius: 8px; white-space: nowrap; }
+  button.act.wait { background: #eee; color: #a87400; }
+  #dlg { display: none; position: fixed; inset: 0; z-index: 10; background: #0007; overflow-y: auto; padding: 16px 10px; }
+  #dlg .card { max-width: 460px; margin: 0 auto; }
+  #dlg label { display: block; margin: 10px 0 4px; font-weight: bold; font-size: 15px; }
+  #dlg input, #dlg select { font: inherit; font-size: 19px; padding: 9px; border: 2px solid #bf9000; border-radius: 10px; width: 100%; background: #fff; text-align: center; }
+  .seg { display: flex; gap: 8px; } .seg button { flex: 1; background: #eee; color: #333; } .seg button.on { background: #0b5d4b; color: #fff; }
+  .sum { background: #f6f1e3; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
+  .sum b { font-size: 17px; } .warn { color: #b3261e; font-weight: bold; white-space: pre-line; margin-top: 8px; }
+</style>
+</head>
+<body>
+<? if (!ok) { ?>
+  <div class="card"><h1>الرابط غير صالح</h1><p>Link not valid – ask the shop for the admin link.</p></div>
+<? } else { ?>
+  <div id="banner"><span id="bannerText"></span><br><button onclick="seen()">تم – OK</button></div>
+
+  <div class="card">
+    <h1>🔔 تنبيهات العمل والطلبات – Alerts</h1>
+    <div class="muted"><?= shop ?></div>
+    <div id="pinBox" style="display:none; margin-top:10px">
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="الرقم السري / PIN">
+      <button class="b1 wide" onclick="start()">دخول / Open</button>
+      <div id="pinMsg" class="off"></div>
+    </div>
+    <div id="ctl" style="display:none; margin-top:10px">
+      <button class="b1 wide" id="enable" onclick="enableAlerts()">🔔 تشغيل الصوت والتنبيهات / Turn on sound &amp; alerts</button>
+      <div style="margin-top:8px" id="state" class="muted"></div>
+      <div class="muted">اترك هذه الصفحة مفتوحة – keep this page open. يتم التحديث كل 20 ثانية – checks every 20 seconds.</div>
+    </div>
+  </div>
+
+  <div id="main" style="display:none">
+    <div class="card">
+      <h3>العمل أونلاين اليوم / Online work today</h3>
+      <div id="work" class="muted">…</div>
+    </div>
+    <div class="card big">
+      <h3>📋 حالة الطلبات / Order status</h3>
+      <div class="srch">
+        <input id="sq" type="search" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+      </div>
+      <div id="scount" class="muted" style="margin:6px 2px"></div>
+      <div class="tw"><table class="st" id="stable"></table></div>
+    </div>
+    <div class="card">
+      <h3>💰 السداد والتسليم / Payments &amp; deliveries</h3>
+      <div class="muted">اضغط 💰📦 بجانب الطلب في الجدول – tap 💰📦 next to an order in the table. يحفظه جهاز المحل خلال دقائق – the shop PC saves it within minutes.</div>
+      <div id="acts" class="muted" style="margin-top:8px">…</div>
+    </div>
+    <div class="card">
+      <h3>الطلبات من الرابط / Online orders</h3>
+      <div id="orders" class="muted">…</div>
+    </div>
+    <div class="card">
+      <h3>اليوم / Today</h3>
+      <div class="tiles" id="tiles"></div>
+    </div>
+  </div>
+
+  <div id="dlg">
+    <div class="card">
+      <h3 id="dTitle"></h3>
+      <div class="sum" id="dSum"></div>
+      <div class="seg" style="margin-top:10px">
+        <button id="kPAY" onclick="setKind('PAY')">💰 سداد / Pay</button>
+        <button id="kDELIVER" onclick="setKind('DELIVER')">📦 تسليم / Deliver</button>
+      </div>
+      <label>المبلغ المدفوع الآن / Amount paid now</label>
+      <input id="dAmt" type="number" inputmode="decimal" min="0" step="0.01">
+      <div id="dPayBox">
+        <label>طريقة الدفع / Payment method</label>
+        <select id="dMethod"></select>
+        <label>المرجع / Reference (SPAN no.)</label>
+        <input id="dRef" type="text" autocomplete="off">
+      </div>
+      <div id="dQtyBox">
+        <label>القطع المسلّمة الآن / Pieces delivered now</label>
+        <input id="dQty" type="number" inputmode="numeric" min="0" step="1">
+      </div>
+      <label>اسمك / Your name</label>
+      <input id="dBy" type="text" autocomplete="off">
+      <div class="sum" style="margin-top:10px" id="dAfter"></div>
+      <div class="warn" id="dWarn"></div>
+      <button class="b1 wide" id="dSave" onclick="saveAct()">حفظ / Save</button>
+      <button class="b2 wide" onclick="closeAct()">إلغاء / Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    var KEY = <?= key ?>, NEEDPIN = <?= needPin ?>;
+    var PIN = '', first = true, seenWork = {}, seenOrders = {}, unread = 0, audio = null, timer = null, newIds = {};
+    var KINDS = { CUT: 'قص – Cutting', STITCH: 'خياطة – Stitching', HINGE: 'زرار – Hinge', MEASURE: 'مقاس – Measuring',
+                  ARRIVE: 'وصل الورشة – Arrived', EMBROIDERY: 'تطريز – Embroidery' };
+    var TITLE = document.title;
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+
+    function start() {
+      try { PIN = NEEDPIN ? ($('pin').value || sessionStorage.getItem('ts_apin') || '') : ''; } catch (x) { PIN = $('pin').value; }
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r) { $('pinBox').style.display = 'block'; $('pinMsg').textContent = NEEDPIN && PIN ? 'الرقم السري غير صحيح – wrong PIN' : ''; return; }
+        try { if (NEEDPIN) sessionStorage.setItem('ts_apin', PIN); } catch (x) { }
+        $('pinBox').style.display = 'none'; $('ctl').style.display = 'block'; $('main').style.display = 'block';
+        show(r);
+        showState();
+        if (!timer) { timer = setInterval(poll, 20000); loadOrders(); setInterval(loadOrders, 60000); }
+      }).withFailureHandler(function (e) { $('state').textContent = 'خطأ – ' + (e && e.message || e); }).aFeed(KEY, PIN);
+    }
+    function poll() {
+      google.script.run.withSuccessHandler(function (r) { if (r) show(r); })
+        .withFailureHandler(function () { $('state').innerHTML = '<span class="off">لا يوجد اتصال – no connection, trying again…</span>'; }).aFeed(KEY, PIN);
+    }
+
+    // ---------------- alerts: sound (after one tap), vibration, notification where allowed, banner, tab title
+    function enableAlerts() {
+      try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); beep(); } catch (x) { audio = null; }
+      try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission().then(showState, showState); } catch (x) { }
+      showState();
+    }
+    function beep() {
+      if (!audio) return;
+      [0, 0.25].forEach(function (d) {
+        var o = audio.createOscillator(), g = audio.createGain();
+        o.type = 'sine'; o.frequency.value = 880; g.gain.value = 0.25;
+        o.connect(g); g.connect(audio.destination);
+        o.start(audio.currentTime + d); o.stop(audio.currentTime + d + 0.18);
+      });
+    }
+    function showState() {
+      var n = !window.Notification ? 'غير مدعوم – not supported' : Notification.permission === 'granted' ? '<span class="on">مفعّل – on</span>'
+            : Notification.permission === 'denied' ? '<span class="off">مرفوض – blocked</span>' : 'لم يُطلب – not asked';
+      $('state').innerHTML = 'الصوت / Sound: ' + (audio ? '<span class="on">مفعّل – on</span>' : '<span class="off">اضغط الزر – tap the button</span>') +
+                             ' &nbsp; · &nbsp; الإشعارات / Notifications: ' + n + (window.LAST ? ' &nbsp; · &nbsp; آخر تحديث / last check ' + esc(window.LAST) : '');
+    }
+    function alertNew(lines) {
+      unread += lines.length;
+      document.title = '(' + unread + ') ' + TITLE;
+      $('bannerText').textContent = lines.slice(0, 6).join('\n') + (lines.length > 6 ? '\n… +' + (lines.length - 6) : '');
+      $('banner').style.display = 'block';
+      beep();
+      try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (x) { }
+      try { if (window.Notification && Notification.permission === 'granted') new Notification('TailorShop', { body: lines.slice(0, 4).join('\n') }); } catch (x) { }
+    }
+    function seen() { unread = 0; newIds = {}; document.title = TITLE; $('banner').style.display = 'none'; document.querySelectorAll('tr.new').forEach(function (t) { t.className = ''; }); }
+
+    // ---------------- the lists
+    function workText(w) { return (KINDS[w.kind] || w.kind) + ': ' + w.name + ' – طلب ' + w.order + ' × ' + w.qty + (w.fit ? ' + بروفة' : ''); }
+    function show(r) {
+      window.LAST = r.now;
+      var lines = [];
+      r.work.forEach(function (w) {
+        if (!seenWork[w.id]) { if (!first) { lines.push('🧵 ' + workText(w)); newIds[w.id] = 1; } seenWork[w.id] = w.status; }
+      });
+      r.orders.forEach(function (o) {
+        var was = seenOrders[o.id];
+        if (!was && !first) { lines.push('🛒 طلب جديد / New order: ' + o.name + ' – ' + o.pcs + ' ثوب · ' + o.total + (o.by ? ' · ' + o.by : '')); newIds[o.id] = 1; }
+        else if (was && was !== o.status && o.status === 'saved') { lines.push('✔ تم حفظ الطلب / Saved: ' + o.order_no + ' – ' + o.name); newIds[o.id] = 1; }
+        else if (was && was !== o.status && o.status === 'error') { lines.push('✖ لم يُحفظ / Not saved: ' + o.name + ' – ' + o.note); newIds[o.id] = 1; }
+        else if (was && was !== o.status && o.status === 'deleted') { lines.push('🗑 حُذف الطلب / Deleted: ' + (o.order_no ? o.order_no + ' – ' : '') + o.name); newIds[o.id] = 1; }
+        seenOrders[o.id] = o.status;
+      });
+      var reload = false;
+      (r.acts || []).forEach(function (a) {
+        var was = seenActs[a.id];
+        if (!was && !first && a.status === 'new') { lines.push((a.kind === 'DELIVER' ? '📦 ' : '💰 ') + actText(a) + (a.by ? ' · ' + a.by : '')); newIds[a.id] = 1; }
+        else if (was && was !== a.status && a.status === 'saved') { lines.push('✔ ' + actText(a) + ' – إيصال / receipt ' + a.receipt_no); newIds[a.id] = 1; reload = true; }
+        else if (was && was !== a.status && a.status === 'error') { lines.push('✖ لم يُحفظ / Not saved: ' + actText(a) + ' – ' + a.note); newIds[a.id] = 1; }
+        seenActs[a.id] = a.status;
+      });
+      showActs(r.acts || []);
+      if (reload) loadOrders();   // the new due / delivered pieces
+      first = false;
+      if (lines.length) alertNew(lines);
+
+      // today's totals per kind of work, and the online orders
+      var tot = {};
+      r.work.forEach(function (w) { if (w.status !== 'deleted') tot[w.kind] = (tot[w.kind] || 0) + w.qty; });
+      $('tiles').innerHTML = Object.keys(KINDS).filter(function (k) { return tot[k]; }).map(function (k) {
+        return '<div class="tile"><b>' + tot[k] + '</b><span>' + esc(KINDS[k]) + '</span></div>';
+      }).join('') + '<div class="tile"><b>' + r.orders.length + '</b><span>طلبات أونلاين – online orders</span></div>';
+
+      $('orders').innerHTML = r.orders.length ? '<table>' + r.orders.map(function (o) {
+        var st = o.status === 'saved' ? '<span class="tag ok">✔ طلب ' + esc(o.order_no) + (o.invoice_no ? ' · فاتورة ' + esc(o.invoice_no) : '') + '</span>'
+               : o.status === 'error' ? '<span class="tag bad">✖ ' + esc(o.note) + '</span>'
+               : o.status === 'deleted' ? '<span class="tag bad">🗑 محذوف – deleted</span>'
+               : o.status === 'delreq' ? '<span class="tag w">⏳ جاري الحذف – deleting</span>' : '<span class="tag w">⏳ بانتظار جهاز المحل</span>';
+        return '<tr class="' + (newIds[o.id] ? 'new' : '') + '"><td>' + esc(o.time) + '</td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + esc(o.pcs) + ' ثوب · ' +
+               esc(o.total) + (o.by ? ' · ' + esc(o.by) : '') + '</span></td><td>' + st + '</td></tr>';
+      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+
+      $('work').innerHTML = r.work.length ? '<table>' + r.work.map(function (w) {
+        var st = w.status === 'imported' ? '<span class="tag ok">✔ استلمه المحل</span>' : w.status === 'deleted' ? '<span class="tag bad">محذوف</span>' : '<span class="tag w">⏳ لم يُستلم بعد</span>';
+        return '<tr class="' + (newIds[w.id] ? 'new' : '') + '"><td>' + esc(w.time) + '</td><td><b>' + esc(w.name) + '</b><br><span class="muted">' + esc(KINDS[w.kind] || w.kind) +
+               '</span></td><td>طلب <b>' + esc(w.order) + '</b> × ' + esc(w.qty) + (w.fit ? '<br><span class="muted">+ بروفة</span>' : '') + '</td><td>' + st + '</td></tr>';
+      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+      showState();
+    }
+
+    // ---------------- order status table: every order (open + last 12 months) in columns, filtered by the search box
+    var ALL = [], PEND = {}, METHODS = ['Cash'], CUR = '';
+    function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
+    function loadOrders() {
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r) return; ALL = r.rows || []; PEND = r.pending || {};
+        if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
+        renderTable();
+      }).withFailureHandler(function () { }).aOrders(KEY, PIN);
+    }
+    $('sq').addEventListener('input', renderTable);
+    $('stable').addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('button.act') : null;
+      if (b) openAct(b.getAttribute('data-o'));
+    });
+
+    // ---------------- payments / deliveries: the form, and the requests with what the shop PC did with them
+    var ACTS = [], seenActs = {}, D = null, KIND = 'PAY';
+    function money(n) { return (Number(n) || 0).toFixed(2); }
+    function actText(a) {
+      return 'طلب / Order ' + a.order_no + ': ' + (a.kind === 'DELIVER' ? 'تسليم ' + a.qty + ' قطعة / delivered ' + a.qty + ' pcs' + (a.amount > 0 ? ' + ' : '') : '') +
+             (a.amount > 0 ? 'سداد / paid ' + money(a.amount) : '');
+    }
+    function waitingFor(no) { return ACTS.some(function (a) { return a.status === 'new' && String(a.order_no) === String(no); }); }
+    function showActs(list) {
+      ACTS = list;
+      $('acts').innerHTML = list.length ? '<table>' + list.map(function (a) {
+        var st = a.status === 'saved' ? '<span class="tag ok">✔ إيصال / receipt ' + esc(a.receipt_no) + '</span><br><span class="muted">' + esc(a.note) + '</span>'
+               : a.status === 'error' ? '<span class="tag bad">✖ ' + esc(a.note) + '</span>'
+               : '<span class="tag w">⏳ بانتظار جهاز المحل – waiting for the shop PC</span>';
+        return '<tr class="' + (newIds[a.id] ? 'new' : '') + '"><td>' + esc(a.time) + '</td><td><b>' + esc(actText(a)) + '</b>' +
+               (a.by ? '<br><span class="muted">' + esc(a.by) + '</span>' : '') + '</td><td>' + st + '</td></tr>';
+      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+      renderTable();
+    }
+    function openAct(no) {
+      var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
+      if (!r) return;
+      D = { no: r[0], name: r[1], pcs: Number(r[5]) || 0, given: Number(r[12]) || 0, due: Number(r[14]) || 0 };
+      $('dTitle').textContent = 'طلب / Order ' + D.no + ' – ' + D.name;
+      $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع / Pieces: <b>' + D.pcs + '</b> · سُلّم / delivered: <b>' + D.given +
+                            '</b> · الباقي / left: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
+      $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+      $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
+      $('dRef').value = '';
+      $('dQty').value = Math.max(0, D.pcs - D.given);
+      try { $('dBy').value = localStorage.getItem('ts_aby') || ''; } catch (x) { }
+      setKind(D.due > 0.005 ? 'PAY' : 'DELIVER');
+      $('dlg').style.display = 'block';
+    }
+    function closeAct() { $('dlg').style.display = 'none'; D = null; }
+    function setKind(k) {
+      KIND = k;
+      $('kPAY').className = k === 'PAY' ? 'on' : ''; $('kDELIVER').className = k === 'DELIVER' ? 'on' : '';
+      $('dQtyBox').style.display = k === 'DELIVER' ? '' : 'none';
+      // delivering: the money still due is usually paid at the same time (0 = delivered without payment)
+      if (k === 'DELIVER' && !(Number($('dAmt').value) > 0) && D && D.due > 0.005) $('dAmt').value = money(D.due);
+      check();
+    }
+    ['dAmt', 'dQty'].forEach(function (id) { $(id).addEventListener('input', check); });
+    // what will be refused by the shop PC is shown before sending
+    function check() {
+      if (!D) return [];
+      var amt = Number($('dAmt').value) || 0, qty = Math.floor(Number($('dQty').value) || 0), left = Math.max(0, D.pcs - D.given);
+      var bal = Math.round((D.due - amt) * 100) / 100, errs = [];
+      $('dPayBox').style.display = KIND === 'PAY' || amt > 0 ? '' : 'none';
+      if (amt < 0) errs.push('المبلغ غير صحيح – amount?');
+      if (amt > D.due + 0.01) errs.push('أكثر من المتبقي ' + money(D.due) + ' – more than the due');
+      if (KIND === 'PAY' && !(amt > 0)) errs.push('اكتب المبلغ – enter the amount');
+      if (KIND === 'DELIVER' && left <= 0) errs.push('تم تسليم كل القطع – all pieces delivered');
+      else if (KIND === 'DELIVER' && !(qty > 0)) errs.push('اكتب عدد القطع – enter the pieces');
+      else if (KIND === 'DELIVER' && qty > left) errs.push('الباقي للتسليم ' + left + ' فقط – only ' + left + ' left');
+      if (waitingFor(D.no)) errs.push('⏳ يوجد طلب سابق لم يُحفظ بعد – an earlier request for this order is still waiting');
+      $('dAfter').innerHTML = 'الباقي بعد / Balance after: <b class="' + (bal > 0.5 ? 'c-late' : 'c-ok') + '">' + money(bal) + '</b>' +
+                              (KIND === 'DELIVER' ? ' · سيبقى للتسليم / still to deliver: <b>' + Math.max(0, left - qty) + '</b>' : '');
+      $('dWarn').textContent = errs.join('\n');
+      return errs;
+    }
+    function saveAct() {
+      if (!D) return;
+      var errs = check().filter(function (e) { return e.indexOf('⏳') !== 0; });   // an earlier request only warns
+      if (errs.length) return;
+      var amt = Math.round((Number($('dAmt').value) || 0) * 100) / 100, bal = Math.round((D.due - amt) * 100) / 100;
+      var by = $('dBy').value.trim();
+      if (!by) { $('dWarn').textContent = 'اكتب اسمك – enter your name'; $('dBy').focus(); return; }
+      var force = false;
+      if (KIND === 'DELIVER' && bal > 0.5) {
+        if (!confirm('على العميل ' + money(bal) + ' – the customer still owes ' + money(bal) + '.\nتسليم على أي حال؟ – Deliver anyway?')) return;
+        force = true;
+      }
+      try { localStorage.setItem('ts_aby', by); } catch (x) { }
+      var act = { order: D.no, kind: KIND, amount: amt, method: $('dMethod').value, ref: $('dRef').value.trim(),
+                  qty: Math.floor(Number($('dQty').value) || 0), by: by, force: force };
+      $('dSave').disabled = true; $('dWarn').textContent = '…';
+      google.script.run.withSuccessHandler(function (r) {
+        $('dSave').disabled = false;
+        if (!r || !r.ok) { $('dWarn').textContent = (r && r.msg) || 'خطأ – error'; return; }
+        r.acts.forEach(function (a) { if (!seenActs[a.id]) seenActs[a.id] = a.status; });   // mine: no alert
+        showActs(r.acts);
+        closeAct();
+      }).withFailureHandler(function () {
+        $('dSave').disabled = false; $('dWarn').textContent = 'لا يوجد اتصال، حاول مرة أخرى – no connection, try again';
+      }).aAct(KEY, PIN, act);
+    }
+    // done / total: green when finished, amber when partly, grey when nothing; +n = sent online, not collected yet
+    function cell(done, total, pend) {
+      done = Number(done) || 0; total = Number(total) || 0;
+      if (!total) return '<td class="c-no">–</td>';
+      var c = done >= total ? 'c-ok' : done > 0 ? 'c-part' : 'c-no';
+      return '<td class="' + c + '"><span dir="ltr">' + done + ' / ' + total + (pend ? ' <span class="pd">+' + pend + '</span>' : '') + '</span></td>';
+    }
+    var STAT = { 'Delivered': ['c-ok', 'Delivered'], 'Ready': ['c-ok', 'Ready'], 'Stitched': ['c-ok', 'Stitched'], 'Partly delivered': ['c-part', 'Partly delivered'],
+                 'In progress': ['c-part', 'In progress'], 'Pending': ['c-no', 'Not started'] };
+    function renderTable() {
+      var q = $('sq').value.trim(), d = q.replace(/\D/g, ''), only = q && /^[\d\s\-+#]+$/.test(q);
+      var tail = d.replace(/^0+/, '').replace(/^966/, ''), lower = q.toLowerCase(), today = new Date().toISOString().slice(0, 10);
+      var list = !q ? ALL : ALL.filter(function (r) {
+        if (only) return r[0].indexOf(d) === 0 || (tail.length >= 3 && r[2].replace(/\D/g, '').indexOf(tail) >= 0);
+        return r[1].toLowerCase().indexOf(lower) >= 0;
+      });
+      var shown = list.slice(0, 300);
+      $('scount').textContent = list.length + ' طلب – orders' + (list.length > shown.length ? ' (أول 300 – first 300; اكتب للبحث – type to search)' : '') +
+                                '   ·   + = أُرسل أونلاين ولم يستلمه المحل بعد – sent online, not collected yet';
+      var head = '<tr><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>الحجز<br>Booked</th><th>التسليم<br>Delivery</th>' +
+                 '<th>ثياب<br>Pcs</th><th>قص<br>Cut</th><th>خياطة<br>Stitched</th><th>زرار<br>Hinge</th><th>تطريز<br>Embroidery</th>' +
+                 '<th>تسليم<br>Delivered</th><th>المتبقي<br>Due</th><th>الحالة<br>Status</th><th>سداد / تسليم<br>Pay / Deliver</th></tr>';
+      $('stable').innerHTML = head + shown.map(function (r) {
+        // order_no, name, mobile, booked, delivery, pcs, cut, stitched, hinge_qty, hinge_done, emb_qty, emb_done, delivered, ready, due, status
+        var p = PEND[r[0]] || {}, pcs = Number(r[5]) || 0, given = Number(r[12]) || 0;
+        var late = given < pcs && r[4] && r[4] < today && r[15] !== 'Delivered';
+        var st = late ? ['c-late', 'Late'] : STAT[r[15]] || ['', r[15]];
+        var due = Number(r[14]) || 0;
+        return '<tr><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+               '<td dir="ltr">' + esc(day(r[3])) + '</td><td dir="ltr" class="' + (late ? 'c-late' : '') + '">' + esc(day(r[4])) + '</td><td><b>' + pcs + '</b></td>' +
+               cell(r[6], pcs, p.CUT) + cell(r[7], pcs, p.STITCH) + cell(r[9], r[8], p.HINGE) + cell(r[11], r[10], p.EMBROIDERY) + cell(given, pcs, 0) +
+               '<td class="' + (due > 0.5 ? 'c-late' : 'c-no') + '">' + (due > 0.5 ? due.toFixed(2) : '–') + '</td>' +
+               '<td class="' + st[0] + '">' + esc(st[1]) + '</td>' +
+               // nothing left to pay or deliver: no button
+               (due > 0.005 || given < pcs ? '<td><button class="act' + (waitingFor(r[0]) ? ' wait' : '') + '" data-o="' + esc(r[0]) + '">' +
+                                              (waitingFor(r[0]) ? '⏳' : '💰📦') + '</button></td>' : '<td class="c-no">✔</td>') + '</tr>';
+      }).join('');
+    }
+
+    if (NEEDPIN) {
+      var saved = ''; try { saved = sessionStorage.getItem('ts_apin') || ''; } catch (x) { }
+      if (saved) { $('pin').value = saved; start(); } else $('pinBox').style.display = 'block';
+    } else start();
+  </script>
+<? } ?>
+</body>
+</html>

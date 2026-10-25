@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>…</title>
+<link rel="icon" href="/favicon.svg">
+<style>body{font-family:system-ui,Tahoma,sans-serif;background:#f6f1e3;color:#555;display:grid;place-items:center;min-height:90vh;margin:0}</style>
+</head>
+<body>
+<p id="w">… جاري التحميل – Loading</p>
+<script type="module">
+// JAMEEL AL HINDAM online pages:  /exec?t=TOKEN (worker)  /exec?o=KEY (new order)  /exec?a=KEY (alerts)
+// The same Page/Order/Admin pages as before; their google.script.run calls now go to Firebase (js/jameel.js).
+import { SERVER, pageVars, orderVars, adminVars } from './js/jameel.js?v=1';
+
+// google.script.run → Firebase
+const SHIM = `<script>(function () {
+  function R(ok, bad) {
+    return new Proxy({}, { get: function (_, n) {
+      if (n === 'withSuccessHandler') return function (h) { return R(h, bad); };
+      if (n === 'withFailureHandler') return function (h) { return R(ok, h); };
+      if (n === 'withUserObject') return function () { return R(ok, bad); };
+      return function () {
+        var a = [].slice.call(arguments);
+        window.__srv.then(function (S) { if (!S[n]) throw new Error('unknown ' + n); return S[n].apply(null, a); })
+          .then(function (r) { if (ok) ok(r); }, function (e) { console.error(e); if (bad) bad(e); });
+      };
+    } });
+  }
+  window.google = { script: { run: R(null, null) } };
+})();<\/script>`;
+
+const P = new URLSearchParams(location.search);
+let tpl, vars, title;
+try {
+  if (P.get('o')) { tpl = 'Order'; vars = await orderVars(P.get('o')); title = 'طلب جديد – New order'; }
+  else if (P.get('a')) { tpl = 'Admin'; vars = await adminVars(P.get('a')); title = 'تنبيهات – Alerts'; }
+  else { tpl = 'Page'; vars = await pageVars(P.get('t')); title = 'Work entry'; }
+  const src = await (await fetch('/tpl/' + tpl + '.html?v=1', { cache: 'no-cache' })).text();
+  window.__srv = Promise.resolve(SERVER);
+  const html = render(src, vars)
+    .replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(title) + '</title><link rel="icon" href="/favicon.svg">' + SHIM);
+  document.open(); document.write(html); document.close();
+} catch (e) {
+  console.error(e);
+  document.getElementById('w').textContent = 'لا يوجد اتصال – No connection, try again (' + (e && e.message || e) + ')';
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// Apps Script template: <? code ?>  <?= value ?> (escaped – a JS literal inside <script>)  <?!= raw ?>
+function render(src, v) {
+  const parts = src.split(/<\?(!=|=)?([\s\S]*?)\?>/);
+  let code = 'let __o = "";\n';
+  let inScript = false;
+  for (let i = 0; i < parts.length; i += 3) {
+    const text = parts[i];
+    if (text) {
+      code += '__o += ' + JSON.stringify(text) + ';\n';
+      const a = text.lastIndexOf('<script'), b = text.lastIndexOf('</script');
+      if (a > b) inScript = true; else if (b > a) inScript = false;
+    }
+    const mode = parts[i + 1], body = parts[i + 2];
+    if (body === undefined) continue;
+    if (mode === '=') code += '__o += ' + (inScript ? '__js' : '__h') + '((' + body + '));\n';
+    else if (mode === '!=') code += '__o += String((' + body + ') ?? "");\n';
+    else code += body + '\n';
+  }
+  code += 'return __o;';
+  const names = Object.keys(v);
+  const fn = new Function('__h', '__js', ...names, code);
+  return fn(esc, (x) => JSON.stringify(x === undefined ? null : x).replace(/</g, '\\u003c'), ...names.map(k => v[k]));
+}
+
+
+</script>
+</body>
+</html>

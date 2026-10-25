@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f6f1e3; color: #222; font-size: 16px; }
+  .card { max-width: 640px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 10px #0002; }
+  h1 { font-size: 21px; margin: 0 0 2px; color: #8a6d00; }
+  h3 { margin: 0 0 10px; font-size: 18px; color: #0b5d4b; }
+  .muted { color: #777; font-size: 14px; }
+  input, select, textarea { font: inherit; font-size: 17px; padding: 9px 10px; border: 2px solid #d9c27a; border-radius: 10px; width: 100%; background: #fff; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #0b5d4b; }
+  label.f { display: block; font-size: 14px; color: #555; margin: 8px 2px 3px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { font: inherit; font-size: 17px; padding: 11px 14px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
+  .b1 { background: #0b5d4b; color: #fff; } .b2 { background: #eee; color: #333; } .b3 { background: #bf9000; color: #fff; }
+  .wide { width: 100%; margin-top: 8px; }
+  .go { width: 100%; font-size: 21px; padding: 15px; background: #0b5d4b; color: #fff; }
+  .go:disabled { background: #999; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .res { border: 1px solid #eee; border-radius: 10px; margin-top: 8px; max-height: 300px; overflow: auto; }
+  .res div { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+  .res div:active, .res div:hover { background: #f6f1e3; }
+  .chosen { background: #e8f5ee; border: 2px solid #0b5d4b; border-radius: 10px; padding: 10px; margin-top: 8px; }
+  .line { border: 1px solid #eee; border-radius: 10px; padding: 8px; margin-top: 8px; }
+  .line .t { font-weight: bold; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; }
+  .line .x { background: #fde8e7; color: #b3261e; padding: 4px 10px; font-size: 15px; }
+  .line .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; align-items: end; }
+  .line .g3 span { font-size: 13px; color: #666; }
+  .amt { font-weight: bold; text-align: center; padding: 9px 0; }
+  .res img, .line img.th { width: 54px; height: 54px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-left: 8px; border: 1px solid #ddd; }
+  .line select { margin-bottom: 6px; font-size: 15px; }
+  .warn { color: #b3261e; font-weight: bold; font-size: 14px; }
+  .ok { color: #1a7f37; font-weight: bold; }
+  table.tot { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.tot td { padding: 6px 4px; border-bottom: 1px solid #f0f0f0; }
+  table.tot td:last-child { text-align: left; font-weight: bold; direction: ltr; }
+  .big { font-size: 22px; color: #0b5d4b; }
+  .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: bold; }
+  .chk input { width: 24px; height: 24px; }
+  #msg { white-space: pre-line; margin-top: 10px; font-size: 16px; }
+  .err { color: #b3261e; font-weight: bold; }
+  .mine td { padding: 7px 4px; border-bottom: 1px solid #eee; font-size: 15px; vertical-align: top; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+  .tag.new { background: #fff3cd; } .tag.saved { background: #d7f0df; color: #0b5d4b; } .tag.error { background: #fde8e7; color: #b3261e; }
+  /* measurement sheet */
+  #mo { display: none; position: fixed; inset: 0; background: #78909c; z-index: 10; flex-direction: column; }
+  #mo .bar { display: flex; gap: 6px; padding: 8px; background: #fff; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 6px #0003; }
+  #mo .bar button { padding: 9px 12px; font-size: 15px; }
+  #mo .scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+  #sheet { position: relative; margin: 10px auto; background: #fff; box-shadow: 0 2px 12px #0005; }
+  #sheet > img { position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; }
+  #sheet .fi { position: absolute; padding: 0 2px; border: 1.5px solid #c9a227; border-radius: 3px; background: #fffbe0; text-align: center; font-weight: bold; color: #0033aa; }
+  #sheet textarea.fi { text-align: right; resize: none; padding: 2px 4px; }
+  #sheet .fi.on { background: #ffeaa0; border-color: #b3261e; }
+  #sheet .tl { position: absolute; border: 2px solid transparent; border-radius: 6px; cursor: pointer; }
+  #sheet .tl.on { background: rgba(46, 160, 67, .25); border-color: #1a7f37; }
+  #sheet .tl .ck { position: absolute; top: 2px; right: 4px; color: #1a7f37; font-weight: bold; display: none; }
+  #sheet .tl.on .ck { display: block; }
+  #sheet .tl .sq { position: absolute; top: 2px; left: 2px; padding: 1px 6px; border-radius: 5px; background: #eee; border: 1px solid #999; font-size: 12px; line-height: 1.4; }
+  #sheet .tl .sq.on { background: #0b5d4b; color: #fff; border-color: #0b5d4b; }
+  #sheet .tk { position: absolute; display: flex; align-items: center; justify-content: flex-start; gap: 6px; background: #fff; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 0 4px; }
+  #sheet .tk span { white-space: nowrap; }
+  #sheet .tk b { display: inline-flex; align-items: center; justify-content: center; border: 2px solid #333; background: #fff; color: #1a7f37; }
+  #sheet .tk.on b { background: #d7f0df; }
+  /* JAMEEL: model rows (as on the shop's screen) and the drawing picker */
+  #sheet .mdl { position: absolute; overflow: auto; background: #b0c4de; transform-origin: 0 0; direction: rtl; padding: 2px; }
+  #sheet .mdl input, #sheet .mdl select { width: auto; font-size: 15px; padding: 3px 5px; border-width: 1.5px; border-radius: 4px; font-weight: bold; }
+  .md { background: #fff8e1; border: 1px solid #c9b77a; border-radius: 4px; margin-bottom: 8px; padding: 3px; }
+  .mbar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-weight: bold; font-size: 15px; padding: 2px; }
+  #sheet .mbar .fb { width: 130px; } #sheet .mbar .qt { width: 58px; } #sheet .mbar .nt { width: 130px; }
+  .mbar button { font-size: 14px; padding: 4px 9px; border-radius: 4px; }
+  .mbar .x, .mx .x { background: #c0392b; color: #fff; }
+  .mmore { background: #e8f4ff; border-radius: 4px; margin-top: 3px; }
+  .mcells { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 3px 2px 2px; }
+  .mc { background: #fff; border: 1px solid #999; }
+  .mt { background: #fff8e1; font-weight: bold; font-size: 15px; padding: 2px 5px; }
+  .mp { height: 104px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; font-size: 15px; text-align: center; padding: 2px; }
+  .mp img { max-height: 62px; max-width: 92%; }
+  .mp .sub { font-size: 13px; }
+  .mx { display: flex; gap: 2px; padding: 2px; }
+  #sheet .mx select { flex: 1; min-width: 0; font-size: 14px; }
+  #sheet .pp { position: absolute; transform-origin: 0 0; cursor: pointer; }
+  #pk { display: none; position: fixed; inset: 0; background: #0009; z-index: 30; align-items: flex-start; justify-content: center; padding: 10px; }
+  #pk .pkb { background: #fff; border-radius: 12px; width: 100%; max-width: 900px; max-height: 94vh; overflow: auto; padding: 10px; }
+  #pk .pkg { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+  .pko { border: 2px solid #ddd; border-radius: 8px; padding: 6px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 15px; }
+  .pko img { max-height: 80px; max-width: 100%; }
+  .pko span { font-size: 13px; color: #555; font-weight: bold; }
+  .pko.on { border-color: #1a7f37; background: #e8f5ee; }
+</style>
+</head>
+<body>
+<? if (!ok) { ?>
+  <div class="card"><h1>الرابط غير صالح</h1><p>Link not valid – please ask the shop for the order link.</p></div>
+<? } else { ?>
+  <div class="card">
+    <h1>طلب جديد – New order</h1>
+    <div class="muted"><?= shop ?></div>
+    <label class="f">اسمك / Your name (entered by)</label>
+    <input id="by" autocomplete="name" placeholder="اسم الموظف">
+  </div>
+
+  <div class="card" id="pinCard" style="display:none">
+    <h3>الرقم السري / PIN</h3>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN">
+    <button class="b1 wide" onclick="start()">دخول / Open</button>
+    <div id="pinMsg" class="err"></div>
+  </div>
+
+  <div id="main" style="display:none">
+    <div class="card">
+      <h3>١. العميل / Customer</h3>
+      <div id="custPick">
+        <input id="q" type="search" inputmode="search" placeholder="رقم الجوال أو الاسم أو #رقم العميل – mobile / name / #no">
+        <div id="res" class="res" style="display:none"></div>
+        <button class="b2 wide" onclick="newCustomer()">+ عميل جديد / New customer</button>
+      </div>
+      <div id="custNew" style="display:none">
+        <label class="f">الاسم / Name *</label><input id="cName">
+        <label class="f">الجوال / Mobile</label><input id="cMobile" type="tel" inputmode="tel">
+        <div id="dupe" class="warn"></div>
+        <label class="f">العنوان / Address</label><input id="cAddr">
+        <button class="b2 wide" onclick="resetCustomer()">✖ إلغاء / Cancel</button>
+      </div>
+      <div id="custBox" class="chosen" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <h3>٢. القماش / Fabrics</h3>
+      <div id="lines"></div>
+      <div class="grid2" style="margin-top:8px">
+        <button class="b3" onclick="pickItem()">+ قماش المحل / Shop fabric</button>
+        <button class="b2" onclick="addOut()">+ قماش العميل / Own fabric</button>
+      </div>
+      <div id="itemPick" style="display:none; margin-top:8px">
+        <input id="iq" type="search" placeholder="رقم أو اسم القماش – code / name">
+        <div id="ires" class="res"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>التطريز / Embroidery</h3>
+      <div id="embs"></div>
+      <button class="b3 wide" onclick="pickEmb()">+ تطريز / Add embroidery</button>
+      <div id="embPick" style="display:none; margin-top:8px">
+        <input id="eq" type="search" placeholder="رقم أو اسم التطريز – code / model">
+        <div id="eres" class="res"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>٣. التفاصيل / Details</h3>
+      <div class="grid2">
+        <div><label class="f">عدد Hinge button</label><input id="hinge" type="number" inputmode="numeric" min="0" value="0"></div>
+        <div><label class="f">عدد السحاب / Zip</label><input id="zip" type="number" inputmode="numeric" min="0" value="0"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="sample"> العميل ترك ثوب عينة / Sample thobe left</label>
+      <label class="f">ملاحظات / Notes</label><textarea id="notes" rows="2"></textarea>
+    </div>
+
+    <div class="card">
+      <h3>٤. المقاسات / Measurements</h3>
+      <div id="measInfo" class="muted">لا يوجد – none</div>
+      <button class="b1 wide" onclick="openSheet()">📐 فتح ورقة المقاس / Open measurement sheet</button>
+      <label class="chk"><input type="checkbox" id="prova" onchange="provaChanged()"> بروفة / Fitting thobe</label>
+      <div id="provaBox" style="display:none"><label class="f">تاريخ البروفة / Fitting date</label><input id="provaDate" type="date"></div>
+    </div>
+
+    <div class="card">
+      <h3>٥. التسليم / Delivery</h3>
+      <div id="sugg" class="muted"></div>
+      <input id="delivery" type="date">
+      <div id="delWarn" class="warn"></div>
+    </div>
+
+    <div class="card">
+      <h3>٦. الدفع / Payment</h3>
+      <label class="chk" style="color:#1a7f37"><input type="checkbox" id="gift" onchange="giftChanged()"> هدية – بدون رقم فاتورة / Free gift (no invoice no.)</label>
+      <table class="tot">
+        <tr><td>المجموع / Subtotal</td><td id="tGross">0</td></tr>
+        <tr><td>الخصم / Discount</td><td><input id="disc" type="number" inputmode="decimal" min="0" value="0" style="width:120px"></td></tr>
+        <tr><td id="tVatL">الضريبة / VAT</td><td id="tVat">0</td></tr>
+        <tr><td><b>الإجمالي / TOTAL</b></td><td id="tTotal" class="big">0</td></tr>
+      </table>
+      <div class="grid2">
+        <div><label class="f">العربون / Down payment</label><input id="down" type="number" inputmode="decimal" min="0" value="0"></div>
+        <div><label class="f">طريقة الدفع / Method</label><select id="method"></select></div>
+      </div>
+      <label class="f">المرجع / Reference (SPAN)</label><input id="ref">
+      <div style="margin-top:8px">المتبقي / Balance: <b id="tBal">0</b></div>
+    </div>
+
+    <div class="card">
+      <button class="go" id="go" onclick="send()">إرسال الطلب ◀ Send order</button>
+      <div id="msg"></div>
+    </div>
+
+    <div class="card">
+      <h3>طلبات اليوم / Today's orders</h3>
+      <div class="muted">رقم الطلب يظهر بعد أن يستلمه جهاز المحل (دقائق) – the order number shows when the shop PC took it (a few minutes)</div>
+      <div id="mine">…</div>
+    </div>
+  </div>
+
+  <div id="mo">
+    <div class="bar">
+      <button class="b1" onclick="closeSheet()">✔ تم / Done</button>
+      <button class="b2" onclick="zoom(1.25)">＋</button>
+      <button class="b2" onclick="zoom(0.8)">－</button>
+      <button class="b2" id="lastBtn" onclick="loadLast()">آخر مقاس / Last</button>
+      <button class="b2" onclick="clearMeas()">مسح / Clear</button>
+      <span id="mCount" class="muted"></span>
+    </div>
+    <div class="scroll"><div id="sheet"></div></div>
+  </div>
+
+  <div id="pk"><div class="pkb">
+    <div class="row"><b id="pkT" style="font-size:19px"></b><button class="b2" style="flex:0" onclick="$('pk').style.display='none'">✖</button></div>
+    <div id="pkG" class="pkg"></div>
+  </div></div>
+
+  <script>
+    var KEY = <?= key ?>, NEEDPIN = <?= needPin ?>;
+    var PIN = '', META = null, SPEC = null, ITEMS = [], EMB = [], IMG = null;
+    var cust = null, isNew = false, lines = [], embs = [], meas = {}, manualDelivery = false, scale = 0, built = false;
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+    function num(v) { var n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; }
+    function money(v) { return (Math.round(v * 100) / 100).toFixed(2); }
+    function call(fn, args, ok) {
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { showMsg('خطأ – ' + (e && e.message || e), true); });
+      r[fn].apply(r, args);
+    }
+    function showMsg(t, bad) { var m = $('msg'); m.className = bad ? 'err' : 'ok'; m.textContent = t; }
+    function store(k, v) { try { localStorage.setItem(k, v); } catch (x) { } }
+    function load(k) { try { return localStorage.getItem(k) || ''; } catch (x) { return ''; } }
+    function day(s) { if (!s) return ''; var p = s.split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
+
+    $('by').value = load('ts_by');
+    $('by').addEventListener('change', function () { store('ts_by', $('by').value.trim()); });
+
+    function start() {
+      try { PIN = NEEDPIN ? ($('pin').value || sessionStorage.getItem('ts_pin') || '') : ''; } catch (x) { PIN = $('pin').value; }
+      call('oInit', [KEY, PIN], function (r) {
+        if (!r || !r.ok) {
+          $('pinCard').style.display = 'block';
+          $('pinMsg').textContent = NEEDPIN && PIN ? 'الرقم السري غير صحيح – wrong PIN' : '';
+          return;
+        }
+        if (!r.meta || !r.spec) { $('pinCard').style.display = 'none'; showMsg('لم يتم تجهيز الصفحة بعد من جهاز المحل – the shop PC has not sent the data yet. Try again in a few minutes.', true); $('main').style.display = 'block'; return; }
+        try { if (NEEDPIN) sessionStorage.setItem('ts_pin', PIN); } catch (x) { }
+        META = r.meta; SPEC = r.spec; ITEMS = r.items || []; EMB = r.emb || [];
+        $('pinCard').style.display = 'none';
+        $('main').style.display = 'block';
+        var sel = $('method'); sel.innerHTML = '';
+        (META.methods || []).forEach(function (m) { var o = document.createElement('option'); o.value = o.textContent = m; sel.appendChild(o); });
+        $('tVatL').textContent = 'الضريبة / VAT ' + Math.round(META.vat * 1000) / 10 + '%' + (META.vatIncl ? ' (شامل / incl.)' : '');
+        $('delivery').min = META.today;
+        $('provaDate').min = META.today;
+        recalc();
+        loadMine();
+      });
+    }
+
+    // ---------------- customer
+    var qTimer = null;
+    $('q').addEventListener('input', function () { clearTimeout(qTimer); qTimer = setTimeout(search, 450); });
+    function search() {
+      var q = $('q').value.trim();
+      if (q.replace(/\D/g, '').length < 3 && q.length < 2) { $('res').style.display = 'none'; return; }
+      call('oSearch', [KEY, PIN, q], function (list) {
+        var el = $('res');
+        el.style.display = 'block';
+        if (!list || !list.length) { el.innerHTML = '<div class="muted">لا يوجد – not found. اضغط "عميل جديد" / press New customer</div>'; return; }
+        el.innerHTML = list.map(function (c) {
+          return '<div data-no="' + esc(c.no) + '"><b>' + esc(c.name) + '</b> &nbsp; <span dir="ltr">' + esc(c.mobile) + '</span> &nbsp; <span class="muted">#' + esc(c.no) + (c.meas ? ' · 📐' : '') + '</span></div>';
+        }).join('');
+        el.querySelectorAll('div[data-no]').forEach(function (d) { d.addEventListener('click', function () { chooseCustomer(d.getAttribute('data-no')); }); });
+      });
+    }
+    function chooseCustomer(no) {
+      call('oCustomer', [KEY, PIN, no], function (c) {
+        if (!c) return;
+        cust = c; isNew = false;
+        $('custPick').style.display = 'none'; $('custNew').style.display = 'none'; $('res').style.display = 'none';
+        var b = $('custBox'); b.style.display = 'block';
+        b.innerHTML = '<b>' + esc(c.name) + '</b><br><span dir="ltr">' + esc(c.mobile) + '</span> &nbsp; <span class="muted">#' + esc(c.no) + '</span>' +
+          (c.address ? '<br><span class="muted">' + esc(c.address) + '</span>' : '') +
+          (c.meas ? '<br><span class="ok">📐 يوجد مقاس سابق – last measurement loaded</span>' : '') +
+          '<br><button class="b2" style="margin-top:8px" onclick="resetCustomer()">تغيير / Change</button>';
+        if (c.meas && !Object.keys(meas).length) { meas = JSON.parse(JSON.stringify(c.meas)); measInfo(); }
+        $('lastBtn').style.display = c.meas ? '' : 'none';
+      });
+    }
+    function newCustomer() {
+      cust = null; isNew = true;
+      $('custPick').style.display = 'none'; $('custBox').style.display = 'none'; $('custNew').style.display = 'block';
+      $('cName').value = ''; $('cMobile').value = $('q').value.replace(/[^\d+]/g, ''); $('cAddr').value = ''; $('dupe').innerHTML = '';
+      $('lastBtn').style.display = 'none';
+      $('cName').focus();
+    }
+    function resetCustomer() {
+      cust = null; isNew = false;
+      $('custPick').style.display = 'block'; $('custBox').style.display = 'none'; $('custNew').style.display = 'none';
+      $('q').value = ''; $('res').style.display = 'none';
+    }
+    // a new customer's mobile that is already known: offer that customer instead (no double customers)
+    $('cMobile').addEventListener('change', function () {
+      var d = $('cMobile').value.replace(/\D/g, '');
+      $('dupe').innerHTML = '';
+      if (d.length < 7) return;
+      call('oSearch', [KEY, PIN, d], function (list) {
+        if (!list || !list.length) return;
+        var c = list[0];
+        $('dupe').innerHTML = 'هذا الجوال مسجل باسم ' + esc(c.name) + ' (#' + esc(c.no) + ') – <a href="#" id="useDupe">استخدمه / use this customer</a>';
+        $('useDupe').addEventListener('click', function (e) { e.preventDefault(); chooseCustomer(c.no); });
+      });
+    });
+
+    // ---------------- fabrics
+    function pickItem() { $('itemPick').style.display = 'block'; $('iq').value = ''; showItems(); $('iq').focus(); }
+    $('iq').addEventListener('input', showItems);
+    function showItems() {
+      var q = $('iq').value.trim().toLowerCase();
+      var list = ITEMS.filter(function (i) { return !q || String(i[0]).indexOf(q) === 0 || String(i[1]).toLowerCase().indexOf(q) >= 0 || String(i[2]).toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+      var el = $('ires');
+      el.innerHTML = list.length ? list.map(function (i, k) {
+        return '<div data-k="' + k + '"><b>' + esc(i[0]) + '</b> &nbsp; ' + esc(i[1]) + (i[3] ? ' – ' + esc(i[3]) : '') + ' &nbsp; <span class="muted">' + esc(i[2]) +
+               ' · ' + money(i[4]) + ' · ' + (i[5] > 0 ? 'المخزون ' + esc(i[5]) : '<span class="warn">غير متوفر</span>') + '</span></div>';
+      }).join('') : '<div class="muted">لا يوجد – not found</div>';
+      el.querySelectorAll('div[data-k]').forEach(function (d) {
+        d.addEventListener('click', function () {
+          var i = list[Number(d.getAttribute('data-k'))];
+          lines.push({ src: 'IN', code: i[0], item: i[1] + (i[3] ? ' – ' + i[3] : ''), qty: 1, rate: i[4], stock: i[5] });
+          $('itemPick').style.display = 'none';
+          drawLines();
+        });
+      });
+    }
+    function addOut() { lines.push({ src: 'OUT', code: 0, item: META.outName || 'قماش العميل', qty: 1, rate: META.outRate || 0 }); drawLines(); }
+    function drawLines() {
+      var el = $('lines');
+      el.innerHTML = lines.map(function (l, k) {
+        return '<div class="line"><div class="t"><span>' + (l.src === 'IN' ? esc(l.code) + ' – ' + esc(l.item) : '<input data-k="' + k + '" data-f="item" value="' + esc(l.item) + '">') +
+          '</span><button class="x" data-del="' + k + '">✖</button></div>' +
+          '<div class="g3"><div><span>العدد / Qty</span><input data-k="' + k + '" data-f="qty" type="number" inputmode="decimal" min="0" value="' + esc(l.qty) + '"></div>' +
+          '<div><span>السعر / Rate</span><input data-k="' + k + '" data-f="rate" type="number" inputmode="decimal" min="0" value="' + esc(l.rate) + '"></div>' +
+          '<div class="amt" id="amt' + k + '"></div></div>' +
+          (l.src === 'IN' ? '<div class="warn" id="stk' + k + '"></div>' : '') + '</div>';
+      }).join('');
+      el.querySelectorAll('input[data-k]').forEach(function (inp) {
+        inp.addEventListener('input', function () {
+          var l = lines[Number(inp.getAttribute('data-k'))], f = inp.getAttribute('data-f');
+          l[f] = f === 'item' ? inp.value : num(inp.value);
+          recalc();
+        });
+      });
+      el.querySelectorAll('button[data-del]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = Number(b.getAttribute('data-del'));
+          lines.splice(k, 1);
+          // embroidery on that fabric: no fabric; on a later one: it moved up
+          embs.forEach(function (e) { if (e.fab === k) e.fab = -1; else if (e.fab > k) e.fab--; });
+          drawLines();
+        });
+      });
+      drawEmbs();
+      recalc();
+    }
+    // the order's fabrics as the shop's order window names them: "1) name (code)" / "2) قماش العميل: …"
+    function fabricName(l, i) { return (i + 1) + ') ' + (l.src === 'OUT' ? 'قماش العميل: ' + l.item : l.item + (l.code ? ' (' + l.code + ')' : '')); }
+
+    // ---------------- embroidery
+    function pickEmb() { $('embPick').style.display = 'block'; $('eq').value = ''; showEmb(); $('eq').focus(); }
+    $('eq').addEventListener('input', showEmb);
+    function showEmb() {
+      var q = $('eq').value.trim().toLowerCase();
+      var list = EMB.filter(function (e) { return !q || String(e[0]).indexOf(q) === 0 || String(e[1]).toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+      var el = $('eres');
+      el.innerHTML = list.length ? list.map(function (e, k) {
+        return '<div data-k="' + k + '">' + (e[3] ? '<img src="' + e[3] + '" alt="">' : '') + '<b>' + esc(e[0]) + '</b> &nbsp; ' + esc(e[1]) + ' &nbsp; <span class="muted">' + money(e[2]) + '</span></div>';
+      }).join('') : '<div class="muted">لا يوجد – not found</div>';
+      el.querySelectorAll('div[data-k]').forEach(function (d) {
+        d.addEventListener('click', function () {
+          var e = list[Number(d.getAttribute('data-k'))];
+          embs.push({ code: e[0], model: e[1], qty: 1, rate: e[2], fab: lines.length ? 0 : -1, thumb: e[3] });
+          $('embPick').style.display = 'none';
+          drawEmbs();
+        });
+      });
+    }
+    function drawEmbs() {
+      var el = $('embs');
+      el.innerHTML = embs.map(function (e, k) {
+        var opts = '<option value="-1">— على القماش / on fabric —</option>' + lines.map(function (l, i) {
+          return '<option value="' + i + '"' + (e.fab === i ? ' selected' : '') + '>' + esc(fabricName(l, i)) + '</option>';
+        }).join('');
+        return '<div class="line"><div class="t"><span>' + (e.thumb ? '<img class="th" src="' + e.thumb + '" alt="">' : '') + esc(e.code) + ' – ' + esc(e.model) +
+          '</span><button class="x" data-edel="' + k + '">✖</button></div>' +
+          '<select data-ek="' + k + '">' + opts + '</select>' +
+          '<div class="g3"><div><span>العدد / Qty</span><input data-ek="' + k + '" data-f="qty" type="number" inputmode="decimal" min="0" value="' + esc(e.qty) + '"></div>' +
+          '<div><span>السعر / Price</span><input data-ek="' + k + '" data-f="rate" type="number" inputmode="decimal" min="0" value="' + esc(e.rate) + '"></div>' +
+          '<div class="amt" id="eamt' + k + '"></div></div></div>';
+      }).join('');
+      el.querySelectorAll('select[data-ek]').forEach(function (s) {
+        s.addEventListener('change', function () { embs[Number(s.getAttribute('data-ek'))].fab = Number(s.value); });
+      });
+      el.querySelectorAll('input[data-ek]').forEach(function (inp) {
+        inp.addEventListener('input', function () { embs[Number(inp.getAttribute('data-ek'))][inp.getAttribute('data-f')] = num(inp.value); recalc(); });
+      });
+      el.querySelectorAll('button[data-edel]').forEach(function (b) {
+        b.addEventListener('click', function () { embs.splice(Number(b.getAttribute('data-edel')), 1); drawEmbs(); });
+      });
+      recalc();
+    }
+
+    // free gift: no invoice number; offer to make it free (discount = subtotal), as the shop's order window does
+    function giftChanged() {
+      if (!$('gift').checked) return;
+      var g = totals().gross;
+      if (g > 0 && confirm('جعل الطلب مجاناً؟ الخصم = ' + money(g) + ' – Make this order free? (Cancel = keep the price, only no invoice no.)')) {
+        $('disc').value = g; recalc();
+      }
+    }
+
+    // ---------------- totals and delivery
+    function pcs() { return Math.round(lines.reduce(function (a, l) { return a + num(l.qty); }, 0)); }
+    function totals() {
+      var gross = lines.reduce(function (a, l) { return a + Math.round(num(l.qty) * num(l.rate) * 100) / 100; }, 0) +
+                  embs.reduce(function (a, e) { return a + Math.round(num(e.qty) * num(e.rate) * 100) / 100; }, 0);
+      var disc = Math.min(Math.max(0, num($('disc').value)), gross), net = gross - disc, rate = META ? META.vat : 0, vat, total;
+      if (!META || META.vatIncl) { total = net; vat = Math.round(net * rate / (1 + rate) * 100) / 100; }
+      else { vat = Math.round(net * rate * 100) / 100; total = net + vat; }
+      return { gross: gross, disc: disc, vat: vat, total: Math.round(total * 100) / 100 };
+    }
+    function recalc() {
+      lines.forEach(function (l, k) {
+        var a = $('amt' + k); if (a) a.textContent = money(num(l.qty) * num(l.rate));
+        var s = $('stk' + k); if (s) s.textContent = num(l.qty) > num(l.stock) ? 'المخزون ' + l.stock + ' فقط – only ' + l.stock + ' in stock' : '';
+      });
+      embs.forEach(function (e, k) { var a = $('eamt' + k); if (a) a.textContent = money(num(e.qty) * num(e.rate)); });
+      var t = totals();
+      $('tGross').textContent = money(t.gross);
+      $('tVat').textContent = money(t.vat);
+      $('tTotal').textContent = money(t.total) + ' ' + (META ? META.currency : '');
+      $('tBal').textContent = money(t.total - num($('down').value));
+      deliveryHint();
+    }
+    ['disc', 'down'].forEach(function (id) { $(id).addEventListener('input', recalc); });
+    function suggestion() {
+      if (!META || !META.deliver || !META.deliver.length) return '';
+      var n = Math.max(1, pcs());
+      return META.deliver[Math.min(n, META.deliver.length) - 1];
+    }
+    function deliveryHint() {
+      if (!META) return;
+      var s = suggestion(), n = Math.max(1, pcs());
+      if (!manualDelivery && s) $('delivery').value = s;
+      $('sugg').innerHTML = s ? 'أقرب موعد تسليم للورشة لـ ' + n + ' ثوب: <b>' + day(s) + '</b> – earliest the workshop can deliver' : '';
+      var d = $('delivery').value, w = '';
+      if (d && s && d < s) w = 'التاريخ المختار أبكر من قدرة الورشة! – earlier than the workshop can make it';
+      if (d && META.dayOff >= 0 && new Date(d + 'T12:00:00').getDay() === META.dayOff) w += (w ? '\n' : '') + 'هذا يوم الإجازة – this is the weekly day off';
+      if (d && d < META.today) w += (w ? '\n' : '') + 'التاريخ قبل اليوم – date before today';
+      $('delWarn').textContent = w;
+    }
+    $('delivery').addEventListener('change', function () { manualDelivery = true; deliveryHint(); });
+
+    function provaChanged() {
+      $('provaBox').style.display = $('prova').checked ? 'block' : 'none';
+      if ($('prova').checked && !$('provaDate').value && META) $('provaDate').value = META.today;
+    }
+
+    // ---------------- measurement sheet
+    function measInfo() {
+      var n = Object.keys(meas).filter(function (k) { return meas[k] !== '' && !/_sq$/.test(k); }).length;
+      $('measInfo').innerHTML = n ? '<span class="ok">📐 ' + n + ' مقاس / values filled</span>' : 'لا يوجد – none';
+      $('mCount').textContent = n + ' مقاس';
+    }
+    function openSheet() {
+      if (!SPEC) return;
+      $('mo').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      if (!scale) scale = Math.max(0.55, Math.min(1, (window.innerWidth - 16) / SPEC.w));
+      if (!built) build();
+      paint();
+      if (SPEC.models && !PICS) call('oPics', [KEY, PIN], function (p) { PICS = p || {}; renderModels(); });
+      if (!IMG) call('oImage', [KEY, PIN], function (src) { IMG = src || ''; if (IMG) { var im = document.createElement('img'); im.src = IMG; im.id = 'bg'; $('sheet').insertBefore(im, $('sheet').firstChild); layout(); } });
+    }
+    function closeSheet() { $('mo').style.display = 'none'; document.body.style.overflow = ''; measInfo(); }
+    function zoom(f) { scale = Math.max(0.3, Math.min(2.5, scale * f)); layout(); }
+    function build() {
+      var sh = $('sheet');
+      SPEC.fields.forEach(function (f) {
+        var el;
+        if (f.t === 'box' || f.t === 'multi') {
+          el = document.createElement(f.t === 'multi' ? 'textarea' : 'input');
+          el.className = 'fi';
+          el.addEventListener('input', function () { if (el.value.trim()) meas[f.k] = el.value; else delete meas[f.k]; el.classList.toggle('on', !!el.value.trim()); });
+        } else if (f.t === 'tile') {
+          el = document.createElement('div');
+          el.className = 'tl';
+          el.innerHTML = '<span class="ck">✓</span>' + (f.sq ? '<span class="sq">مربع</span>' : '');
+          el.addEventListener('click', function (e) {
+            if (e.target.classList.contains('sq')) {
+              if (meas[f.k + '_sq'] === '1') delete meas[f.k + '_sq']; else meas[f.k + '_sq'] = '1';
+            } else {
+              var on = meas[f.k] === '1';
+              // one tile per group (JAMEEL's sheet); the paper's drawings tick on their own
+              if (!on && f.g) SPEC.fields.forEach(function (o) { if (o.t === 'tile' && o.g === f.g) delete meas[o.k]; });
+              if (on) delete meas[f.k]; else meas[f.k] = '1';
+            }
+            paint();
+          });
+        } else if (f.t === 'sel') {
+          // a list of choices (JAMEEL's style drawings by name, the buttons)
+          el = document.createElement('select');
+          el.className = 'fi';
+          el.innerHTML = '<option value="">— ' + esc(f.l) + ' —</option>' + (f.o || []).map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+          el.addEventListener('change', function () { if (el.value) meas[f.k] = el.value; else delete meas[f.k]; el.classList.toggle('on', !!el.value); });
+        } else {
+          el = document.createElement('div');
+          el.className = 'tk';
+          el.innerHTML = '<b>✓</b><span>' + esc(f.l) + '</span>';
+          el.addEventListener('click', function () { if (meas[f.k] === '1') delete meas[f.k]; else meas[f.k] = '1'; paint(); });
+        }
+        el.setAttribute('data-k', f.k);
+        f.el = el;
+        sh.appendChild(el);
+      });
+      if (SPEC.models) buildModels();
+      built = true;
+      layout();
+    }
+    function layout() {
+      var sh = $('sheet'), s = scale;
+      sh.style.width = SPEC.w * s + 'px'; sh.style.height = SPEC.h * s + 'px';
+      var bg = $('bg'); if (bg) { bg.style.width = SPEC.w * s + 'px'; bg.style.height = SPEC.h * s + 'px'; }
+      SPEC.fields.forEach(function (f) {
+        var st = f.el.style;
+        st.left = f.x * s + 'px'; st.top = f.y * s + 'px'; st.width = f.w * s + 'px'; st.height = f.h * s + 'px';
+        if (f.t === 'box') st.fontSize = Math.max(11, Math.min(f.h * 0.55, 24) * s) + 'px';
+        if (f.t === 'multi') st.fontSize = Math.max(11, 16 * s) + 'px';
+        if (f.t === 'sel') st.fontSize = Math.max(11, 14 * s) + 'px';
+        if (f.t === 'tick') { st.fontSize = Math.max(9, 13 * s) + 'px'; var b = f.el.querySelector('b'); b.style.width = b.style.height = Math.max(14, 22 * s) + 'px'; }
+      });
+      if (SPEC.models && mdl) layoutModels(s);
+    }
+    function paint() {
+      SPEC.fields.forEach(function (f) {
+        var v = meas[f.k] || '';
+        if (f.t === 'box' || f.t === 'multi' || f.t === 'sel') { if (f.el.value !== v) f.el.value = v; f.el.classList.toggle('on', !!v.trim()); }
+        else {
+          f.el.classList.toggle('on', v === '1');
+          if (f.t === 'tick') f.el.querySelector('b').textContent = v === '1' ? '✓' : '';
+          var q = f.el.querySelector('.sq'); if (q) q.classList.toggle('on', meas[f.k + '_sq'] === '1');
+        }
+      });
+      if (SPEC.models) renderModels();
+      measInfo();
+    }
+    function loadLast() {
+      if (!cust || !cust.meas) return;
+      if (Object.keys(meas).length && !confirm('استبدال المقاسات بآخر مقاس؟ – replace with the last measurement?')) return;
+      meas = JSON.parse(JSON.stringify(cust.meas)); paint();
+    }
+    function clearMeas() { if (confirm('مسح كل المقاسات؟ – clear all?')) { meas = {}; paint(); } }
+
+    // ---------------- JAMEEL: the model rows (as on the shop's screen): fabric, qty, note, more fabrics, drawings, lists
+    var PICS = null, nModels = 1, MORE = {}, MEASREF = null, PK = null;
+    function mk(k, n) { return n <= 1 ? k : k + '_' + n; }
+    function mKeys() {
+      var M = SPEC.models, a = [M.fab, M.qty, M.more, M.note, M.btn.k];
+      M.cells.forEach(function (c) { a.push(c.k); }); M.extras.forEach(function (e) { a.push(e.k); });
+      return a;
+    }
+    function modelCount() {
+      var c = 1, ks = mKeys();
+      for (var n = 2; n <= SPEC.models.max; n++) if (ks.some(function (k) { return meas[mk(k, n)] !== undefined; })) c = n;
+      return Math.max(c, nModels);
+    }
+    function setM(k, v) { if (v !== '' && v != null) meas[k] = String(v); else delete meas[k]; }
+    function fabNames() {
+      var a = [];
+      lines.forEach(function (l) { var s = l.src === 'OUT' ? 'قماش العميل' : String(l.code || l.item || ''); if (s && a.indexOf(s) < 0) a.push(s); });
+      return a;
+    }
+    function parseMore(s) { return String(s || '').split(';').filter(function (x) { return x !== ''; }).map(function (x) { var p = x.split('×'); return [p[0] || '', p[1] || '', p[2] || '']; }); }
+    function joinMore(a) {
+      function c(s) { return String(s).trim().replace(/;/g, ' ').replace(/×/g, 'x'); }
+      return a.filter(function (p) { return c(p[0]); }).map(function (p) { return c(p[0]) + '×' + c(p[1]) + (c(p[2]) ? '×' + c(p[2]) : ''); }).join(';');
+    }
+    function optOf(list, v) { for (var i = 0; i < list.o.length; i++) if (list.o[i][0] === v) return list.o[i]; return null; }
+    function picHtml(list, v) {
+      var o = v ? optOf(list, v) : null;
+      if (!o) return '<span class="muted">— اختر / choose —</span>';
+      return '<span>' + esc(o[1]) + '</span>' + (PICS && PICS[o[0]] ? '<img src="' + PICS[o[0]] + '" alt="">' : '<span></span>') + '<span class="sub">' + esc(o[2] || '') + '</span>';
+    }
+    function mSel(k, n, t, opts) {
+      var v = meas[mk(k, n)] || '';
+      return '<select data-k="' + k + '" data-n="' + n + '"><option value="">' + esc(t) + ': —</option>' + opts.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(t + ' ' + o) + '</option>';
+      }).join('') + '</select>';
+    }
+    function renderModels() {
+      var M = SPEC.models, box = $('mdl');
+      if (!M || !box) return;
+      if (MEASREF !== meas) { MORE = {}; nModels = 1; MEASREF = meas; }   // another customer / last measurement / cleared
+      $('fabl').innerHTML = fabNames().map(function (f) { return '<option value="' + esc(f) + '">'; }).join('');
+      var cnt = modelCount(), h = '';
+      for (var n = 1; n <= cnt; n++) {
+        var more = MORE[n] || (MORE[n] = parseMore(meas[mk(M.more, n)]));
+        h += '<div class="md"><div class="mbar"><b>موديل ' + n + ':</b> القماش' +
+          '<input class="fb" list="fabl" data-k="' + M.fab + '" data-n="' + n + '" value="' + esc(meas[mk(M.fab, n)] || '') + '">' +
+          ' عدد <input class="qt" type="number" min="0" inputmode="numeric" data-k="' + M.qty + '" data-n="' + n + '" value="' + esc(meas[mk(M.qty, n)] || '') + '">' +
+          '<input class="nt" placeholder="ملاحظة" data-k="' + M.note + '" data-n="' + n + '" value="' + esc(meas[mk(M.note, n)] || '') + '">' +
+          '<button class="b2" onclick="addFab(' + n + ')">+ قماش آخر</button>' +
+          (n === 1 ? '<button class="b1" onclick="addModel()">+ موديل آخر</button>' : '<button class="x" onclick="delModel(' + n + ')">حذف</button>') + '</div>';
+        if (more.length) {
+          h += '<div class="mbar mmore">قماش آخر:';
+          more.forEach(function (p, i) {
+            var a = ' data-more="' + n + '" data-i="' + i + '"';
+            h += ' <input class="fb" list="fabl"' + a + ' data-p="0" value="' + esc(p[0]) + '">' +
+                 '<input class="qt" type="number" min="0" inputmode="numeric"' + a + ' data-p="1" value="' + esc(p[1]) + '">' +
+                 '<input class="nt" placeholder="ملاحظة"' + a + ' data-p="2" value="' + esc(p[2]) + '">' +
+                 '<button class="x" onclick="delFab(' + n + ',' + i + ')">✕</button>';
+          });
+          h += '</div>';
+        }
+        h += '<div class="mcells">';
+        M.cells.forEach(function (c, ci) {
+          h += '<div class="mc"><div class="mt">' + esc(c.t) + '</div><div class="mp" onclick="pick(' + ci + ',' + n + ')">' + picHtml(c, meas[mk(c.k, n)]) + '</div><div class="mx">';
+          if (M.btn.cell === c.k) h += mSel(M.btn.k, n, M.btn.t, M.btn.o);
+          M.extras.forEach(function (e) { if (e.cell === c.k) h += mSel(e.k, n, e.t, e.o); });
+          h += '</div></div>';
+        });
+        h += '</div></div>';
+      }
+      box.innerHTML = h;
+      $('pp').innerHTML = '<div class="mt">' + esc(M.pocket.list.t) + '</div><div class="mp" style="height:' + (M.pocket.r[3] - 26) + 'px">' + picHtml(M.pocket.list, meas[M.pocket.list.k]) + '</div>';
+    }
+    function mdlInput(e) {
+      var el = e.target, k = el.getAttribute('data-k'), mn = el.getAttribute('data-more');
+      if (k) setM(mk(k, +el.getAttribute('data-n')), el.value.trim());
+      else if (mn) {
+        var m = +mn, a = MORE[m];
+        a[+el.getAttribute('data-i')][+el.getAttribute('data-p')] = el.value;
+        setM(mk(SPEC.models.more, m), joinMore(a));
+      }
+      measInfo();
+    }
+    function addModel() {
+      var M = SPEC.models, cnt = modelCount();
+      if (cnt >= M.max) return;
+      var n = cnt + 1, fl = fabNames();
+      // a new model starts like model 1 (its drawings and lists), with the order's next fabric and 1 thobe
+      [M.btn.k].concat(M.cells.map(function (c) { return c.k; }), M.extras.map(function (e) { return e.k; }))
+        .forEach(function (k) { if (meas[k] !== undefined) meas[mk(k, n)] = meas[k]; });
+      setM(mk(M.fab, n), fl[n - 1] || meas[M.fab] || '');
+      setM(mk(M.qty, n), '1');
+      nModels = n; MORE[n] = [];
+      renderModels(); measInfo();
+      var d = $('mdl'); d.scrollTop = d.scrollHeight;
+    }
+    function delModel(n) {
+      var cnt = modelCount(), ks = mKeys();
+      if (!confirm('حذف الموديل ' + n + '؟ – remove model ' + n + '?')) return;
+      for (var m = n; m < cnt; m++) { ks.forEach(function (k) { setM(mk(k, m), meas[mk(k, m + 1)]); }); MORE[m] = MORE[m + 1]; }
+      ks.forEach(function (k) { delete meas[mk(k, cnt)]; }); delete MORE[cnt];
+      nModels = Math.max(1, cnt - 1);
+      renderModels(); measInfo();
+    }
+    function addFab(n) {
+      var a = MORE[n] || (MORE[n] = []);
+      if (a.length >= 4) { alert('أربعة أقمشة إضافية على الأكثر – 4 more fabrics at most'); return; }
+      a.push(['', '1', '']);
+      renderModels();
+    }
+    function delFab(n, i) { MORE[n].splice(i, 1); setM(mk(SPEC.models.more, n), joinMore(MORE[n])); renderModels(); measInfo(); }
+    // the drawings of a list as pictures to tap
+    function openPk(list, key) {
+      PK = key;
+      $('pkT').textContent = list.t;
+      $('pkG').innerHTML = '<div class="pko" data-v=""><b>— بدون / none —</b></div>' + list.o.map(function (o) {
+        return '<div class="pko' + (meas[key] === o[0] ? ' on' : '') + '" data-v="' + esc(o[0]) + '"><b>' + esc(o[1]) + '</b>' +
+          (PICS && PICS[o[0]] ? '<img src="' + PICS[o[0]] + '" alt="">' : '') + (o[2] ? '<span>' + esc(o[2]) + '</span>' : '') + '</div>';
+      }).join('');
+      $('pk').style.display = 'flex';
+    }
+    function pick(ci, n) { var c = SPEC.models.cells[ci]; openPk(c, mk(c.k, n)); }
+    $('pkG').addEventListener('click', function (e) {
+      var d = e.target.closest('.pko');
+      if (!d || !PK) return;
+      setM(PK, d.getAttribute('data-v'));
+      $('pk').style.display = 'none';
+      renderModels(); measInfo();
+    });
+    function buildModels() {
+      var M = SPEC.models, sh = $('sheet');
+      var d = document.createElement('div'); d.id = 'mdl'; d.className = 'mdl'; sh.appendChild(d);
+      d.addEventListener('input', mdlInput); d.addEventListener('change', mdlInput);
+      var p = document.createElement('div'); p.id = 'pp'; p.className = 'mc pp'; sh.appendChild(p);
+      p.addEventListener('click', function () { openPk(M.pocket.list, M.pocket.list.k); });
+      var dl = document.createElement('datalist'); dl.id = 'fabl'; document.body.appendChild(dl);
+      renderModels();
+    }
+    function layoutModels(s) {
+      var M = SPEC.models, a = M.area, r = M.pocket.r, d = $('mdl'), p = $('pp');
+      d.style.left = a[0] * s + 'px'; d.style.top = a[1] * s + 'px'; d.style.width = a[2] + 'px'; d.style.height = a[3] + 'px'; d.style.transform = 'scale(' + s + ')';
+      p.style.left = r[0] * s + 'px'; p.style.top = r[1] * s + 'px'; p.style.width = r[2] + 'px'; p.style.height = r[3] + 'px'; p.style.transform = 'scale(' + s + ')';
+    }
+
+    // ---------------- send
+    function send() {
+      if (!META) return;
+      var by = $('by').value.trim(); store('ts_by', by);
+      var c = cust ? { no: cust.no, name: cust.name, mobile: cust.mobile, address: cust.address }
+                   : isNew ? { no: 0, name: $('cName').value.trim(), mobile: $('cMobile').value.trim(), address: $('cAddr').value.trim() } : null;
+      if (!c || (!c.no && !c.name)) { showMsg('اختر العميل أو أضف عميل جديد – choose or add the customer', true); return; }
+      var ls = lines.filter(function (l) { return num(l.qty) > 0; });
+      if (!ls.length) { showMsg('أضف قماش – add at least one fabric', true); return; }
+      var t = totals(), down = num($('down').value), d = $('delivery').value;
+      if (!d) { showMsg('اختر تاريخ التسليم – choose the delivery date', true); return; }
+      if (d < META.today) { showMsg('تاريخ التسليم قبل اليوم – delivery date before today', true); return; }
+      if (down < 0 || down > t.total + 0.01) { showMsg('العربون أكبر من الإجمالي – down payment more than the total', true); return; }
+      var hinge = Math.round(num($('hinge').value)), zip = Math.round(num($('zip').value));
+      if (hinge > pcs() || zip > pcs()) { showMsg('عدد Hinge / السحاب أكبر من عدد الثياب – more than the pieces', true); return; }
+      var o = {
+        customer: c,
+        lines: ls.map(function (l) { return { src: l.src, code: l.code || 0, item: l.item, qty: num(l.qty), rate: num(l.rate) }; }),
+        // the fabric index counts the fabrics actually sent (lines with pieces)
+        emb: embs.filter(function (e) { return num(e.qty) > 0; }).map(function (e) {
+          var f = e.fab >= 0 && lines[e.fab] ? ls.indexOf(lines[e.fab]) : -1;
+          return { code: e.code, qty: num(e.qty), rate: num(e.rate), fab: f };
+        }),
+        gift: $('gift').checked,
+        hinge: hinge, zip: zip, sample: $('sample').checked, notes: $('notes').value.trim(),
+        delivery: d, discount: t.disc, down: down, method: down > 0 ? $('method').value : '', ref: $('ref').value.trim(),
+        by: by, meas: meas, prova: $('prova').checked, provaDate: $('prova').checked ? $('provaDate').value : '', total: t.total
+      };
+      var sum = c.name + '\n' + pcs() + ' ثوب – pcs' + (embs.length ? '\nتطريز / Embroidery: ' + embs.length : '') +
+                '\nالإجمالي / Total: ' + money(t.total) + '\nالعربون / Down: ' + money(down) + '\nالتسليم / Delivery: ' + day(d) +
+                ($('gift').checked ? '\nهدية – بدون فاتورة / FREE GIFT' : '');
+      if (!confirm('إرسال الطلب؟ – Send this order?\n\n' + sum)) return;
+      $('go').disabled = true;
+      showMsg('جاري الإرسال… – sending…', false);
+      google.script.run.withSuccessHandler(function (r) {
+        $('go').disabled = false;
+        if (!r || !r.ok) { showMsg((r && r.msg) || 'لم يتم الإرسال – not sent', true); return; }
+        showMsg('تم إرسال الطلب ✔ – Order sent.\nرقم الطلب يظهر في "طلبات اليوم" بعد دقائق – the order number shows below in a few minutes.', false);
+        showMine(r.list);
+        resetAll();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }).withFailureHandler(function (e) { $('go').disabled = false; showMsg('خطأ – ' + (e && e.message || e), true); }).oSubmit(KEY, PIN, o);
+    }
+    function resetAll() {
+      resetCustomer();
+      lines = []; embs = []; meas = {}; manualDelivery = false; drawLines();
+      ['hinge', 'zip', 'disc', 'down'].forEach(function (id) { $(id).value = 0; });
+      ['notes', 'ref'].forEach(function (id) { $(id).value = ''; });
+      $('sample').checked = false; $('prova').checked = false; $('gift').checked = false; provaChanged();
+      if (built) paint(); measInfo();
+    }
+
+    // ---------------- today's orders
+    function showMine(list) {
+      var el = $('mine');
+      if (!list || !list.length) { el.innerHTML = '<div class="muted">لا يوجد – none yet</div>'; return; }
+      el.innerHTML = '<table class="mine" style="width:100%;border-collapse:collapse">' + list.map(function (r) {
+        var st = r.status === 'saved' ? '<span class="tag saved">✔ طلب ' + esc(r.order_no) + (r.invoice_no ? ' · فاتورة ' + esc(r.invoice_no) : '') + '</span>' +
+                                        (r.note ? '<br><span class="muted">' + esc(r.note) + '</span>' : '')
+               : r.status === 'error' ? '<span class="tag error">✖ ' + esc(r.note) + '</span>'
+               : r.status === 'deleted' ? '<span class="tag error">🗑 محذوف – deleted</span>'
+               : r.status === 'delreq' ? '<span class="tag new">⏳ جاري الحذف في المحل – deleting</span>'
+               : '<span class="tag new">⏳ بانتظار المحل – waiting</span>';
+        var canDel = r.status === 'new' || r.status === 'saved' || r.status === 'error';
+        return '<tr><td>' + esc(r.time) + '</td><td><b>' + esc(r.name) + '</b><br><span class="muted">' + esc(r.pcs) + ' ثوب · ' + esc(r.total) + (r.by ? ' · ' + esc(r.by) : '') + '</span></td><td>' + st +
+               (canDel ? '<br><button class="x" style="margin-top:6px;background:#fde8e7;color:#b3261e;padding:5px 10px;font-size:14px" data-del="' + esc(r.id) +
+                         '" data-name="' + esc(r.name) + '" data-no="' + esc(r.order_no) + '">🗑 حذف / Delete</button>' : '') + '</td></tr>';
+      }).join('') + '</table>';
+      el.querySelectorAll('button[data-del]').forEach(function (b) {
+        b.addEventListener('click', function () { delOrder(b.getAttribute('data-del'), b.getAttribute('data-name'), b.getAttribute('data-no')); });
+      });
+    }
+    // delete a sent order (not saved yet: at once; saved: the shop PC deletes it at its next sync if no work started)
+    function delOrder(id, name, no) {
+      if (!confirm('حذف الطلب؟ – Delete this order?\n\n' + name + (no ? '\nطلب ' + no + ' (يحذف من المحل خلال دقيقة – deleted in the shop within a minute)' : ''))) return;
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { showMsg((r && r.msg) || 'لم يتم الحذف – not deleted', true); return; }
+        showMsg(no ? 'تم طلب الحذف – the shop PC deletes it at its next sync' : 'تم حذف الطلب ✔ – deleted', false);
+        showMine(r.list);
+      }).withFailureHandler(function (e) { showMsg('خطأ – ' + (e && e.message || e), true); }).oDelete(KEY, PIN, id, $('by').value.trim());
+    }
+    function loadMine() { if (META) google.script.run.withSuccessHandler(showMine).oMine(KEY, PIN); }
+    setInterval(function () { if (!document.hidden) loadMine(); }, 30000);
+
+    if (NEEDPIN) {
+      var saved = ''; try { saved = sessionStorage.getItem('ts_pin') || ''; } catch (x) { }
+      if (saved) { $('pin').value = saved; start(); } else $('pinCard').style.display = 'block';
+    } else start();
+  </script>
+<? } ?>
+</body>
+</html>

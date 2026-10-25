@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shop Online</title>
+<meta name="theme-color" content="#0f3d3e">
+<link rel="icon" href="/favicon.svg">
+<style>
+:root{--bg:#f4f1ea;--card:#fffdf8;--ink:#1c2626;--mute:#6b7472;--line:#e3ddd0;--acc:#0f5c5d;--acc2:#e7f0ee;--warn:#a5520c;--warnbg:#fbeee0;--bad:#a12d2d;--badbg:#f8e5e3;--ok:#2d6a3e;--okbg:#e3f1e5;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#121717;--card:#1a2121;--ink:#e8e4da;--mute:#9aa29f;--line:#2b3434;--acc:#5fb3ad;--acc2:#1d3332;--warn:#e7a35e;--warnbg:#3a2a18;--bad:#ec8a80;--badbg:#3a1e1c;--ok:#86c99a;--okbg:#1b3323;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;padding-bottom:76px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+header h1{font:600 17px/1.2 Georgia,serif;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header button{flex:none}
+main{max-width:860px;margin:0 auto;padding:12px 16px}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--mute);padding:9px 2px 8px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--acc);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mute);font-size:12.5px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:18px 0 8px;font-weight:600}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;white-space:nowrap;cursor:pointer}
+.tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.btn{border:0;background:var(--acc);color:#fff;border-radius:9px;padding:9px 14px;font:600 14px system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:var(--acc2);color:var(--acc)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;align-items:center}
+.list .it{display:flex;gap:10px;align-items:flex-start;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border-bottom:0}
+.it .main{flex:1;min-width:0}
+.it .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .s{color:var(--mute);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .r{text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.no{font-variant-numeric:tabular-nums;color:var(--mute);font-size:13px;min-width:42px}
+.pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:600;background:var(--acc2);color:var(--acc)}
+.pill.warn{background:var(--warnbg);color:var(--warn)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.ok{background:var(--okbg);color:var(--ok)}
+.kv{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:4px 12px;font-size:14px}
+.kv div:nth-child(odd){color:var(--mute)}
+.kv div{word-break:break-word}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:12.5px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--mute)}.center{text-align:center}
+.err{background:var(--badbg);color:var(--bad);border-radius:9px;padding:9px 12px;margin:0 0 10px}
+.note{background:var(--warnbg);color:var(--warn);border-radius:9px;padding:9px 12px;margin:0 0 10px;font-size:14px}
+.more{display:block;margin:10px auto 0}
+.login{max-width:340px;margin:12vh auto 0;text-align:center}
+.login h1{font:500 30px Georgia,serif;margin:0 0 4px}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--bg);width:100%;max-width:860px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px 24px}
+.sug{border:1px solid var(--line);border-radius:9px;margin-top:4px;background:var(--card);max-height:220px;overflow:auto}
+.sug div{padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.sug div:last-child{border-bottom:0}
+.line{display:grid;grid-template-columns:1fr 70px 90px 30px;gap:6px;align-items:center;margin-bottom:6px}
+.x{border:0;background:none;color:var(--bad);font-size:20px;cursor:pointer}
+.ar{direction:rtl;unicode-bidi:plaintext}
+a{color:var(--acc)}
+.linkrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.linkrow:last-child{border-bottom:0}
+.linkrow .main{flex:1;min-width:0}
+.linkrow code{font-size:12px;color:var(--mute);word-break:break-all}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { db, auth, riyadh } from '../js/fb.js?v=1';
+import { doc, getDoc, getDocs, collection, query, where, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+const OWNER = 'owner@saudithobe.best';
+const $ = (s, e = document) => e.querySelector(s);
+const H = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const N = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const money = (v) => N(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const d10 = (v) => String(v ?? '').slice(0, 10);
+const state = { tab: 'home', sub: {}, q: {} };
+
+// ---- data: the shop PC keeps copies of the shop data in Firebase (ds/<name>/c/<piece>); search runs here in the phone
+const DSC = {};
+async function loadDs(name) {
+  const c = DSC[name];
+  if (c && Date.now() - c.at < 60000) return c;
+  const [parts, meta] = await Promise.all([getDocs(collection(db, 'ds', name, 'c')), getDoc(doc(db, 'ds', name))]);
+  let all = [];
+  parts.forEach(x => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
+  for (const r of all) Object.defineProperty(r, '_s', { value: Object.values(r).map(v => String(v ?? '')).join(' ').toLowerCase() });
+  return (DSC[name] = { at: Date.now(), rows: all, meta: meta.exists() ? meta.data() : {} });
+}
+function cmpv(a, b) {
+  const x = Number(a), y = Number(b);
+  if (a !== null && b !== null && a !== '' && b !== '' && Number.isFinite(x) && Number.isFinite(y)) return x - y;
+  return String(a ?? '').localeCompare(String(b ?? ''));
+}
+async function rows(ds, p = {}) {
+  const c = await loadDs(ds);
+  let r = c.rows;
+  const q = String(p.q || '').trim().toLowerCase();
+  if (q) { const ws = q.split(/\s+/); r = r.filter(x => ws.every(w => x._s.includes(w))); }
+  for (const f of (p.f || [])) { const i = f.indexOf(':'), k = f.slice(0, i), v = f.slice(i + 1); r = r.filter(x => String(x[k] ?? '') === v); }
+  const sk = p.sort || c.meta.sort || '';
+  if (sk) { const dir = p.asc ? 1 : -1; r = r.slice().sort((a, b) => dir * cmpv(a[sk], b[sk])); }
+  const off = p.offset || 0, lim = p.limit || 40;
+  return { rows: r.slice(off, off + lim), total: r.length };
+}
+// ---- jobs for the shop PC (invoice PDF, new Genix invoice)
+async function jobNew(kind, data) {
+  const ref = await addDoc(collection(db, 'jobs'), { ...data, kind, st: 'new', ts: serverTimestamp() });
+  return { id: ref.id, status: 'new' };
+}
+async function jobGet(id) {
+  const s = await getDoc(doc(db, 'jobs', id));
+  const d = s.exists() ? s.data() : {};
+  return { id, status: d.st || 'error', result: d, data: d, kind: d.kind, created: d.ts && d.ts.toDate ? riyadh(d.ts.toDate()) : '' };
+}
+async function openFile(id, btn) {
+  const old = btn ? btn.textContent : '';
+  if (btn) btn.textContent = '…';
+  try {
+    const f = await getDoc(doc(db, 'files', id));
+    if (!f.exists()) throw new Error('file not found');
+    const n = Number(f.data().parts) || 0, ps = [];
+    for (let i = 0; i < n; i++) ps.push(getDoc(doc(db, 'files', id, 'p', String(i))));
+    const b64 = (await Promise.all(ps)).map(x => x.data().v).join('');
+    const bin = atob(b64), u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([u8], { type: f.data().mime || 'application/pdf' }));
+    const w = window.open(url, '_blank');
+    if (!w) location.href = url;
+  } catch (e) { alert(e.message); }
+  if (btn) btn.textContent = old;
+}
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-file]'); if (b) { e.preventDefault(); openFile(b.dataset.file, b); } });
+const fileBtn = (id, label = 'Open PDF ↗') => `<button class="btn small" data-file="${H(id)}">${label}</button>`;
+
+// ---------------------------------------------------------------- login
+function showLogin() {
+  $('#app').innerHTML = `<div class="login"><h1>Shop Online</h1><p class="muted">Jameel Al Hindam · InvProject · Genix</p>
+  <form id="lf" class="card"><input id="lp" type="password" placeholder="Password" autocomplete="current-password" autofocus>
+  <div id="le" class="err" hidden style="margin-top:10px"></div><button class="btn" style="width:100%;margin-top:10px">Login</button></form></div>`;
+  $('#lf').onsubmit = async (e) => {
+    e.preventDefault();
+    try { await signInWithEmailAndPassword(auth, OWNER, $('#lp').value); }
+    catch (x) { const el = $('#le'); el.hidden = false; el.textContent = /invalid|wrong|credential/i.test(x.code || x.message) ? 'Password galat hai' : /too-many/i.test(x.code || '') ? 'Bahut galat password – thodi der baad koshish karein' : x.message; }
+  };
+}
+
+// ---------------------------------------------------------------- shell
+const ICON = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  jameel: '<path d="M9 3h6l4 5-3 2v11H8V10L5 8z"/>',
+  inv: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  genix: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+};
+const TABS = [['home', 'Home'], ['jameel', 'Jameel'], ['inv', 'InvProject'], ['genix', 'Genix'], ['more', 'More']];
+function shell(title) {
+  if (!$('nav')) {
+    $('#app').innerHTML = `<header><h1 id="ttl"></h1><button class="btn ghost small" id="back" hidden>‹ Back</button></header><main id="m"></main>
+    <nav>${TABS.map(([k, l]) => `<button data-t="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${ICON[k]}</svg>${l}</button>`).join('')}</nav>`;
+    document.querySelectorAll('nav button').forEach(b => b.onclick = () => { state.tab = b.dataset.t; history.replaceState(null, '', '#' + state.tab); render(); });
+  }
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t === state.tab));
+  $('#ttl').textContent = title;
+  $('#back').hidden = true;
+  return $('#m');
+}
+let detailStack = [];
+function openDetail(title, fn) {
+  detailStack.push({ tab: state.tab, y: scrollY });
+  const m = shell(title);
+  const b = $('#back'); b.hidden = false;
+  b.onclick = () => { const s = detailStack.pop(); state.tab = s.tab; render(s.y); };
+  m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
+  scrollTo(0, 0);
+  fn(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+}
+
+function render(y) {
+  detailStack = [];
+  const f = { home: homeView, jameel: jameelView, inv: invView, genix: genixView, more: moreView }[state.tab] || homeView;
+  f().then(() => { if (y) scrollTo(0, y); }).catch(e => { if (e.message !== 'login') $('#m').innerHTML = `<div class="err">${H(e.message)}</div>`; });
+}
+
+// ---------------------------------------------------------------- home
+async function homeView() {
+  const m = shell('Shop Online');
+  m.innerHTML = '<p class="muted"><span class="spin"></span></p>';
+  const s = await summary();
+  const ag = s.agent;
+  const agoMin = ag ? Math.round((new Date(s.now.replace(' ', 'T')) - new Date(ag.at.replace(' ', 'T'))) / 60000) : null;
+  const online = agoMin !== null && agoMin <= 3;
+  m.innerHTML = `
+  <div class="card row" style="justify-content:space-between"><div><b>Shop PC</b><div class="muted" style="font-size:13px">${ag ? 'Last contact ' + H(ag.at.slice(5, 16)) + (online ? '' : ` · ${agoMin} min ago`) : 'Never connected yet'}</div></div>
+  <span class="pill ${online ? 'ok' : 'warn'}">${online ? 'Online' : 'Offline'}</span></div>
+  ${s.pendingJobs ? `<div class="note">${s.pendingJobs} kaam shop PC ka intezaar kar rahe hain (More → Jobs)</div>` : ''}
+  <h2>Jameel · today ${H(s.today)}</h2>
+  <div class="grid">
+    <div class="stat"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
+    <div class="stat"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
+    <div class="stat"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
+    <div class="stat"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
+    <div class="stat"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
+    <div class="stat"><b>${money(s.genixToday.amt)}</b><span>Genix invoices today (${s.genixToday.n})</span></div>
+  </div>
+  <h2>Quick</h2>
+  <div class="row" style="flex-wrap:wrap">
+    <button class="btn" id="qn">+ New Genix invoice</button>
+    <button class="btn ghost" id="qo">+ New Jameel order</button>
+    <button class="btn ghost" id="qd">Deliveries due</button>
+  </div>
+  <h2>Data sync</h2>
+  <div class="card"><table><tr><th>Data</th><th class="n">Rows</th><th>Updated</th></tr>
+  ${s.meta.map(x => `<tr><td>${H(DSNAME[x.ds] || x.ds)}${x.err ? `<div class="err" style="margin:4px 0 0;font-size:12px">${H(x.err)}</div>` : ''}</td><td class="n">${x.n}</td><td class="muted">${H(String(x.at || '').slice(5, 16))}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Abhi koi data nahin aaya – shop PC par ShopSync chalaiye</td></tr>'}
+  </table></div>`;
+  $('#qn').onclick = () => newInvoice();
+  $('#qo').onclick = () => openOrderPage();
+  $('#qd').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'due'; render(); };
+}
+async function summary() {
+  const now = riyadh(), today = now.slice(0, 10);
+  const soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
+  const [jo, jp, gi, metas, ag, pj] = await Promise.all([
+    loadDs('j_orders').catch(() => ({ rows: [] })), loadDs('j_payments').catch(() => ({ rows: [] })), loadDs('g_invoices').catch(() => ({ rows: [] })),
+    getDocs(collection(db, 'ds')), getDoc(doc(db, 'sys', 'agent')), getDocs(query(collection(db, 'jobs'), where('st', '==', 'new'))),
+  ]);
+  const bk = jo.rows.filter(o => o.booking_date === today);
+  const pt = jp.rows.filter(p => p.date === today);
+  const un = jo.rows.filter(o => N(o.total) - N(o.paid) > 0.01);
+  const gt = gi.rows.filter(v => String(v.date || '').slice(0, 10) === today);
+  const meta = [];
+  metas.forEach(x => { const d = x.data(); meta.push({ ds: x.id, n: d.n || 0, err: d.err || '', at: d.at && d.at.toDate ? riyadh(d.at.toDate()) : '' }); });
+  const a = ag.exists() ? ag.data() : null;
+  return {
+    today, now,
+    booked: { n: bk.length, pcs: bk.reduce((s, o) => s + N(o.pcs), 0), amt: bk.reduce((s, o) => s + N(o.total), 0) },
+    paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
+    dueSoon: jo.rows.filter(o => N(o.open) === 1 && o.delivery_date && o.delivery_date <= soon).length,
+    unpaid: { n: un.length, due: un.reduce((s, o) => s + N(o.total) - N(o.paid), 0) },
+    genixToday: { n: gt.length, amt: gt.reduce((s, v) => s + N(v.tot_net), 0) },
+    meta, agent: a ? { at: a.at && a.at.toDate ? riyadh(a.at.toDate()) : '', pc: a.pc, ver: a.ver } : null, pendingJobs: pj.size,
+  };
+}
+const DSNAME = { j_orders: 'Jameel orders', j_customers: 'Jameel customers', j_payments: 'Jameel payments', j_lines: 'Jameel order lines', j_meas: 'Jameel measurements', j_alts: 'Jameel alterations', j_workers: 'Jameel workers', j_links: 'Jameel online links', i_orders: 'InvProject orders', i_customers: 'InvProject customers', i_fabrics: 'InvProject order fabrics', i_meas: 'InvProject measurements (D7)', g_invoices: 'Genix invoices', g_lines: 'Genix invoice lines', g_customers: 'Genix customers', g_items: 'Genix items', g_receipts: 'Genix receipts (سند قبض)' };
+
+// ---------------------------------------------------------------- generic searchable list
+async function listView(m, ds, item, opts = {}) {
+  const key = ds + (opts.key || '');
+  m.innerHTML = `<div class="row" style="margin-bottom:10px"><input id="q" type="search" placeholder="${H(opts.ph || 'Search name, mobile, number…')}" value="${H(state.q[key] || '')}"></div><div class="card list" id="L"><p class="muted"><span class="spin"></span></p></div><button class="btn ghost more" id="mo" hidden>More</button>`;
+  let off = 0, all = [];
+  const load = async (reset) => {
+    if (reset) { off = 0; all = []; }
+    const r = await rows(ds, { q: state.q[key], offset: off, limit: 40, f: opts.f, asc: opts.asc, sort: opts.sort });
+    all = all.concat(r.rows); off += r.rows.length;
+    const L = $('#L', m);
+    L.innerHTML = all.length ? all.map((x, i) => `<div class="it" data-i="${i}">${item(x)}</div>`).join('') : '<p class="muted center">Kuch nahin mila</p>';
+    L.querySelectorAll('.it').forEach(el => el.onclick = () => opts.open && opts.open(all[+el.dataset.i]));
+    $('#mo', m).hidden = off >= r.total;
+    $('#mo', m).textContent = `More (${r.total - off} aur)`;
+  };
+  let t;
+  $('#q', m).oninput = (e) => { clearTimeout(t); t = setTimeout(() => { state.q[key] = e.target.value.trim(); load(true).catch(x => $('#L', m).innerHTML = `<div class="err">${H(x.message)}</div>`); }, 300); };
+  $('#mo', m).onclick = () => load(false);
+  await load(true);
+}
+function subTabs(m, tab, list) {
+  const cur = state.sub[tab] || list[0][0];
+  const bar = document.createElement('div'); bar.className = 'tabs';
+  bar.innerHTML = list.map(([k, l]) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${l}</button>`).join('');
+  bar.querySelectorAll('button').forEach(b => b.onclick = () => { state.sub[tab] = b.dataset.k; render(); });
+  m.innerHTML = ''; m.appendChild(bar);
+  const body = document.createElement('div'); m.appendChild(body);
+  return [cur, body];
+}
+function kv(o, skip = []) {
+  return `<div class="kv">${Object.keys(o).filter(k => !skip.includes(k) && o[k] !== null && o[k] !== '' && o[k] !== undefined).map(k => `<div>${H(k)}</div><div class="ar">${H(o[k])}</div>`).join('')}</div>`;
+}
+
+// ---------------------------------------------------------------- JAMEEL
+function jStatus(o) {
+  const pcs = N(o.pcs), del = N(o.delivered_qty), ready = N(o.ready);
+  if (pcs && del >= pcs) return '<span class="pill ok">Delivered</span>';
+  if (ready) return '<span class="pill">Ready</span>';
+  const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  if (o.delivery_date && o.delivery_date < today) return '<span class="pill bad">Late</span>';
+  return '<span class="pill warn">In work</span>';
+}
+const jOrderItem = (o) => {
+  const due = N(o.total) - N(o.paid);
+  return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)} · ${N(o.pcs)} pcs</div></div>
+  <div class="r"><div>${money(o.total)}</div>${due > 0.01 ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
+};
+async function jameelView() {
+  const m = shell('Jameel Al Hindam');
+  const [cur, b] = subTabs(m, 'jameel', [['orders', 'Orders'], ['due', 'Delivery due'], ['unpaid', 'Unpaid'], ['customers', 'Customers'], ['payments', 'Payments'], ['alts', 'Alterations']]);
+  if (cur === 'orders') return listView(b, 'j_orders', jOrderItem, { open: jOrder });
+  if (cur === 'due') return listView(b, 'j_orders', jOrderItem, { open: jOrder, f: ['open:1'], asc: true, sort: 'delivery_date', key: 'due', ph: 'Orders not yet delivered (oldest delivery first)' });
+  if (cur === 'unpaid') return listView(b, 'j_orders', jOrderItem, { open: jOrder, f: ['unpaid:1'], key: 'unpaid', ph: 'Orders with balance due' });
+  if (cur === 'customers') return listView(b, 'j_customers', c => `<div class="no">${H(c.customer_no)}</div><div class="main"><div class="t ar">${H(c.name)}</div><div class="s">${H(c.mobile)}</div></div>`, { open: jCustomer });
+  if (cur === 'payments') return listView(b, 'j_payments', p => `<div class="no">${H(p.order_no)}</div><div class="main"><div class="t">${H(p.kind)} · ${H(p.method)}</div><div class="s">${H(p.date)} · ${H(p.created_by)}</div></div><div class="r">${money(p.amount)}</div>`, { open: p => jOrderByNo(p.order_no) });
+  if (cur === 'alts') return listView(b, 'j_alts', a => `<div class="no">${H(a.alt_no)}</div><div class="main"><div class="t ar">${H(a.customer_name)}</div><div class="s">${H(a.details)}</div></div><div class="r"><span class="pill">${H(a.status)}</span><div class="muted" style="font-size:12px">${H(a.ready_date)}</div></div>`, { open: a => openDetail('Alteration ' + a.alt_no, async (d) => d.innerHTML = `<div class="card">${kv(a)}</div>`) });
+}
+async function jOrderByNo(no) {
+  const r = await rows('j_orders', { f: ['order_no:' + no], limit: 1 });
+  if (r.rows[0]) jOrder(r.rows[0]);
+}
+function jOrder(o) {
+  openDetail('Order ' + o.order_no, async (m) => {
+    const [lines, pays, meas, inv] = await Promise.all([
+      rows('j_lines', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
+      rows('j_payments', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
+      rows('j_meas', { f: ['order_no:' + o.order_no], limit: 3 }),
+      rows('i_orders', { f: ['OrderId:' + o.order_no], limit: 1 }),
+    ]);
+    const due = N(o.total) - N(o.paid);
+    m.innerHTML = `
+    <div class="card"><div class="row" style="justify-content:space-between"><div><div class="ar" style="font-size:18px;font-weight:600">${H(o.customer_name)}</div>
+    <div class="muted">${H(o.mobile)} · customer ${H(o.customer_no)}</div></div>${jStatus(o)}</div>
+    <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(o.total)}</b><span>Total (VAT ${money(o.vat)})</span></div><div class="stat"><b>${money(o.paid)}</b><span>Paid</span></div>
+    <div class="stat"><b style="color:${due > 0.01 ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
+    <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.invoice_no ? `<button class="btn small" id="pdf">Invoice ${H(o.invoice_no)} PDF</button>` : ''}
+    ${o.mobile ? `<a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a>` : ''}</div>
+    <div id="pdfst"></div></div>
+    <h2>Details</h2><div class="card">${kv(o, ['customer_name', 'mobile', 'customer_no', 'paid', 'open', 'unpaid'])}</div>
+    <h2>Items</h2><div class="card">${lines.rows.length ? `<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>${lines.rows.map(l => `<tr><td class="ar">${H(l.item || l.code)}${l.fabric ? `<div class="muted">${H(l.fabric)}</div>` : ''}</td><td class="n">${H(l.qty)}</td><td class="n">${money(l.rate)}</td><td class="n">${money(l.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No lines</p>'}</div>
+    <h2>Payments</h2><div class="card">${pays.rows.length ? `<table><tr><th>Date</th><th>Kind</th><th>Method</th><th class="n">Amount</th></tr>${pays.rows.map(p => `<tr><td>${H(p.date)}</td><td>${H(p.kind)}</td><td>${H(p.method)}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No payments</p>'}</div>
+    ${meas.rows.length ? `<h2>Measurements</h2><div class="card">${measHtml(meas.rows[0])}</div>` : ''}
+    ${inv.rows.length ? `<h2>InvProject</h2><div class="card"><button class="btn ghost small" id="io">Open InvProject order ${H(o.order_no)}</button></div>` : ''}`;
+    if (o.invoice_no) $('#pdf', m).onclick = () => pdfJob(o.invoice_no, $('#pdfst', m));
+    if (inv.rows.length) $('#io', m).onclick = () => iOrder(inv.rows[0]);
+  });
+}
+function measHtml(x) {
+  let d = {};
+  try { d = typeof x.data === 'string' ? JSON.parse(x.data) : (x.data || {}); } catch (e) { }
+  const rest = Object.assign({}, x); delete rest.data;
+  const flat = Object.assign({}, rest, d);
+  return kv(flat, ['id', 'customer_no', 'order_no']);
+}
+const wa = (m) => { let d = String(m).replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); if (d.startsWith('0')) d = d.slice(1); if (!d.startsWith('966')) d = '966' + d; return d; };
+function jCustomer(c) {
+  openDetail('Customer ' + c.customer_no, async (m) => {
+    const o = await rows('j_orders', { f: ['customer_no:' + c.customer_no], limit: 50 });
+    m.innerHTML = `<div class="card"><div class="ar" style="font-size:18px;font-weight:600">${H(c.name)}</div>${kv(c, ['name'])}
+    ${c.mobile ? `<div class="row" style="margin-top:8px"><a class="btn ghost small" href="https://wa.me/${H(wa(c.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(c.mobile)}">Call</a></div>` : ''}</div>
+    <h2>Orders (${o.total})</h2><div class="card list" id="L">${o.rows.map((x, i) => `<div class="it" data-i="${i}">${jOrderItem(x)}</div>`).join('') || '<p class="muted">No orders</p>'}</div>`;
+    m.querySelectorAll('.it').forEach(el => el.onclick = () => jOrder(o.rows[+el.dataset.i]));
+  });
+}
+
+// ---------------------------------------------------------------- InvProject
+const iOrderItem = (o) => `<div class="no">${H(o.OrderId)}</div><div class="main"><div class="t ar">${H(o.CustomerNameAr)}</div><div class="s">${H(o.Mobile1)} · ${d10(o.OrderDate)} → ${d10(o.FinishDate)}</div></div>
+  <div class="r"><div>${money(o.NetTotal)}</div><div><span class="pill">${H(o.StatusDesc || '')}</span></div>${o.GenixInvNo ? `<div class="muted" style="font-size:12px">Genix ${H(o.GenixInvNo)}</div>` : ''}</div>`;
+async function invView() {
+  const m = shell('InvProject');
+  const [cur, b] = subTabs(m, 'inv', [['orders', 'Orders (أوامر التشغيل)'], ['customers', 'Customers']]);
+  if (cur === 'orders') return listView(b, 'i_orders', iOrderItem, { open: iOrder });
+  return listView(b, 'i_customers', c => `<div class="no">${H(c.CustomerID)}</div><div class="main"><div class="t ar">${H(c.CustomerNameAr)}</div><div class="s">${H(c.Mobile1)}</div></div>`, {
+    open: c => openDetail('Customer ' + c.CustomerID, async (m) => {
+      const o = await rows('i_orders', { f: ['CustomerID:' + c.CustomerID], limit: 50 });
+      m.innerHTML = `<div class="card">${kv(c)}</div><h2>Orders (${o.total})</h2><div class="card list">${o.rows.map((x, i) => `<div class="it" data-i="${i}">${iOrderItem(x)}</div>`).join('') || '<p class="muted">No orders</p>'}</div>`;
+      m.querySelectorAll('.it').forEach(el => el.onclick = () => iOrder(o.rows[+el.dataset.i]));
+    })
+  });
+}
+function iOrder(o) {
+  openDetail('InvProject order ' + o.OrderId, async (m) => {
+    const [fab, meas, j] = await Promise.all([
+      rows('i_fabrics', { f: ['OrderId:' + o.OrderId], asc: true, limit: 50 }),
+      rows('i_meas', { f: ['OrderId:' + o.OrderId], limit: 3 }),
+      rows('j_orders', { f: ['order_no:' + o.OrderId], limit: 1 }),
+    ]);
+    m.innerHTML = `<div class="card"><div class="ar" style="font-size:18px;font-weight:600">${H(o.CustomerNameAr)}</div><div class="muted">${H(o.Mobile1)}</div>
+    <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.GenixInvNo ? `<button class="btn small" id="pdf">Genix invoice ${H(o.GenixInvNo)} PDF</button>` : ''}${j.rows.length ? '<button class="btn ghost small" id="jo">Open in Jameel</button>' : ''}</div><div id="pdfst"></div></div>
+    <h2>Details</h2><div class="card">${kv(o, ['CustomerNameAr', 'Mobile1'])}</div>
+    <h2>Fabrics</h2><div class="card">${fab.rows.length ? `<table><tr><th>Fabric</th><th class="n">Thobes</th><th class="n">Price</th></tr>${fab.rows.map(f => `<tr><td class="ar">${H(f.name || f.TextId)}${N(f.Source) === 2 ? ' <span class="pill">own fabric</span>' : ''}</td><td class="n">${H(f.qty)}</td><td class="n">${f.Price != null ? money(f.Price) : '–'}</td></tr>`).join('')}</table>` : '<p class="muted">No fabrics</p>'}</div>
+    ${meas.rows.length ? `<h2>Measurements (D7)</h2><div class="card">${kv(meas.rows[0], ['OrderId', 'custid', 'k'])}</div>` : ''}`;
+    if (o.GenixInvNo) $('#pdf', m).onclick = () => pdfJob(o.GenixInvNo, $('#pdfst', m));
+    if (j.rows.length) $('#jo', m).onclick = () => jOrder(j.rows[0]);
+  });
+}
+
+// ---------------------------------------------------------------- Genix
+const gInvItem = (v) => `<div class="no">${H(v.id)}</div><div class="main"><div class="t ar">${H(v.name)}</div><div class="s">${H(String(v.date || '').slice(0, 10))} · ${N(v.inv_type) === 1 ? 'آجلة credit' : 'نقدية cash'}${v.mobile ? ' · ' + H(v.mobile) : ''}</div></div>
+  <div class="r"><div>${money(v.tot_net)}</div>${N(v.tot_net) - N(v.paid_all) > 0.01 ? `<div style="font-size:12px;color:var(--bad)">due ${money(N(v.tot_net) - N(v.paid_all))}</div>` : '<span class="pill ok">Paid</span>'}</div>`;
+async function genixView() {
+  const m = shell('Genix');
+  const [cur, b] = subTabs(m, 'genix', [['inv', 'Invoices'], ['rec', 'Receipts'], ['cust', 'Customers'], ['items', 'Items']]);
+  if (cur === 'inv') {
+    const top = document.createElement('div'); top.innerHTML = '<button class="btn" style="width:100%;margin-bottom:10px">+ New invoice (فاتورة جديدة)</button>';
+    top.firstChild.onclick = () => newInvoice(); b.before(top);
+    return listView(b, 'g_invoices', gInvItem, { open: gInvoice });
+  }
+  if (cur === 'rec') return listView(b, 'g_receipts', r => `<div class="no">${H(r.id)}</div><div class="main"><div class="t ar">${H(r.name || r.cust_id)}</div><div class="s">${H(String(r.date || '').slice(0, 10))}${r.inv_id ? ' · invoice ' + H(r.inv_id) : ''}</div></div><div class="r">${money(r.val)}<div class="muted" style="font-size:12px">${N(r.cash_part) ? 'cash ' + money(r.cash_part) : ''} ${N(r.network_part) ? 'network ' + money(r.network_part) : ''}</div></div>`,
+    { open: r => openDetail('Receipt ' + r.id, async d => d.innerHTML = `<div class="card">${kv(r)}</div>`) });
+  if (cur === 'cust') return listView(b, 'g_customers', c => `<div class="no">${H(c.id)}</div><div class="main"><div class="t ar">${H(c.name)}</div><div class="s">${H(c.mobile)}</div></div>`, {
+    open: c => openDetail('Genix customer ' + c.id, async (m) => {
+      const v = await rows('g_invoices', { f: ['cust_id:' + c.id], limit: 50 });
+      m.innerHTML = `<div class="card">${kv(c)}<button class="btn small" style="margin-top:10px" id="ni">+ New invoice for this customer</button></div><h2>Invoices (${v.total})</h2><div class="card list">${v.rows.map((x, i) => `<div class="it" data-i="${i}">${gInvItem(x)}</div>`).join('') || '<p class="muted">No invoices</p>'}</div>`;
+      m.querySelectorAll('.it').forEach(el => el.onclick = () => gInvoice(v.rows[+el.dataset.i]));
+      $('#ni', m).onclick = () => newInvoice(c);
+    })
+  });
+  return listView(b, 'g_items', i => `<div class="no">${H(i.barcode)}</div><div class="main"><div class="t ar">${H(i.symbol)}</div></div><div class="r">${money(i.sale_price)}</div>`, { open: i => openDetail('Item ' + i.id, async d => d.innerHTML = `<div class="card">${kv(i)}</div>`) });
+}
+function gInvoice(v) {
+  openDetail('Invoice ' + v.id, async (m) => {
+    const l = await rows('g_lines', { f: ['proc_id:' + v.proc_id], asc: true, limit: 60 });
+    m.innerHTML = `<div class="card"><div class="ar" style="font-size:18px;font-weight:600">${H(v.name)}</div><div class="muted">${H(v.mobile)} · ${H(String(v.date || '').slice(0, 16))}</div>
+    <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(v.tot_net)}</b><span>Net incl. VAT</span></div><div class="stat"><b>${money(v.paid_all)}</b><span>Paid</span></div><div class="stat"><b>${money(N(v.tot_net) - N(v.paid_all))}</b><span>Balance</span></div></div>
+    <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn small" id="p1">PDF (A4)</button><button class="btn ghost small" id="p5">PDF full tax invoice</button>${v.mobile ? `<a class="btn ghost small" href="https://wa.me/${H(wa(v.mobile))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}</div><div id="pdfst"></div></div>
+    <h2>Lines</h2><div class="card">${l.rows.length ? `<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Price</th><th class="n">VAT</th></tr>${l.rows.map(x => `<tr><td class="ar">${H(x.symbol || x.item)}</td><td class="n">${H(x.qty)}</td><td class="n">${money(x.price)}</td><td class="n">${money(x.taxval)}</td></tr>`).join('')}</table>` : '<p class="muted">–</p>'}</div>
+    <h2>Details</h2><div class="card">${kv(v, ['name', 'mobile'])}</div>`;
+    $('#p1', m).onclick = () => pdfJob(v.id, $('#pdfst', m), 1);
+    $('#p5', m).onclick = () => pdfJob(v.id, $('#pdfst', m), 5);
+  });
+}
+
+// PDF: the shop PC renders it with Genix's own report (GenixBridge pdf)
+async function pdfJob(no, el, type = 1) {
+  el.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC se PDF mangwa rahe hain…</p>';
+  try {
+    let j = await jobNew('pdf', { no: Number(no), type });
+    const t0 = Date.now();
+    while (j.status === 'new' || j.status === 'running') {
+      if (Date.now() - t0 > 90000) { el.innerHTML = '<div class="note">Shop PC abhi jawab nahin de raha (band hai?). PC on hone par PDF ban jayega – More → Jobs mein dekhein.</div>'; return; }
+      await new Promise(r => setTimeout(r, 2500));
+      j = await jobGet(j.id);
+    }
+    if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+    el.innerHTML = `<p>${fileBtn(j.result.file)}</p>`;
+  } catch (e) { el.innerHTML = `<div class="err">${H(e.message)}</div>`; }
+}
+
+// ---------------------------------------------------------------- new Genix invoice
+function suggest(input, box, ds, label, pick) {
+  let t;
+  input.oninput = () => {
+    clearTimeout(t);
+    const q = input.value.trim();
+    if (q.length < 1) { box.hidden = true; return; }
+    t = setTimeout(async () => {
+      const r = await rows(ds, { q, limit: 12 });
+      box.hidden = false;
+      box.innerHTML = r.rows.map((x, i) => `<div data-i="${i}" class="ar">${label(x)}</div>`).join('') || '<div class="muted">Kuch nahin mila</div>';
+      box.querySelectorAll('[data-i]').forEach(el => el.onclick = () => { box.hidden = true; pick(r.rows[+el.dataset.i]); });
+    }, 250);
+  };
+}
+function newInvoice(cust) {
+  const s = document.createElement('div'); s.className = 'sheet';
+  s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">New Genix invoice · فاتورة آجلة</h2><button class="x" id="cl">×</button></div>
+  <div class="note">Yeh asli tax invoice banega – shop PC par Genix mein, ZATCA ko report hoga. Shop PC on hona chahiye.</div>
+  <label class="muted">Customer</label><input id="cq" placeholder="Name ya mobile likhiye"><div class="sug" id="cs" hidden></div><div id="cv" style="margin:6px 0 12px"></div>
+  <label class="muted">Items (price VAT ke saath)</label><div id="ls"></div>
+  <input id="iq" placeholder="+ Item add: naam ya barcode"><div class="sug" id="is" hidden></div>
+  <div class="row" style="margin-top:12px"><div style="flex:1"><label class="muted">Cash paid</label><input id="ca" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div style="flex:1"><label class="muted">Network (مصرف الانماء)</label><input id="ne" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div></div>
+  <label class="muted" style="display:block;margin-top:8px">Notes</label><input id="no" maxlength="200">
+  <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><span>Total incl. VAT</span><b id="tt">0</b></div><div class="row muted" style="justify-content:space-between"><span>Balance (آجل)</span><span id="bl">0</span></div></div>
+  <div id="er"></div><button class="btn" id="go" style="width:100%">Create invoice</button><div id="rs"></div></div>`;
+  document.body.appendChild(s);
+  const st = { cust: null, lines: [] };
+  const close = () => s.remove();
+  $('#cl', s).onclick = close;
+  const setCust = (c) => { st.cust = c; $('#cq', s).value = ''; $('#cv', s).innerHTML = c ? `<span class="pill">${H(c.id)}</span> <b class="ar">${H(c.name)}</b> <span class="muted">${H(c.mobile)}</span>` : ''; };
+  if (cust) setCust(cust);
+  suggest($('#cq', s), $('#cs', s), 'g_customers', c => `${H(c.name)} <span class="muted">${H(c.mobile)} · ${H(c.id)}</span>`, setCust);
+  const draw = () => {
+    $('#ls', s).innerHTML = st.lines.map((l, i) => `<div class="line"><div class="ar" style="font-size:14px">${H(l.name)}<div class="muted" style="font-size:12px">${H(l.barcode)}</div></div>
+      <input type="number" min="0" step="1" inputmode="decimal" value="${l.qty}" data-i="${i}" data-f="qty" title="Qty"><input type="number" min="0" step="0.01" inputmode="decimal" value="${l.price}" data-i="${i}" data-f="price" title="Price incl. VAT"><button class="x" data-del="${i}">×</button></div>`).join('');
+    $('#ls', s).querySelectorAll('input').forEach(el => el.oninput = () => { st.lines[+el.dataset.i][el.dataset.f] = el.value; sum(); });
+    $('#ls', s).querySelectorAll('[data-del]').forEach(el => el.onclick = () => { st.lines.splice(+el.dataset.del, 1); draw(); });
+    sum();
+  };
+  const total = () => st.lines.reduce((a, l) => a + Math.round(N(l.qty) * N(l.price) * 100) / 100, 0);
+  const sum = () => { const t = total(); $('#tt', s).textContent = money(t); $('#bl', s).textContent = money(t - N($('#ca', s).value) - N($('#ne', s).value)); };
+  $('#ca', s).oninput = sum; $('#ne', s).oninput = sum;
+  suggest($('#iq', s), $('#is', s), 'g_items', i => `${H(i.symbol)} <span class="muted">${H(i.barcode)} · ${money(i.sale_price)}</span>`, i => {
+    $('#iq', s).value = '';
+    st.lines.push({ item: i.id, unit: i.unit, name: i.symbol, barcode: i.barcode, qty: 1, price: N(i.sale_price) || '' }); draw();
+  });
+  $('#go', s).onclick = async () => {
+    const er = $('#er', s); er.innerHTML = '';
+    const lines = st.lines.map(l => ({ item: l.item, unit: l.unit, name: l.name, qty: N(l.qty), total: Math.round(N(l.qty) * N(l.price) * 100) / 100 }));
+    if (!st.cust) { er.innerHTML = '<div class="err">Customer chuniye</div>'; return; }
+    if (!lines.length || lines.some(l => !(l.qty > 0) || !(l.total > 0))) { er.innerHTML = '<div class="err">Har item ki qty aur price likhiye</div>'; return; }
+    if (!confirm(`Invoice banayein?\n${st.cust.name}\nTotal ${money(total())} SAR (VAT ke saath)\n\nYeh ZATCA ko report hoga.`)) return;
+    const go = $('#go', s); go.disabled = true;
+    const rs = $('#rs', s);
+    try {
+      let j = await jobNew('invoice', { cust: N(st.cust.id), custName: String(st.cust.name || ''), lines, cash: N($('#ca', s).value), network: N($('#ne', s).value), notes: $('#no', s).value });
+      rs.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC par invoice ban raha hai…</p>';
+      const t0 = Date.now();
+      while (j.status === 'new' || j.status === 'running') {
+        if (Date.now() - t0 > 120000) { rs.innerHTML = `<div class="note">Request #${j.id} save hai. Shop PC abhi jawab nahin de raha – PC on hote hi (12 ghante ke andar) invoice ban jayega. More → Jobs mein status dekhein.</div>`; return; }
+        await new Promise(r => setTimeout(r, 3000));
+        j = await jobGet(j.id);
+      }
+      if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+      rs.innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>Invoice ${H(j.result.no)} ban gaya ✓</b>${j.result.receipt > 0 ? `<div>Receipt (سند قبض) ${H(j.result.receipt)}</div>` : ''}
+      ${j.result.file ? `<p>${fileBtn(j.result.file)}</p>` : ''}</div>`;
+      go.hidden = true;
+    } catch (e) { go.disabled = false; rs.innerHTML = `<div class="err">${H(e.message)}</div>`; }
+  };
+  draw();
+}
+
+// ---------------------------------------------------------------- Jameel online links (Apps Script pages on our domain)
+async function links() {
+  const r = await rows('j_links', { limit: 5 });
+  return r.rows[0] || {};
+}
+async function openOrderPage() {
+  const l = await links();
+  if (!l.OnlineOrderKey) return alert('Online order page ki key abhi sync nahin hui');
+  window.open('/exec?o=' + l.OnlineOrderKey, '_blank');
+}
+
+// ---------------------------------------------------------------- more
+async function moreView() {
+  const m = shell('More');
+  const [cur, b] = subTabs(m, 'more', [['links', 'Online links'], ['jobs', 'Jobs'], ['settings', 'Settings']]);
+  if (cur === 'links') {
+    const [l, w] = await Promise.all([links(), rows('j_workers', { limit: 100, asc: true })]);
+    const base = 'https://saudithobe.best';
+    const row = (title, sub, url) => `<div class="linkrow"><div class="main"><b>${H(title)}</b> <span class="muted">${H(sub)}</span><br><code>${H(url)}</code></div>
+      <button class="btn ghost small" data-copy="${H(url)}">Copy</button><a class="btn ghost small" href="${H(url)}" target="_blank" rel="noopener">Open</a></div>`;
+    b.innerHTML = `<p class="muted">Yeh JAMEEL ke online pages hain – ab apne domain par. Link secret hai: sirf usi ko bhejiye jiska hai.</p>
+    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد', base + '/exec?o=' + l.OnlineOrderKey) : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/exec?a=' + l.OnlineAdminKey) : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>
+    <h2>Workers – work entry links</h2><div class="card">${w.rows.filter(x => x.web_token && N(x.active)).map(x => row(x.name, x.role, base + '/exec?t=' + x.web_token)).join('') || '<p class="muted">No workers with a link</p>'}</div>`;
+    b.querySelectorAll('[data-copy]').forEach(el => el.onclick = async () => { try { await navigator.clipboard.writeText(el.dataset.copy); el.textContent = 'Copied ✓'; } catch (e) { prompt('Copy:', el.dataset.copy); } });
+    return;
+  }
+  if (cur === 'jobs') {
+    const js = await getDocs(query(collection(db, 'jobs'), orderBy('ts', 'desc'), limit(100)));
+    const j = { rows: [] };
+    js.forEach(x => { const d = x.data(); j.rows.push({ id: x.id.slice(0, 5), kind: d.kind, status: d.st, data: d, result: d, created: d.ts && d.ts.toDate ? riyadh(d.ts.toDate()) : '' }); });
+    const pill = (s) => `<span class="pill ${s === 'done' ? 'ok' : s === 'error' || s === 'cancelled' ? 'bad' : 'warn'}">${H(s)}</span>`;
+    b.innerHTML = `<div class="card">${j.rows.length ? `<table><tr><th>#</th><th>Kaam</th><th>Status</th><th>Time</th></tr>${j.rows.map(x => `<tr><td>${x.id}</td><td>${x.kind === 'invoice' ? `Invoice · <span class="ar">${H(x.data.custName)}</span> · ${money(x.data.lines.reduce((a, l) => a + l.total, 0))}` : x.kind === 'pdf' ? 'PDF ' + H(x.data.no) : H(x.kind)}
+      ${x.result && x.result.no ? `<div class="muted">→ invoice ${H(x.result.no)}</div>` : ''}${x.result && x.result.file ? ' ' + fileBtn(x.result.file, 'PDF') : ''}${x.result && x.result.error ? `<div style="color:var(--bad);font-size:13px">${H(x.result.error)}</div>` : ''}</td>
+      <td>${pill(x.status)}</td><td class="muted" style="font-size:12px">${H(x.created.slice(5, 16))}</td></tr>`).join('')}</table>` : '<p class="muted">Abhi koi kaam nahin</p>'}</div>`;
+    return;
+  }
+  b.innerHTML = `<div class="card"><b>Password badlein</b><form id="pf" style="margin-top:8px"><input id="p0" type="password" placeholder="Purana password" autocomplete="current-password" style="margin-bottom:6px">
+  <input id="p1" type="password" placeholder="Naya password (8+)" autocomplete="new-password" style="margin-bottom:6px"><div id="pe"></div><button class="btn">Save</button></form></div>
+  <div class="card"><button class="btn ghost" id="lo">Logout</button></div>`;
+  $('#pf', b).onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if ($('#p1', b).value.length < 8) throw new Error('Naya password kam se kam 8 akshar');
+      await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(OWNER, $('#p0', b).value));
+      await updatePassword(auth.currentUser, $('#p1', b).value);
+      alert('Password badal gaya');
+    }
+    catch (x) { if (x.message !== 'login') $('#pe', b).innerHTML = `<div class="err">${H(x.message)}</div>`; }
+  };
+  $('#lo', b).onclick = async () => { await signOut(auth); };
+}
+
+function start() {
+  state.tab = (location.hash || '#home').slice(1);
+  if (!TABS.some(t => t[0] === state.tab)) state.tab = 'home';
+  $('#app').innerHTML = '';
+  render();
+}
+let started = false;
+onAuthStateChanged(auth, (u) => {
+  if (u && u.email === OWNER) { if (!started) { started = true; start(); } }
+  else { started = false; showLogin(); }
+});
+</script>
+</body>
+</html>
