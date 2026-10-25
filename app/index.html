@@ -211,6 +211,8 @@ async function homeView() {
     <div class="stat"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
     <div class="stat"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
     <div class="stat"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
+    <div class="stat"><b>${money(s.dueRecv.amt)}</b><span>Due received today – purane orders (${s.dueRecv.n})</span></div>
+    <div class="stat"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – aaj ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
     <div class="stat"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
     <div class="stat"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
     <div class="stat"><b>${money(s.genixToday.amt)}</b><span>Genix invoices today (${s.genixToday.n})</span></div>
@@ -247,6 +249,7 @@ async function summary() {
     today, now,
     booked: { n: bk.length, pcs: bk.reduce((s, o) => s + N(o.pcs), 0), amt: bk.reduce((s, o) => s + N(o.total), 0) },
     paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
+    dueRecv: (() => { const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || ''); const d = pt.filter(p => (bd[p.order_no] || today) < today); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
     dueSoon: jo.rows.filter(o => N(o.open) === 1 && o.delivery_date && o.delivery_date <= soon).length,
     unpaid: { n: un.length, due: un.reduce((s, o) => s + N(o.total) - N(o.paid), 0) },
     genixToday: { n: gt.length, amt: gt.reduce((s, v) => s + N(v.tot_net), 0) },
