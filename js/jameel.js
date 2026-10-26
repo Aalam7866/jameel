@@ -23,7 +23,9 @@ async function worker(token) {
 }
 export async function pageVars(token) {
   const w = await worker(token);
-  return { ok: !!w, token: w ? token : '', name: w ? w.name : '', kind: w ? w.kind : '', needPin: !!(w && w.pin),
+  const kinds = w ? w.kind.split(',').filter(Boolean) : [];
+  return { ok: !!w, token: w ? token : '', name: w ? w.name : '', kind: w ? kinds[0] : '',
+           kinds, needPin: !!(w && w.pin),
            photo: w && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(w.photo || '') ? w.photo : '' };
 }
 
@@ -69,18 +71,24 @@ function cutAvail(o, od, cutPending, stitchPending) {
   return Math.max(0, cut - stitched);
 }
 
-async function orderInfo(token, order) {
+function activeKindOf(w, ak) {
+  const kinds = w.kind.split(',');
+  return ak && kinds.includes(ak) ? ak : kinds[0];
+}
+
+async function orderInfo(token, order, ak) {
   const w = await worker(token), o = orderKey(order);
   if (!w || !o) return null;
+  const kind = activeKindOf(w, ak);
   const sp = await space(w);
   const od = sp.orders[o];
-  if (!od || !(od.total[w.kind] > 0)) return { order: o, found: false };
-  const mine = pending(sp, w.kind);
-  const left = Math.max(0, od[w.kind] - (mine[o] || 0));
+  if (!od || !(od.total[kind] > 0)) return { order: o, found: false };
+  const mine = pending(sp, kind);
+  const left = Math.max(0, od[kind] - (mine[o] || 0));
   return {
-    order: o, found: true, total: od.total[w.kind], left,
-    cutAvail: w.kind === 'STITCH' ? cutAvail(o, od, pending(sp, 'CUT'), mine) : left,
-    fit: fitChoice(w.kind, o, od, pendingFit(sp, 'CUT'), pendingFit(sp, w.kind)),
+    order: o, found: true, total: od.total[kind], left,
+    cutAvail: kind === 'STITCH' ? cutAvail(o, od, pending(sp, 'CUT'), mine) : left,
+    fit: fitChoice(kind, o, od, pendingFit(sp, 'CUT'), pendingFit(sp, kind)),
   };
 }
 
@@ -93,13 +101,14 @@ async function today(w) {
 }
 async function myToday(token) { const w = await worker(token); return w ? today(w) : []; }
 
-async function waiting(token) {
+async function waiting(token, ak) {
   const w = await worker(token);
   if (!w) return [];
-  const sp = await space(w), p = pending(sp, w.kind), out = [];
+  const kind = activeKindOf(w, ak);
+  const sp = await space(w), p = pending(sp, kind), out = [];
   for (const o of Object.keys(sp.orders)) {
-    const od = sp.orders[o], left = (od[w.kind] || 0) - (p[o] || 0);
-    if (od.total[w.kind] > 0 && left > 0) out.push({ order: Number(o), left, total: od.total[w.kind] });
+    const od = sp.orders[o], left = (od[kind] || 0) - (p[o] || 0);
+    if (od.total[kind] > 0 && left > 0) out.push({ order: Number(o), left, total: od.total[kind] });
   }
   out.sort((a, b) => a.order - b.order);
   return out.slice(0, 500);
@@ -111,12 +120,13 @@ async function myStats(token) {
   return J(w.stats, null) || { months: [], work: [], alts: [] };
 }
 
-async function submit(token, rows, pin) {
+async function submit(token, rows, pin, ak) {
   const w = await worker(String(token || '').trim());
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  const kind = activeKindOf(w, ak);
   const sp = await space(w);
-  const orders = sp.orders, pend = pending(sp, w.kind), cutPend = pending(sp, 'CUT');
-  const fitCutPend = pendingFit(sp, 'CUT'), myFitPend = pendingFit(sp, w.kind);
+  const orders = sp.orders, pend = pending(sp, kind), cutPend = pending(sp, 'CUT');
+  const fitCutPend = pendingFit(sp, 'CUT'), myFitPend = pendingFit(sp, kind);
   const clean = [], errors = [], want = {}, fits = {};
   (rows || []).forEach(r => {
     const o = orderKey(r.order);
@@ -134,15 +144,15 @@ async function submit(token, rows, pin) {
   if (!clean.length && !errors.length) return { ok: false, msg: 'اكتب رقم طلب واحد على الأقل – Enter at least one order number' };
   for (const o of Object.keys(want)) {
     const od = orders[o];
-    if (!od || !(od.total[w.kind] > 0)) { errors.push('طلب ' + o + ': غير موجود أو مكتمل – not found / finished'); continue; }
-    const left = od[w.kind] - (pend[o] || 0);
+    if (!od || !(od.total[kind] > 0)) { errors.push('طلب ' + o + ': غير موجود أو مكتمل – not found / finished'); continue; }
+    const left = od[kind] - (pend[o] || 0);
     if (want[o] > left) errors.push('طلب ' + o + ': المتبقي ' + Math.max(0, left) + ' فقط – only ' + Math.max(0, left) + ' pcs left');
-    else if (w.kind === 'STITCH') {
+    else if (kind === 'STITCH') {
       const avail = cutAvail(o, od, cutPend, pend);
       if (want[o] > avail) errors.push('طلب ' + o + ': المقصوص ' + avail + ' فقط – only ' + avail + ' pcs cut');
     }
     if (fits[o]) {
-      const c = fitChoice(w.kind, o, od, fitCutPend, myFitPend);
+      const c = fitChoice(kind, o, od, fitCutPend, myFitPend);
       if (c === 'waitcut') errors.push('طلب ' + o + ': البروفة لم تُقص بعد – fitting piece not cut yet');
       else if (c !== 'cut' && c !== 'done') errors.push('طلب ' + o + ': لا توجد بروفة أو تمت – no fitting piece / already done');
     }
@@ -151,7 +161,7 @@ async function submit(token, rows, pin) {
   const ph = w.pin ? await sha256('tspin:' + w.emp + ':' + String(pin || '').trim()) : null;
   const b = writeBatch(db), d = workDay();
   for (const c of clean) {
-    const e = { emp: w.emp, name: w.name, kind: w.kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
+    const e = { emp: w.emp, name: w.name, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
     if (ph) e.ph = ph;
     b.set(doc(collection(db, 'wk', w.token, 'e')), e);
   }
@@ -403,9 +413,12 @@ async function aAddWorker(key, pin, w) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   const name = String((w && w.name) || '').trim().slice(0, 40);
-  const kind = String((w && w.kind) || '').trim();
+  const VALID = ['CUT','STITCH','HINGE','MEASURE','EMBROIDERY'];
+  // accept comma-separated kinds (e.g. "HINGE,EMBROIDERY") or single kind
+  const kinds = String((w && w.kind) || '').split(',').map(k => k.trim()).filter(Boolean);
   if (!name) return { ok: false, msg: 'اكتب اسم العامل – enter worker name' };
-  if (!['CUT','STITCH','HINGE','MEASURE','EMBROIDERY'].includes(kind)) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
+  if (!kinds.length || !kinds.every(k => VALID.includes(k))) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
+  const kind = kinds.join(',');
   // generate 32-char hex token
   const buf = new Uint8Array(16);
   crypto.getRandomValues(buf);
@@ -418,7 +431,9 @@ async function aAddWorker(key, pin, w) {
   const list = J(s.exists() && s.data().v, []);
   list.push({ token, name, kind, active: true });
   await setDoc(ref, { v: JSON.stringify(list) });
-  return { ok: true, token, msg: 'تمت الإضافة ✔ Worker added' };
+  // return updated list so UI can refresh
+  const updated = list.filter(x => x.active !== false);
+  return { ok: true, token, list: updated, msg: 'تمت الإضافة ✔ Worker added' };
 }
 async function aDelWorker(key, pin, token) {
   const r = await root('ak', key, pin);
@@ -432,7 +447,8 @@ async function aDelWorker(key, pin, token) {
   if (idx < 0) return { ok: false, msg: 'العامل غير موجود – worker not found' };
   list[idx].active = false;
   await setDoc(ref, { v: JSON.stringify(list) });
-  return { ok: true, msg: 'تم الحذف ✔ Worker removed' };
+  const updated = list.filter(x => x.active !== false);
+  return { ok: true, list: updated, msg: 'تم الحذف ✔ Worker removed' };
 }
 
 // ================================================================ admin: work rates (?a=KEY)

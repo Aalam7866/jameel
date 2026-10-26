@@ -131,14 +131,14 @@
         <div class="wadd">
           <h3>➕ إضافة عامل / Add worker</h3>
           <input id="wName" placeholder="اسم العامل / Worker name">
-          <select id="wKind">
-            <option value="">نوع العمل / Work type</option>
-            <option value="CUT">✂️ قص / Cutting</option>
-            <option value="STITCH">🧵 خياطة / Stitching</option>
-            <option value="HINGE">🔘 زرار / Hinge</option>
-            <option value="MEASURE">📏 مقاس / Measuring</option>
-            <option value="EMBROIDERY">🪡 تطريز / Embroidery</option>
-          </select>
+          <div style="margin:8px 0 4px;font-weight:bold;font-size:15px;color:#0e6b5c">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
+          <div id="wKinds" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="CUT" style="width:18px;height:18px;accent-color:#0e6b5c"> ✂️ قص</label>
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="STITCH" style="width:18px;height:18px;accent-color:#0e6b5c"> 🧵 خياطة</label>
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="HINGE" style="width:18px;height:18px;accent-color:#0e6b5c"> 🔘 زرار</label>
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="MEASURE" style="width:18px;height:18px;accent-color:#0e6b5c"> 📏 مقاس</label>
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="EMBROIDERY" style="width:18px;height:18px;accent-color:#0e6b5c"> 🪡 تطريز</label>
+          </div>
           <button class="go wide" onclick="addWorker()">إضافة / Add</button>
           <div id="wMsg"></div>
         </div>
@@ -495,11 +495,14 @@
         $('wList').innerHTML = '<div class="muted">خطأ – ' + esc(e && e.message || e) + '</div>';
       }).aWorkers(KEY, PIN);
     }
+    function kindLabel(k) {
+      return k.split(',').map(function (x) { return WKINDS[x] || x; }).join(' · ');
+    }
     function renderWorkers(list) {
       if (!list.length) { $('wList').innerHTML = '<div class="muted">لا يوجد عمال – no workers added yet</div>'; return; }
       var base = location.origin + '/exec?t=';
       $('wList').innerHTML = list.filter(function (w) { return w.active !== false; }).map(function (w) {
-        return '<div class="wcard"><div class="winfo"><b>' + esc(w.name) + '</b> <span class="wkind">' + (WKINDS[w.kind] || w.kind) + '</span>' +
+        return '<div class="wcard"><div class="winfo"><b>' + esc(w.name) + '</b> <span class="wkind">' + kindLabel(w.kind) + '</span>' +
                '<div class="wlink" onclick="copyLink(this)" title="انسخ الرابط – Copy link">' + esc(base + w.token) + '</div></div>' +
                '<button class="sec" style="font-size:13px;padding:6px 10px" onclick="delWorker(\'' + esc(w.token) + '\')">حذف</button></div>';
       }).join('');
@@ -509,15 +512,20 @@
       catch (x) { prompt('انسخ الرابط / Copy link:', el.textContent); }
     }
     function addWorker() {
-      var name = $('wName').value.trim(), kind = $('wKind').value;
+      var name = $('wName').value.trim();
+      var checks = $('wKinds').querySelectorAll('input[type=checkbox]:checked');
+      var kinds = []; checks.forEach(function (c) { kinds.push(c.value); });
+      var kind = kinds.join(',');
       if (!name) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اكتب اسم العامل – enter name</div>'; return; }
       if (!kind) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر نوع العمل – choose work type</div>'; return; }
       $('wMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الإضافة…</div>';
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.ok) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
         $('wMsg').innerHTML = '<div class="rate-ok" style="margin-top:8px">تمت الإضافة ✔ – Worker added</div>';
-        $('wName').value = ''; $('wKind').value = '';
-        renderWorkers(r.list);
+        $('wName').value = '';
+        $('wKinds').querySelectorAll('input[type=checkbox]').forEach(function (c) { c.checked = false; });
+        if (r.list) renderWorkers(r.list);
+        else loadWorkers();
         setTimeout(function () { $('wMsg').innerHTML = ''; }, 4000);
       }).withFailureHandler(function (e) {
         $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">خطأ – ' + esc(e && e.message || e) + '</div>';

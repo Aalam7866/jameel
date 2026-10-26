@@ -134,7 +134,7 @@
     <? if (photo) { ?><img class="header-photo" src="<?!= photo ?>" alt=""><? } else { ?><div class="header-photo-placeholder"><?= name.charAt(0) ?></div><? } ?>
     <div>
       <div class="header-name"><?= name ?></div>
-      <div class="header-role"><b><?= kind === 'CUT' ? 'قص – Cutting' : kind === 'HINGE' ? 'زرار – Hinge' : kind === 'MEASURE' ? 'مقاس – Measure' : kind === 'ARRIVE' ? 'الورشة – Workshop' : kind === 'EMBROIDERY' ? 'تطريز – Embroidery' : 'خياطة – Stitching' ?></b> · جميل الهندام</div>
+      <div class="header-role"><b><?!= kinds.map(function(k){ return k === 'CUT' ? 'قص' : k === 'HINGE' ? 'زرار' : k === 'MEASURE' ? 'مقاس' : k === 'ARRIVE' ? 'الورشة' : k === 'EMBROIDERY' ? 'تطريز' : 'خياطة'; }).join(' · ') ?></b> · جميل الهندام</div>
     </div>
   </div>
 </div>
@@ -149,6 +149,12 @@
   <div class="tab" data-panel="pending" onclick="switchTab(this)">⏳ بانتظار</div>
   <? } ?>
 </div>
+
+<? if (kinds.length > 1) { ?>
+<div class="filter-pills" id="kindPills">
+<?!= kinds.map(function(k,i){ var lbl = k === 'CUT' ? '✂️ قص' : k === 'HINGE' ? '🔘 زرار' : k === 'MEASURE' ? '📏 مقاس' : k === 'ARRIVE' ? '📦 ورشة' : k === 'EMBROIDERY' ? '🪡 تطريز' : '🧵 خياطة'; return '<div class="pill'+(i===0?' active':'')+'" data-kind="'+k+'" onclick="switchKind(this)">'+lbl+'</div>'; }).join('') ?>
+</div>
+<? } ?>
 
 <div class="content">
   <!-- STAT TILES (always visible) -->
@@ -205,9 +211,19 @@
 
 <script>
   var TOKEN = <?= token ?>;
-  var IS_ARRIVE = <?= kind === 'ARRIVE' ?>;
-  var KIND = <?= kind ?>;
+  var KINDS = <?= kinds ?>;
+  var KIND = KINDS[0];
+  var IS_ARRIVE = KIND === 'ARRIVE';
   var STATS = null;
+
+  /* ─── KIND PILLS ─── */
+  function switchKind(el){
+    document.querySelectorAll('#kindPills .pill').forEach(function(p){ p.classList.remove('active'); });
+    el.classList.add('active');
+    KIND = el.getAttribute('data-kind');
+    IS_ARRIVE = KIND === 'ARRIVE';
+    loadWaiting();
+  }
 
   /* ─── TABS ─── */
   function switchTab(el) {
@@ -243,7 +259,7 @@
     lookup(d);
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function loadWaiting(){ if(IS_ARRIVE) google.script.run.withSuccessHandler(showWaiting).waiting(TOKEN); }
+  function loadWaiting(){ if(IS_ARRIVE) google.script.run.withSuccessHandler(showWaiting).waiting(TOKEN, KIND); }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return '&#'+c.charCodeAt(0)+';'; }); }
 
   /* ─── FORM ROWS ─── */
@@ -278,7 +294,7 @@
       }
       if(KIND==='STITCH'&&r.cutAvail<=0) d.querySelector('.q').value='0';
       check(d);
-    }).withFailureHandler(function(){ info.textContent=''; }).orderInfo(TOKEN,no);
+    }).withFailureHandler(function(){ info.textContent=''; }).orderInfo(TOKEN,no,KIND);
   }
 
   function check(d){
@@ -426,7 +442,7 @@
         go.disabled=false; msg.className='err';
         msg.textContent='لا يوجد اتصال – No connection, try again';
       })
-      .submit(TOKEN, rows, pinEl?pinEl.value:'');
+      .submit(TOKEN, rows, pinEl?pinEl.value:'', KIND);
   }
 
   /* ─── PWA INSTALL ─── */
