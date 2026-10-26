@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>…</title>
 <link rel="icon" href="/favicon.svg">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1f3a34">
+<meta name="theme-color" content="#0e6b5c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/img/icon-192.png">
@@ -40,12 +39,19 @@ const P = new URLSearchParams(location.search);
 let tpl, vars, title;
 try {
   if (P.get('o')) { tpl = 'Order'; vars = await orderVars(P.get('o')); title = 'طلب جديد – New order'; }
-  else if (P.get('a')) { tpl = 'Admin'; vars = await adminVars(P.get('a')); title = 'تنبيهات – Alerts'; }
+  else if (P.get('a')) { tpl = 'Admin'; vars = await adminVars(P.get('a')); title = 'إدارة – Admin'; }
   else { tpl = 'Page'; vars = await pageVars(P.get('t')); title = 'Work entry'; }
+  // PWA: set manifest with current URL as start_url so each page installs as its own app
+  const mani = { name: 'جميل الهندام – ' + title, short_name: tpl === 'Admin' ? 'Jameel Admin' : tpl === 'Order' ? 'Jameel Order' : 'Jameel',
+    start_url: location.pathname + location.search, scope: '/', display: 'standalone',
+    background_color: '#eef5f3', theme_color: '#0e6b5c', orientation: 'portrait',
+    icons: [{ src: '/img/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: '/img/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
+  const mLink = '<link rel="manifest" href="' + URL.createObjectURL(new Blob([JSON.stringify(mani)], { type: 'application/json' })) + '">';
   const src = await (await fetch('/tpl/' + tpl + '.html?v=3', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
   const html = render(src, vars)
-    .replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(title) + '</title><link rel="icon" href="/favicon.svg">' + SHIM);
+    .replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(title) + '</title><link rel="icon" href="/favicon.svg">' + mLink + SHIM);
   document.open(); document.write(html); document.close();
 } catch (e) {
   console.error(e);
