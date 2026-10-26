@@ -1,14 +1,15 @@
 {
   "name": "جميل الهندام – Jameel Al Hindam",
   "short_name": "Jameel",
-  "description": "Worker entry system – نظام إدخال العمال",
-  "start_url": "/exec",
+  "description": "Shop management – إدارة المحل",
+  "start_url": "/app/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f1e3",
-  "theme_color": "#1f3a34",
+  "background_color": "#eef5f3",
+  "theme_color": "#0e6b5c",
   "orientation": "portrait",
   "icons": [
-    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

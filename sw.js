@@ -1,6 +1,7 @@
 // Jameel Al Hindam – Service Worker (cache-first for static, network-first for API/data)
-const CACHE = 'jameel-v1';
-const STATIC = ['/', '/exec', '/exec.html', '/favicon.svg', '/img/icon-192.png', '/img/icon-512.png',
+const CACHE = 'jameel-v3';
+const STATIC = ['/', '/exec', '/exec.html', '/app/', '/app/index.html',
+                '/favicon.svg', '/img/icon-192.png', '/img/icon-512.png',
                 '/js/fb.js', '/js/config.js', '/js/jameel.js',
                 '/tpl/Page.html', '/tpl/Order.html', '/tpl/Admin.html'];
 

@@ -17,7 +17,7 @@
 <script type="module">
 // JAMEEL AL HINDAM online pages:  /exec?t=TOKEN (worker)  /exec?o=KEY (new order)  /exec?a=KEY (alerts)
 // The same Page/Order/Admin pages as before; their google.script.run calls now go to Firebase (js/jameel.js).
-import { SERVER, pageVars, orderVars, adminVars } from './js/jameel.js?v=2';
+import { SERVER, pageVars, orderVars, adminVars } from './js/jameel.js?v=3';
 
 // google.script.run → Firebase
 const SHIM = `<script>(function () {
@@ -42,7 +42,7 @@ try {
   if (P.get('o')) { tpl = 'Order'; vars = await orderVars(P.get('o')); title = 'طلب جديد – New order'; }
   else if (P.get('a')) { tpl = 'Admin'; vars = await adminVars(P.get('a')); title = 'تنبيهات – Alerts'; }
   else { tpl = 'Page'; vars = await pageVars(P.get('t')); title = 'Work entry'; }
-  const src = await (await fetch('/tpl/' + tpl + '.html?v=1', { cache: 'no-cache' })).text();
+  const src = await (await fetch('/tpl/' + tpl + '.html?v=3', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
   const html = render(src, vars)
     .replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(title) + '</title><link rel="icon" href="/favicon.svg">' + SHIM);
