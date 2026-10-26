@@ -391,6 +391,50 @@ async function aAct(key, pin, act) {
   return { ok: true, acts: await actList(r) };
 }
 
+// ================================================================ admin: worker management (?a=KEY)
+async function aWorkers(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const s = await getDoc(doc(db, 'ak', r.id, 'd', 'workers'));
+  const list = J(s.exists() && s.data().v, []);   // [{token, name, kind, active}]
+  return list.filter(w => w.active !== false);
+}
+async function aAddWorker(key, pin, w) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const name = String((w && w.name) || '').trim().slice(0, 40);
+  const kind = String((w && w.kind) || '').trim();
+  if (!name) return { ok: false, msg: 'اكتب اسم العامل – enter worker name' };
+  if (!['CUT','STITCH','HINGE','MEASURE','EMBROIDERY'].includes(kind)) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
+  // generate 32-char hex token
+  const buf = new Uint8Array(16);
+  crypto.getRandomValues(buf);
+  const token = [...buf].map(x => x.toString(16).padStart(2, '0')).join('');
+  // create wk/{token} doc
+  await setDoc(doc(db, 'wk', token), { name, kind, emp: name, s: r.s });
+  // update worker list in admin sub-doc
+  const ref = doc(db, 'ak', r.id, 'd', 'workers');
+  const s = await getDoc(ref);
+  const list = J(s.exists() && s.data().v, []);
+  list.push({ token, name, kind, active: true });
+  await setDoc(ref, { v: JSON.stringify(list) });
+  return { ok: true, token, msg: 'تمت الإضافة ✔ Worker added' };
+}
+async function aDelWorker(key, pin, token) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  token = String(token || '').trim();
+  if (!/^[0-9a-f]{32}$/.test(token)) return { ok: false, msg: 'رمز غير صالح – invalid token' };
+  const ref = doc(db, 'ak', r.id, 'd', 'workers');
+  const s = await getDoc(ref);
+  const list = J(s.exists() && s.data().v, []);
+  const idx = list.findIndex(w => w.token === token);
+  if (idx < 0) return { ok: false, msg: 'العامل غير موجود – worker not found' };
+  list[idx].active = false;
+  await setDoc(ref, { v: JSON.stringify(list) });
+  return { ok: true, msg: 'تم الحذف ✔ Worker removed' };
+}
+
 // ================================================================ admin: work rates (?a=KEY)
 const RATE_KINDS = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
 async function aRates(key, pin) {
@@ -420,4 +464,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
+  aWorkers, aAddWorker, aDelWorker,
 };

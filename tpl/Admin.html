@@ -5,59 +5,62 @@
 <meta charset="utf-8">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f6f1e3; color: #222; font-size: 16px; }
-  .card { max-width: 760px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 10px #0002; }
-  h1 { font-size: 21px; margin: 0 0 2px; color: #8a6d00; }
-  h3 { margin: 0 0 10px; font-size: 18px; color: #0b5d4b; }
-  .muted { color: #777; font-size: 14px; }
-  button { font: inherit; font-size: 17px; padding: 11px 14px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
-  .b1 { background: #0b5d4b; color: #fff; } .b2 { background: #eee; color: #333; }
-  .wide { width: 100%; margin-top: 8px; }
-  input { font: inherit; font-size: 20px; padding: 10px; border: 2px solid #0b5d4b; border-radius: 10px; width: 100%; text-align: center; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-  .tile { background: #f6f1e3; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .tile b { display: block; font-size: 24px; color: #0b5d4b; } .tile span { font-size: 13px; color: #555; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 7px 4px; border-bottom: 1px solid #eee; font-size: 15px; vertical-align: top; }
-  tr.new td { background: #fff3cd; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-  .tag.w { background: #fff3cd; } .tag.ok { background: #d7f0df; color: #0b5d4b; } .tag.bad { background: #fde8e7; color: #b3261e; }
-  #banner { display: none; position: sticky; top: 0; z-index: 5; max-width: 760px; margin: 0 auto 12px; background: #0b5d4b; color: #fff;
-            border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 14px #0004; white-space: pre-line; font-weight: bold; }
-  #banner button { margin-top: 8px; background: #fff; color: #0b5d4b; padding: 7px 12px; font-size: 15px; }
-  .on { color: #1a7f37; font-weight: bold; } .off { color: #b3261e; font-weight: bold; }
-  .srch { display: flex; gap: 8px; } .srch input { flex: 1; font-size: 18px; text-align: right; border-color: #d9c27a; }
-  .oc { border: 1px solid #eee; border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
-  .oc .hd { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .oc .no { font-size: 20px; font-weight: bold; color: #0b5d4b; }
-  .pr { display: grid; grid-template-columns: 110px 1fr 70px; gap: 8px; align-items: center; margin-top: 6px; font-size: 14px; }
-  .bar { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
-  .bar i { display: block; height: 100%; background: #0b5d4b; } .bar i.part { background: #bf9000; }
-  .pd { color: #bf9000; font-size: 12px; }
+  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #eef5f3; color: #222; font-size: 16px; }
+  .card { max-width: 640px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 2px 10px #0002; }
   .card.big { max-width: 1250px; }
+  h1 { font-size: 21px; margin: 0; color: #0e6b5c; }
+  h3 { margin: 0 0 8px; color: #0e6b5c; font-size: 17px; }
+  .muted { color: #777; font-size: 13px; }
+  button { font: inherit; font-size: 16px; padding: 10px 12px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
+  .go { background: #0e6b5c; color: #fff; } .sec { background: #e3efec; color: #0e6b5c; } .gold { background: #fff3cd; color: #7a5b00; }
+  .wide { width: 100%; margin-top: 8px; }
+  input, select { font: inherit; font-size: 17px; padding: 9px; border: 2px solid #9fc9bf; border-radius: 9px; width: 100%; box-sizing: border-box; background: #fff; }
+  input:focus, select:focus { border-color: #0e6b5c; outline: none; }
+  .pin { text-align: center; font-size: 24px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tabs button { flex: 1; min-width: 60px; font-size: 14px; padding: 9px 6px; background: #e3efec; color: #0e6b5c; }
+  .tabs button.on { background: #0e6b5c; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  td { padding: 6px 3px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+  .badge.w { background: #fff3cd; } .badge.ok { background: #c8e6c9; color: #1a7f37; } .badge.bad { background: #fde8e7; color: #b3261e; }
+  .on-t { color: #1a7f37; font-weight: bold; } .off-t { color: #b3261e; font-weight: bold; }
+  .new { animation: flash 2s 3; } @keyframes flash { 50% { background: #fff3cd; } }
+  #banner { display: none; position: sticky; top: 0; z-index: 5; max-width: 640px; margin: 0 auto 12px; background: #0e6b5c; color: #fff;
+            border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 14px #0004; white-space: pre-line; font-weight: bold; }
+  #banner button { margin-top: 8px; background: #fff; color: #0e6b5c; padding: 7px 12px; font-size: 15px; }
   .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #eee; border-radius: 10px; max-height: 70vh; overflow-y: auto; }
   table.st { border-collapse: collapse; min-width: 980px; font-size: 14px; }
-  table.st th { position: sticky; top: 0; background: #0b5d4b; color: #fff; padding: 8px 6px; white-space: nowrap; font-weight: bold; z-index: 1; }
+  table.st th { position: sticky; top: 0; background: #0e6b5c; color: #fff; padding: 8px 6px; white-space: nowrap; font-weight: bold; z-index: 1; }
   table.st td { padding: 6px; border-bottom: 1px solid #eee; white-space: nowrap; text-align: center; }
   table.st td.l { text-align: right; }
-  table.st tr:nth-child(even) td { background: #faf8f1; }
+  table.st tr:nth-child(even) td { background: #f5f9f8; }
   .c-ok { color: #1a7f37; font-weight: bold; } .c-part { color: #a87400; font-weight: bold; } .c-no { color: #999; } .c-late { color: #b3261e; font-weight: bold; }
   button.act { font-size: 15px; padding: 6px 10px; background: #bf9000; color: #fff; border-radius: 8px; white-space: nowrap; }
   button.act.wait { background: #eee; color: #a87400; }
   #dlg { display: none; position: fixed; inset: 0; z-index: 10; background: #0007; overflow-y: auto; padding: 16px 10px; }
   #dlg .card { max-width: 460px; margin: 0 auto; }
   #dlg label { display: block; margin: 10px 0 4px; font-weight: bold; font-size: 15px; }
-  #dlg input, #dlg select { font: inherit; font-size: 19px; padding: 9px; border: 2px solid #bf9000; border-radius: 10px; width: 100%; background: #fff; text-align: center; }
-  .seg { display: flex; gap: 8px; } .seg button { flex: 1; background: #eee; color: #333; } .seg button.on { background: #0b5d4b; color: #fff; }
-  .sum { background: #f6f1e3; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
+  #dlg input, #dlg select { border-color: #bf9000; text-align: center; font-size: 19px; }
+  .seg { display: flex; gap: 8px; } .seg button { flex: 1; } .seg button.on { background: #0e6b5c; color: #fff; }
+  .sum { background: #f5f9f8; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
   .sum b { font-size: 17px; } .warn { color: #b3261e; font-weight: bold; white-space: pre-line; margin-top: 8px; }
-  .rates-grid { display: grid; gap: 10px; }
-  .rate-row { display: flex; align-items: center; gap: 10px; background: #f6f1e3; border-radius: 10px; padding: 10px 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+  .tile { background: #f5f9f8; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .tile b { display: block; font-size: 22px; color: #0e6b5c; } .tile span { font-size: 12px; color: #555; }
+  .rate-row { display: flex; align-items: center; gap: 10px; background: #f5f9f8; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
   .rate-row label { flex: 1; font-weight: bold; font-size: 15px; white-space: nowrap; }
-  .rate-row input { width: 120px; flex: none; font-size: 22px; font-weight: bold; text-align: center; border: 2px solid #bf9000; border-radius: 10px; padding: 8px; background: #fff; }
-  .rate-row input:focus { border-color: #0b5d4b; outline: none; }
-  .rate-ok { background: #d7f0df; color: #0b5d4b; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
+  .rate-row input { width: 120px; flex: none; font-size: 22px; font-weight: bold; text-align: center; }
+  .rate-ok { background: #c8e6c9; color: #1a7f37; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
   .rate-err { background: #fde8e7; color: #b3261e; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
+  .wcard { border: 1px solid #e3efec; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .wcard .winfo { flex: 1; }
+  .wcard b { font-size: 16px; color: #0e6b5c; }
+  .wcard .wkind { font-size: 13px; color: #777; }
+  .wlink { display: block; font-size: 12px; color: #999; margin-top: 4px; word-break: break-all; cursor: pointer; }
+  .wlink:active { color: #0e6b5c; }
+  .wadd { background: #f5f9f8; border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .wadd input, .wadd select { margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -67,66 +70,102 @@
   <div id="banner"><span id="bannerText"></span><br><button onclick="seen()">تم – OK</button></div>
 
   <div class="card">
-    <h1>🔔 تنبيهات العمل والطلبات – Alerts</h1>
-    <div class="muted"><?= shop ?></div>
+    <h1><?= shop ?> – إدارة / Admin</h1>
     <div id="pinBox" style="display:none; margin-top:10px">
-      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="الرقم السري / PIN">
-      <button class="b1 wide" onclick="start()">دخول / Open</button>
-      <div id="pinMsg" class="off"></div>
+      <input id="pin" class="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="الرقم السري / PIN">
+      <button class="go wide" onclick="start()">دخول / Open</button>
+      <div id="pinMsg" class="off-t"></div>
     </div>
-    <div id="ctl" style="display:none; margin-top:10px">
-      <button class="b1 wide" id="enable" onclick="enableAlerts()">🔔 تشغيل الصوت والتنبيهات / Turn on sound &amp; alerts</button>
-      <div style="margin-top:8px" id="state" class="muted"></div>
-      <div class="muted">اترك هذه الصفحة مفتوحة – keep this page open. يتم التحديث كل 20 ثانية – checks every 20 seconds.</div>
-    </div>
+    <div id="state" class="muted"></div>
   </div>
 
-  <div id="main" style="display:none">
+  <div id="app" style="display:none">
     <div class="card">
-      <h3>العمل أونلاين اليوم / Online work today</h3>
-      <div id="work" class="muted">…</div>
-    </div>
-    <div class="card big">
-      <h3>📋 حالة الطلبات / Order status</h3>
-      <div class="srch">
-        <input id="sq" type="search" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+      <div class="tabs">
+        <button id="t1" class="on" onclick="tab(1)">اليوم / Today</button>
+        <button id="t2" onclick="tab(2)">الطلبات / Orders</button>
+        <button id="t3" onclick="tab(3)">العمال / Workers</button>
+        <button id="t4" onclick="tab(4)">الإعدادات / Settings</button>
       </div>
-      <div id="scount" class="muted" style="margin:6px 2px"></div>
-      <div class="tw"><table class="st" id="stable"></table></div>
-    </div>
-    <div class="card">
-      <h3>💰 السداد والتسليم / Payments &amp; deliveries</h3>
-      <div class="muted">اضغط 💰📦 بجانب الطلب في الجدول – tap 💰📦 next to an order in the table. يحفظه جهاز المحل خلال دقائق – the shop PC saves it within minutes.</div>
-      <div id="acts" class="muted" style="margin-top:8px">…</div>
-    </div>
-    <div class="card">
-      <h3>الطلبات من الرابط / Online orders</h3>
-      <div id="orders" class="muted">…</div>
-    </div>
-    <div class="card">
-      <h3>اليوم / Today</h3>
-      <div class="tiles" id="tiles"></div>
+      <div id="ctl">
+        <button class="sec wide" id="enable" onclick="enableAlerts()">🔔 تشغيل الصوت والتنبيهات / Turn on sound &amp; alerts</button>
+        <div style="margin-top:6px" id="stInfo" class="muted"></div>
+      </div>
     </div>
 
-    <div class="card" id="ratesCard">
-      <h3>💲 أسعار العمل / Work Rates (SAR)</h3>
-      <div class="muted" style="margin-bottom:10px">يحدد سعر كل قطعة حسب نوع العمل – يُستخدم لحساب أرباح العمال<br>Set the per-piece rate for each work type – used to calculate worker earnings</div>
-      <div id="ratesLoad" class="muted">جاري التحميل… / Loading…</div>
-      <div id="ratesBody" style="display:none">
-        <div class="rates-grid">
+    <!-- Tab 1: Today -->
+    <div id="p1">
+      <div class="card">
+        <h3>🧵 العمل أونلاين اليوم / Online work today</h3>
+        <div id="work" class="muted">…</div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+      <div class="card">
+        <h3>🛒 الطلبات من الرابط / Online orders</h3>
+        <div id="orders" class="muted">…</div>
+      </div>
+      <div class="card">
+        <h3>💰 السداد والتسليم / Payments &amp; deliveries</h3>
+        <div class="muted">اضغط 💰📦 بجانب الطلب في تبويب الطلبات – tap 💰📦 next to an order in the Orders tab.</div>
+        <div id="acts" class="muted" style="margin-top:8px">…</div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Orders -->
+    <div id="p2" style="display:none">
+      <div class="card big">
+        <input id="sq" type="search" style="border-color:#bf9000" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+        <div id="scount" class="muted" style="margin:6px 2px"></div>
+        <div class="tw"><table class="st" id="stable"></table></div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Workers -->
+    <div id="p3" style="display:none">
+      <div class="card">
+        <h3>👷 العمال / Workers</h3>
+        <div class="muted" style="margin-bottom:10px">أضف عمال وشارك رابط تحويل العمل – Add workers and share their work entry links</div>
+        <div id="wList">
+          <div class="muted">جاري التحميل… / Loading…</div>
+        </div>
+        <div class="wadd">
+          <h3>➕ إضافة عامل / Add worker</h3>
+          <input id="wName" placeholder="اسم العامل / Worker name">
+          <select id="wKind">
+            <option value="">نوع العمل / Work type</option>
+            <option value="CUT">✂️ قص / Cutting</option>
+            <option value="STITCH">🧵 خياطة / Stitching</option>
+            <option value="HINGE">🔘 زرار / Hinge</option>
+            <option value="MEASURE">📏 مقاس / Measuring</option>
+            <option value="EMBROIDERY">🪡 تطريز / Embroidery</option>
+          </select>
+          <button class="go wide" onclick="addWorker()">إضافة / Add</button>
+          <div id="wMsg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Settings -->
+    <div id="p4" style="display:none">
+      <div class="card">
+        <h3>💲 أسعار العمل / Work Rates (SAR)</h3>
+        <div class="muted" style="margin-bottom:10px">يحدد سعر كل قطعة حسب نوع العمل – يُستخدم لحساب أرباح العمال<br>Set the per-piece rate for each work type – used to calculate worker earnings</div>
+        <div id="ratesLoad" class="muted">جاري التحميل… / Loading…</div>
+        <div id="ratesBody" style="display:none">
           <div class="rate-row"><label>✂️ قص / Cutting</label><input id="rCUT" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
           <div class="rate-row"><label>🧵 خياطة / Stitching</label><input id="rSTITCH" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
           <div class="rate-row"><label>🔘 زرار / Hinge</label><input id="rHINGE" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
           <div class="rate-row"><label>📏 مقاس / Measuring</label><input id="rMEASURE" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
           <div class="rate-row"><label>🪡 تطريز / Embroidery</label><input id="rEMBROIDERY" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+          <div id="ratesUpdated" class="muted" style="margin-top:6px"></div>
+          <div id="ratesMsg"></div>
+          <button class="go wide" id="ratesSave" onclick="saveRates()">حفظ الأسعار / Save Rates</button>
         </div>
-        <div id="ratesUpdated" class="muted" style="margin-top:6px"></div>
-        <div id="ratesMsg"></div>
-        <button class="b1 wide" id="ratesSave" onclick="saveRates()">حفظ الأسعار / Save Rates</button>
       </div>
     </div>
   </div>
 
+  <!-- Payment / Deliver dialog -->
   <div id="dlg">
     <div class="card">
       <h3 id="dTitle"></h3>
@@ -151,39 +190,46 @@
       <input id="dBy" type="text" autocomplete="off">
       <div class="sum" style="margin-top:10px" id="dAfter"></div>
       <div class="warn" id="dWarn"></div>
-      <button class="b1 wide" id="dSave" onclick="saveAct()">حفظ / Save</button>
-      <button class="b2 wide" onclick="closeAct()">إلغاء / Cancel</button>
+      <button class="go wide" id="dSave" onclick="saveAct()">حفظ / Save</button>
+      <button class="sec wide" onclick="closeAct()">إلغاء / Cancel</button>
     </div>
   </div>
 
   <script>
     var KEY = <?= key ?>, NEEDPIN = <?= needPin ?>;
-    var PIN = '', first = true, seenWork = {}, seenOrders = {}, unread = 0, audio = null, timer = null, newIds = {};
+    var PIN = '', first = true, seenWork = {}, seenOrders = {}, seenActs = {}, unread = 0, audio = null, timer = null, newIds = {};
     var KINDS = { CUT: 'قص – Cutting', STITCH: 'خياطة – Stitching', HINGE: 'زرار – Hinge', MEASURE: 'مقاس – Measuring',
                   ARRIVE: 'وصل الورشة – Arrived', EMBROIDERY: 'تطريز – Embroidery' };
-    var TITLE = document.title;
+    var TITLE = document.title, CUR_TAB = 1;
 
     function $(id) { return document.getElementById(id); }
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
 
+    function tab(n) {
+      CUR_TAB = n;
+      for (var i = 1; i <= 4; i++) { $('p' + i).style.display = i === n ? '' : 'none'; $('t' + i).className = i === n ? 'on' : ''; }
+      if (n === 2) loadOrders();
+      if (n === 3) loadWorkers();
+      if (n === 4) loadRates();
+    }
+
     function start() {
-      try { PIN = NEEDPIN ? ($('pin').value || sessionStorage.getItem('ts_apin') || '') : ''; } catch (x) { PIN = $('pin').value; }
+      try { PIN = NEEDPIN ? ($('pin').value || sessionStorage.getItem('ts_apin') || '') : ''; } catch (x) { PIN = $('pin') ? $('pin').value : ''; }
       google.script.run.withSuccessHandler(function (r) {
         if (!r) { $('pinBox').style.display = 'block'; $('pinMsg').textContent = NEEDPIN && PIN ? 'الرقم السري غير صحيح – wrong PIN' : ''; return; }
         try { if (NEEDPIN) sessionStorage.setItem('ts_apin', PIN); } catch (x) { }
-        $('pinBox').style.display = 'none'; $('ctl').style.display = 'block'; $('main').style.display = 'block';
+        $('pinBox').style.display = 'none'; $('app').style.display = '';
         show(r);
         showState();
-        loadRates();
         if (!timer) { timer = setInterval(poll, 20000); loadOrders(); setInterval(loadOrders, 60000); }
       }).withFailureHandler(function (e) { $('state').textContent = 'خطأ – ' + (e && e.message || e); }).aFeed(KEY, PIN);
     }
     function poll() {
       google.script.run.withSuccessHandler(function (r) { if (r) show(r); })
-        .withFailureHandler(function () { $('state').innerHTML = '<span class="off">لا يوجد اتصال – no connection, trying again…</span>'; }).aFeed(KEY, PIN);
+        .withFailureHandler(function () { $('stInfo').innerHTML = '<span class="off-t">لا يوجد اتصال – no connection, trying…</span>'; }).aFeed(KEY, PIN);
     }
 
-    // ---------------- alerts: sound (after one tap), vibration, notification where allowed, banner, tab title
+    // ---- alerts ----
     function enableAlerts() {
       try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); beep(); } catch (x) { audio = null; }
       try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission().then(showState, showState); } catch (x) { }
@@ -199,10 +245,10 @@
       });
     }
     function showState() {
-      var n = !window.Notification ? 'غير مدعوم – not supported' : Notification.permission === 'granted' ? '<span class="on">مفعّل – on</span>'
-            : Notification.permission === 'denied' ? '<span class="off">مرفوض – blocked</span>' : 'لم يُطلب – not asked';
-      $('state').innerHTML = 'الصوت / Sound: ' + (audio ? '<span class="on">مفعّل – on</span>' : '<span class="off">اضغط الزر – tap the button</span>') +
-                             ' &nbsp; · &nbsp; الإشعارات / Notifications: ' + n + (window.LAST ? ' &nbsp; · &nbsp; آخر تحديث / last check ' + esc(window.LAST) : '');
+      var n = !window.Notification ? 'غير مدعوم' : Notification.permission === 'granted' ? '<span class="on-t">مفعّل – on</span>'
+            : Notification.permission === 'denied' ? '<span class="off-t">مرفوض – blocked</span>' : 'لم يُطلب';
+      $('stInfo').innerHTML = 'الصوت: ' + (audio ? '<span class="on-t">✔</span>' : '<span class="off-t">✖</span>') +
+                             ' · الإشعارات: ' + n + (window.LAST ? ' · آخر تحديث ' + esc(window.LAST) : '');
     }
     function alertNew(lines) {
       unread += lines.length;
@@ -215,7 +261,7 @@
     }
     function seen() { unread = 0; newIds = {}; document.title = TITLE; $('banner').style.display = 'none'; document.querySelectorAll('tr.new').forEach(function (t) { t.className = ''; }); }
 
-    // ---------------- the lists
+    // ---- today's feed ----
     function workText(w) { return (KINDS[w.kind] || w.kind) + ': ' + w.name + ' – طلب ' + w.order + ' × ' + w.qty + (w.fit ? ' + بروفة' : ''); }
     function show(r) {
       window.LAST = r.now;
@@ -240,35 +286,37 @@
         seenActs[a.id] = a.status;
       });
       showActs(r.acts || []);
-      if (reload) loadOrders();   // the new due / delivered pieces
+      if (reload) loadOrders();
       first = false;
       if (lines.length) alertNew(lines);
 
-      // today's totals per kind of work, and the online orders
+      // today totals
       var tot = {};
       r.work.forEach(function (w) { if (w.status !== 'deleted') tot[w.kind] = (tot[w.kind] || 0) + w.qty; });
       $('tiles').innerHTML = Object.keys(KINDS).filter(function (k) { return tot[k]; }).map(function (k) {
         return '<div class="tile"><b>' + tot[k] + '</b><span>' + esc(KINDS[k]) + '</span></div>';
-      }).join('') + '<div class="tile"><b>' + r.orders.length + '</b><span>طلبات أونلاين – online orders</span></div>';
+      }).join('') + '<div class="tile"><b>' + r.orders.length + '</b><span>طلبات أونلاين</span></div>';
 
+      // online orders
       $('orders').innerHTML = r.orders.length ? '<table>' + r.orders.map(function (o) {
-        var st = o.status === 'saved' ? '<span class="tag ok">✔ طلب ' + esc(o.order_no) + (o.invoice_no ? ' · فاتورة ' + esc(o.invoice_no) : '') + '</span>'
-               : o.status === 'error' ? '<span class="tag bad">✖ ' + esc(o.note) + '</span>'
-               : o.status === 'deleted' ? '<span class="tag bad">🗑 محذوف – deleted</span>'
-               : o.status === 'delreq' ? '<span class="tag w">⏳ جاري الحذف – deleting</span>' : '<span class="tag w">⏳ بانتظار جهاز المحل</span>';
+        var st = o.status === 'saved' ? '<span class="badge ok">✔ طلب ' + esc(o.order_no) + (o.invoice_no ? ' · فاتورة ' + esc(o.invoice_no) : '') + '</span>'
+               : o.status === 'error' ? '<span class="badge bad">✖ ' + esc(o.note) + '</span>'
+               : o.status === 'deleted' ? '<span class="badge bad">🗑 محذوف</span>'
+               : o.status === 'delreq' ? '<span class="badge w">⏳ جاري الحذف</span>' : '<span class="badge w">⏳ بانتظار المحل</span>';
         return '<tr class="' + (newIds[o.id] ? 'new' : '') + '"><td>' + esc(o.time) + '</td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + esc(o.pcs) + ' ثوب · ' +
                esc(o.total) + (o.by ? ' · ' + esc(o.by) : '') + '</span></td><td>' + st + '</td></tr>';
-      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+      }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
 
+      // work entries
       $('work').innerHTML = r.work.length ? '<table>' + r.work.map(function (w) {
-        var st = w.status === 'imported' ? '<span class="tag ok">✔ استلمه المحل</span>' : w.status === 'deleted' ? '<span class="tag bad">محذوف</span>' : '<span class="tag w">⏳ لم يُستلم بعد</span>';
+        var st = w.status === 'imported' ? '<span class="badge ok">✔</span>' : w.status === 'deleted' ? '<span class="badge bad">✖</span>' : '<span class="badge w">⏳</span>';
         return '<tr class="' + (newIds[w.id] ? 'new' : '') + '"><td>' + esc(w.time) + '</td><td><b>' + esc(w.name) + '</b><br><span class="muted">' + esc(KINDS[w.kind] || w.kind) +
                '</span></td><td>طلب <b>' + esc(w.order) + '</b> × ' + esc(w.qty) + (w.fit ? '<br><span class="muted">+ بروفة</span>' : '') + '</td><td>' + st + '</td></tr>';
-      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+      }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
       showState();
     }
 
-    // ---------------- order status table: every order (open + last 12 months) in columns, filtered by the search box
+    // ---- order status table ----
     var ALL = [], PEND = {}, METHODS = ['Cash'], CUR = '';
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
@@ -284,32 +332,32 @@
       if (b) openAct(b.getAttribute('data-o'));
     });
 
-    // ---------------- payments / deliveries: the form, and the requests with what the shop PC did with them
-    var ACTS = [], seenActs = {}, D = null, KIND = 'PAY';
+    // ---- payments / deliveries ----
+    var ACTS = [], D = null, KIND = 'PAY';
     function money(n) { return (Number(n) || 0).toFixed(2); }
     function actText(a) {
-      return 'طلب / Order ' + a.order_no + ': ' + (a.kind === 'DELIVER' ? 'تسليم ' + a.qty + ' قطعة / delivered ' + a.qty + ' pcs' + (a.amount > 0 ? ' + ' : '') : '') +
-             (a.amount > 0 ? 'سداد / paid ' + money(a.amount) : '');
+      return 'طلب ' + a.order_no + ': ' + (a.kind === 'DELIVER' ? 'تسليم ' + a.qty + ' قطعة' + (a.amount > 0 ? ' + ' : '') : '') +
+             (a.amount > 0 ? 'سداد ' + money(a.amount) : '');
     }
     function waitingFor(no) { return ACTS.some(function (a) { return a.status === 'new' && String(a.order_no) === String(no); }); }
     function showActs(list) {
       ACTS = list;
       $('acts').innerHTML = list.length ? '<table>' + list.map(function (a) {
-        var st = a.status === 'saved' ? '<span class="tag ok">✔ إيصال / receipt ' + esc(a.receipt_no) + '</span><br><span class="muted">' + esc(a.note) + '</span>'
-               : a.status === 'error' ? '<span class="tag bad">✖ ' + esc(a.note) + '</span>'
-               : '<span class="tag w">⏳ بانتظار جهاز المحل – waiting for the shop PC</span>';
+        var st = a.status === 'saved' ? '<span class="badge ok">✔ إيصال ' + esc(a.receipt_no) + '</span>'
+               : a.status === 'error' ? '<span class="badge bad">✖ ' + esc(a.note) + '</span>'
+               : '<span class="badge w">⏳ بانتظار المحل</span>';
         return '<tr class="' + (newIds[a.id] ? 'new' : '') + '"><td>' + esc(a.time) + '</td><td><b>' + esc(actText(a)) + '</b>' +
                (a.by ? '<br><span class="muted">' + esc(a.by) + '</span>' : '') + '</td><td>' + st + '</td></tr>';
-      }).join('') + '</table>' : 'لا يوجد اليوم – none today';
+      }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
       renderTable();
     }
     function openAct(no) {
       var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
       if (!r) return;
       D = { no: r[0], name: r[1], pcs: Number(r[5]) || 0, given: Number(r[12]) || 0, due: Number(r[14]) || 0 };
-      $('dTitle').textContent = 'طلب / Order ' + D.no + ' – ' + D.name;
-      $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع / Pieces: <b>' + D.pcs + '</b> · سُلّم / delivered: <b>' + D.given +
-                            '</b> · الباقي / left: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
+      $('dTitle').textContent = 'طلب ' + D.no + ' – ' + D.name;
+      $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
+                            '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -323,39 +371,37 @@
       KIND = k;
       $('kPAY').className = k === 'PAY' ? 'on' : ''; $('kDELIVER').className = k === 'DELIVER' ? 'on' : '';
       $('dQtyBox').style.display = k === 'DELIVER' ? '' : 'none';
-      // delivering: the money still due is usually paid at the same time (0 = delivered without payment)
       if (k === 'DELIVER' && !(Number($('dAmt').value) > 0) && D && D.due > 0.005) $('dAmt').value = money(D.due);
       check();
     }
     ['dAmt', 'dQty'].forEach(function (id) { $(id).addEventListener('input', check); });
-    // what will be refused by the shop PC is shown before sending
     function check() {
       if (!D) return [];
       var amt = Number($('dAmt').value) || 0, qty = Math.floor(Number($('dQty').value) || 0), left = Math.max(0, D.pcs - D.given);
       var bal = Math.round((D.due - amt) * 100) / 100, errs = [];
       $('dPayBox').style.display = KIND === 'PAY' || amt > 0 ? '' : 'none';
       if (amt < 0) errs.push('المبلغ غير صحيح – amount?');
-      if (amt > D.due + 0.01) errs.push('أكثر من المتبقي ' + money(D.due) + ' – more than the due');
-      if (KIND === 'PAY' && !(amt > 0)) errs.push('اكتب المبلغ – enter the amount');
-      if (KIND === 'DELIVER' && left <= 0) errs.push('تم تسليم كل القطع – all pieces delivered');
-      else if (KIND === 'DELIVER' && !(qty > 0)) errs.push('اكتب عدد القطع – enter the pieces');
-      else if (KIND === 'DELIVER' && qty > left) errs.push('الباقي للتسليم ' + left + ' فقط – only ' + left + ' left');
-      if (waitingFor(D.no)) errs.push('⏳ يوجد طلب سابق لم يُحفظ بعد – an earlier request for this order is still waiting');
-      $('dAfter').innerHTML = 'الباقي بعد / Balance after: <b class="' + (bal > 0.5 ? 'c-late' : 'c-ok') + '">' + money(bal) + '</b>' +
-                              (KIND === 'DELIVER' ? ' · سيبقى للتسليم / still to deliver: <b>' + Math.max(0, left - qty) + '</b>' : '');
+      if (amt > D.due + 0.01) errs.push('أكثر من المتبقي ' + money(D.due));
+      if (KIND === 'PAY' && !(amt > 0)) errs.push('اكتب المبلغ – enter amount');
+      if (KIND === 'DELIVER' && left <= 0) errs.push('تم تسليم كل القطع – all delivered');
+      else if (KIND === 'DELIVER' && !(qty > 0)) errs.push('اكتب العدد – enter pieces');
+      else if (KIND === 'DELIVER' && qty > left) errs.push('الباقي ' + left + ' فقط – only ' + left + ' left');
+      if (waitingFor(D.no)) errs.push('⏳ يوجد طلب سابق لم يُحفظ بعد');
+      $('dAfter').innerHTML = 'الباقي بعد: <b class="' + (bal > 0.5 ? 'c-late' : 'c-ok') + '">' + money(bal) + '</b>' +
+                              (KIND === 'DELIVER' ? ' · سيبقى للتسليم: <b>' + Math.max(0, left - qty) + '</b>' : '');
       $('dWarn').textContent = errs.join('\n');
       return errs;
     }
     function saveAct() {
       if (!D) return;
-      var errs = check().filter(function (e) { return e.indexOf('⏳') !== 0; });   // an earlier request only warns
+      var errs = check().filter(function (e) { return e.indexOf('⏳') !== 0; });
       if (errs.length) return;
       var amt = Math.round((Number($('dAmt').value) || 0) * 100) / 100, bal = Math.round((D.due - amt) * 100) / 100;
       var by = $('dBy').value.trim();
       if (!by) { $('dWarn').textContent = 'اكتب اسمك – enter your name'; $('dBy').focus(); return; }
       var force = false;
       if (KIND === 'DELIVER' && bal > 0.5) {
-        if (!confirm('على العميل ' + money(bal) + ' – the customer still owes ' + money(bal) + '.\nتسليم على أي حال؟ – Deliver anyway?')) return;
+        if (!confirm('على العميل ' + money(bal) + ' – still owes ' + money(bal) + '.\nتسليم؟ – Deliver anyway?')) return;
         force = true;
       }
       try { localStorage.setItem('ts_aby', by); } catch (x) { }
@@ -365,19 +411,18 @@
       google.script.run.withSuccessHandler(function (r) {
         $('dSave').disabled = false;
         if (!r || !r.ok) { $('dWarn').textContent = (r && r.msg) || 'خطأ – error'; return; }
-        r.acts.forEach(function (a) { if (!seenActs[a.id]) seenActs[a.id] = a.status; });   // mine: no alert
+        r.acts.forEach(function (a) { if (!seenActs[a.id]) seenActs[a.id] = a.status; });
         showActs(r.acts);
         closeAct();
       }).withFailureHandler(function () {
-        $('dSave').disabled = false; $('dWarn').textContent = 'لا يوجد اتصال، حاول مرة أخرى – no connection, try again';
+        $('dSave').disabled = false; $('dWarn').textContent = 'لا يوجد اتصال – no connection, try again';
       }).aAct(KEY, PIN, act);
     }
-    // done / total: green when finished, amber when partly, grey when nothing; +n = sent online, not collected yet
     function cell(done, total, pend) {
       done = Number(done) || 0; total = Number(total) || 0;
       if (!total) return '<td class="c-no">–</td>';
       var c = done >= total ? 'c-ok' : done > 0 ? 'c-part' : 'c-no';
-      return '<td class="' + c + '"><span dir="ltr">' + done + ' / ' + total + (pend ? ' <span class="pd">+' + pend + '</span>' : '') + '</span></td>';
+      return '<td class="' + c + '"><span dir="ltr">' + done + ' / ' + total + (pend ? ' <span style="color:#a87400;font-size:12px">+' + pend + '</span>' : '') + '</span></td>';
     }
     var STAT = { 'Delivered': ['c-ok', 'Delivered'], 'Ready': ['c-ok', 'Ready'], 'Stitched': ['c-ok', 'Stitched'], 'Partly delivered': ['c-part', 'Partly delivered'],
                  'In progress': ['c-part', 'In progress'], 'Pending': ['c-no', 'Not started'] };
@@ -389,13 +434,12 @@
         return r[1].toLowerCase().indexOf(lower) >= 0;
       });
       var shown = list.slice(0, 300);
-      $('scount').textContent = list.length + ' طلب – orders' + (list.length > shown.length ? ' (أول 300 – first 300; اكتب للبحث – type to search)' : '') +
-                                '   ·   + = أُرسل أونلاين ولم يستلمه المحل بعد – sent online, not collected yet';
+      $('scount').textContent = list.length + ' طلب' + (list.length > shown.length ? ' (أول 300)' : '') +
+                                '   ·   + = أُرسل أونلاين ولم يستلمه المحل';
       var head = '<tr><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>الحجز<br>Booked</th><th>التسليم<br>Delivery</th>' +
-                 '<th>ثياب<br>Pcs</th><th>قص<br>Cut</th><th>خياطة<br>Stitched</th><th>زرار<br>Hinge</th><th>تطريز<br>Embroidery</th>' +
-                 '<th>تسليم<br>Delivered</th><th>المتبقي<br>Due</th><th>الحالة<br>Status</th><th>سداد / تسليم<br>Pay / Deliver</th></tr>';
+                 '<th>ثياب<br>Pcs</th><th>قص<br>Cut</th><th>خياطة<br>Stitch</th><th>زرار<br>Hinge</th><th>تطريز<br>Emb</th>' +
+                 '<th>تسليم<br>Delivered</th><th>المتبقي<br>Due</th><th>الحالة<br>Status</th><th>💰📦</th></tr>';
       $('stable').innerHTML = head + shown.map(function (r) {
-        // order_no, name, mobile, booked, delivery, pcs, cut, stitched, hinge_qty, hinge_done, emb_qty, emb_done, delivered, ready, due, status
         var p = PEND[r[0]] || {}, pcs = Number(r[5]) || 0, given = Number(r[12]) || 0;
         var late = given < pcs && r[4] && r[4] < today && r[15] !== 'Delivered';
         var st = late ? ['c-late', 'Late'] : STAT[r[15]] || ['', r[15]];
@@ -405,21 +449,20 @@
                cell(r[6], pcs, p.CUT) + cell(r[7], pcs, p.STITCH) + cell(r[9], r[8], p.HINGE) + cell(r[11], r[10], p.EMBROIDERY) + cell(given, pcs, 0) +
                '<td class="' + (due > 0.5 ? 'c-late' : 'c-no') + '">' + (due > 0.5 ? due.toFixed(2) : '–') + '</td>' +
                '<td class="' + st[0] + '">' + esc(st[1]) + '</td>' +
-               // nothing left to pay or deliver: no button
                (due > 0.005 || given < pcs ? '<td><button class="act' + (waitingFor(r[0]) ? ' wait' : '') + '" data-o="' + esc(r[0]) + '">' +
                                               (waitingFor(r[0]) ? '⏳' : '💰📦') + '</button></td>' : '<td class="c-no">✔</td>') + '</tr>';
       }).join('');
     }
 
-    // ---------------- rates management
+    // ---- rates ----
     var RATE_KINDS = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
     function loadRates() {
       google.script.run.withSuccessHandler(function (r) {
         $('ratesLoad').style.display = 'none';
-        if (!r) { $('ratesLoad').style.display = ''; $('ratesLoad').textContent = 'تعذر التحميل – could not load rates'; return; }
+        if (!r) { $('ratesLoad').style.display = ''; $('ratesLoad').textContent = 'تعذر التحميل – could not load'; return; }
         $('ratesBody').style.display = '';
         RATE_KINDS.forEach(function (k) { $('r' + k).value = r.rates[k] || ''; });
-        if (r.updated) $('ratesUpdated').textContent = 'آخر تحديث / Last updated: ' + r.updated;
+        if (r.updated) $('ratesUpdated').textContent = 'آخر تحديث: ' + r.updated;
       }).withFailureHandler(function (e) {
         $('ratesLoad').textContent = 'خطأ – ' + (e && e.message || e);
       }).aRates(KEY, PIN);
@@ -428,19 +471,67 @@
       var rates = {};
       RATE_KINDS.forEach(function (k) { rates[k] = Number($('r' + k).value) || 0; });
       $('ratesSave').disabled = true;
-      $('ratesMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الحفظ… / Saving…</div>';
+      $('ratesMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الحفظ…</div>';
       google.script.run.withSuccessHandler(function (r) {
         $('ratesSave').disabled = false;
-        if (!r || !r.ok) { $('ratesMsg').innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ – error') + '</div>'; return; }
+        if (!r || !r.ok) { $('ratesMsg').innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
         $('ratesMsg').innerHTML = '<div class="rate-ok">' + esc(r.msg) + '</div>';
-        $('ratesUpdated').textContent = 'آخر تحديث / Last updated: الآن – just now';
+        $('ratesUpdated').textContent = 'آخر تحديث: الآن – just now';
         setTimeout(function () { $('ratesMsg').innerHTML = ''; }, 4000);
       }).withFailureHandler(function (e) {
         $('ratesSave').disabled = false;
-        $('ratesMsg').innerHTML = '<div class="rate-err">لا يوجد اتصال – no connection: ' + esc(e && e.message || e) + '</div>';
+        $('ratesMsg').innerHTML = '<div class="rate-err">لا يوجد اتصال – ' + esc(e && e.message || e) + '</div>';
       }).aSetRates(KEY, PIN, rates);
     }
 
+    // ---- workers ----
+    var WKINDS = { CUT: '✂️ قص', STITCH: '🧵 خياطة', HINGE: '🔘 زرار', MEASURE: '📏 مقاس', EMBROIDERY: '🪡 تطريز' };
+    function loadWorkers() {
+      $('wList').innerHTML = '<div class="muted">جاري التحميل… / Loading…</div>';
+      google.script.run.withSuccessHandler(function (list) {
+        if (!list) { $('wList').innerHTML = '<div class="muted">تعذر التحميل</div>'; return; }
+        renderWorkers(list);
+      }).withFailureHandler(function (e) {
+        $('wList').innerHTML = '<div class="muted">خطأ – ' + esc(e && e.message || e) + '</div>';
+      }).aWorkers(KEY, PIN);
+    }
+    function renderWorkers(list) {
+      if (!list.length) { $('wList').innerHTML = '<div class="muted">لا يوجد عمال – no workers added yet</div>'; return; }
+      var base = location.origin + '/exec?t=';
+      $('wList').innerHTML = list.filter(function (w) { return w.active !== false; }).map(function (w) {
+        return '<div class="wcard"><div class="winfo"><b>' + esc(w.name) + '</b> <span class="wkind">' + (WKINDS[w.kind] || w.kind) + '</span>' +
+               '<div class="wlink" onclick="copyLink(this)" title="انسخ الرابط – Copy link">' + esc(base + w.token) + '</div></div>' +
+               '<button class="sec" style="font-size:13px;padding:6px 10px" onclick="delWorker(\'' + esc(w.token) + '\')">حذف</button></div>';
+      }).join('');
+    }
+    function copyLink(el) {
+      try { navigator.clipboard.writeText(el.textContent); el.style.color = '#1a7f37'; el.textContent = '✔ تم النسخ – Copied!'; setTimeout(function () { loadWorkers(); }, 1500); }
+      catch (x) { prompt('انسخ الرابط / Copy link:', el.textContent); }
+    }
+    function addWorker() {
+      var name = $('wName').value.trim(), kind = $('wKind').value;
+      if (!name) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اكتب اسم العامل – enter name</div>'; return; }
+      if (!kind) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر نوع العمل – choose work type</div>'; return; }
+      $('wMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الإضافة…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
+        $('wMsg').innerHTML = '<div class="rate-ok" style="margin-top:8px">تمت الإضافة ✔ – Worker added</div>';
+        $('wName').value = ''; $('wKind').value = '';
+        renderWorkers(r.list);
+        setTimeout(function () { $('wMsg').innerHTML = ''; }, 4000);
+      }).withFailureHandler(function (e) {
+        $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">خطأ – ' + esc(e && e.message || e) + '</div>';
+      }).aAddWorker(KEY, PIN, { name: name, kind: kind });
+    }
+    function delWorker(token) {
+      if (!confirm('حذف هذا العامل؟ – Remove this worker?')) return;
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { alert(r && r.msg || 'خطأ'); return; }
+        renderWorkers(r.list);
+      }).withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e)); }).aDelWorker(KEY, PIN, token);
+    }
+
+    // ---- init ----
     if (NEEDPIN) {
       var saved = ''; try { saved = sessionStorage.getItem('ts_apin') || ''; } catch (x) { }
       if (saved) { $('pin').value = saved; start(); } else $('pinBox').style.display = 'block';
