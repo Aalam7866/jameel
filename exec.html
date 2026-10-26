@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>…</title>
 <link rel="icon" href="/favicon.svg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1f3a34">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/img/icon-192.png">
 <style>body{font-family:system-ui,Tahoma,sans-serif;background:#f6f1e3;color:#555;display:grid;place-items:center;min-height:90vh;margin:0}</style>
 </head>
 <body>
@@ -73,7 +78,7 @@ function render(src, v) {
   return fn(esc, (x) => JSON.stringify(x === undefined ? null : x).replace(/</g, '\\u003c'), ...names.map(k => v[k]));
 }
 
-
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 </body>
 </html>

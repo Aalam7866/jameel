@@ -173,29 +173,32 @@
       var p = ym.split('-');
       return names[parseInt(p[1], 10) - 1] + ' ' + p[0];
     }
+    function money(v) { return (Number(v) || 0).toFixed(2) + ' ر.س.'; }
     function showStats(s) {
       STATS = s || { months: [], work: [], alts: [] };
       var el = document.getElementById('month');
       if (!STATS.months.length) { el.textContent = 'لا يوجد بعد – nothing yet'; return; }
-      var tp = 0, ta = 0;
-      STATS.months.forEach(function (m) { tp += Number(m[1]); ta += Number(m[3]); });
+      var tp = 0, ta = 0, te = 0;
+      STATS.months.forEach(function (m) { tp += Number(m[1]); ta += Number(m[3]); te += Number(m[5] || 0); });
       var h = '<select id="ym" onchange="showMonth()"><option value="">المجموع (12 شهر) – Total 12 months</option>';
       STATS.months.forEach(function (m, i) { h += '<option value="' + esc(m[0]) + '"' + (i === 0 ? ' selected' : '') + '>' + esc(monthName(m[0])) + '</option>'; });
       h += '</select><div id="mdetail"></div>' +
-           '<div class="muted">المجموع 12 شهر: ' + tp + ' قطعة – ' + ta + ' تعديل &nbsp;|&nbsp; 12 months: ' + tp + ' pcs – ' + ta + ' alterations</div>';
+           '<div class="muted">المجموع 12 شهر: ' + tp + ' قطعة – ' + ta + ' تعديل' + (te > 0 ? ' – ' + money(te) : '') +
+           ' &nbsp;|&nbsp; 12 months: ' + tp + ' pcs – ' + ta + ' alts' + (te > 0 ? ' – ' + money(te) : '') + '</div>';
       el.innerHTML = h;
       showMonth();
     }
     function showMonth() {
       var ym = document.getElementById('ym').value, el = document.getElementById('mdetail');
-      var pcs = 0, orders = 0, alts = 0;
-      STATS.months.forEach(function (m) { if (!ym || m[0] === ym) { pcs += Number(m[1]); orders += Number(m[2]); alts += Number(m[3]); } });
+      var pcs = 0, orders = 0, alts = 0, earn = 0;
+      STATS.months.forEach(function (m) { if (!ym || m[0] === ym) { pcs += Number(m[1]); orders += Number(m[2]); alts += Number(m[3]); earn += Number(m[5] || 0); } });
       var h = '<div class="tiles"><div class="tile"><b>' + pcs + '</b><span>قطعة / pcs</span></div>' +
               '<div class="tile"><b>' + orders + '</b><span>طلب / orders</span></div>' +
-              '<div class="tile alt"><b>' + alts + '</b><span>تعديل / alterations</span></div></div>';
+              (earn > 0 ? '<div class="tile"><b>' + money(earn) + '</b><span>الأجر / earned</span></div>' : '') +
+              '<div class="tile alt"><b>' + alts + '</b><span>تعديل / alts</span></div></div>';
       if (!ym) {
-        h += '<table><tr><td><b>الشهر</b></td><td><b>قطع</b></td><td><b>طلبات</b></td><td><b>تعديلات</b></td></tr>';
-        STATS.months.forEach(function (m) { h += '<tr><td>' + esc(monthName(m[0])) + '</td><td>' + esc(m[1]) + '</td><td>' + esc(m[2]) + '</td><td>' + esc(m[3]) + '</td></tr>'; });
+        h += '<table><tr><td><b>الشهر</b></td><td><b>قطع</b></td><td><b>طلبات</b></td>' + (earn > 0 ? '<td><b>الأجر</b></td>' : '') + '<td><b>تعديلات</b></td></tr>';
+        STATS.months.forEach(function (m) { h += '<tr><td>' + esc(monthName(m[0])) + '</td><td>' + esc(m[1]) + '</td><td>' + esc(m[2]) + '</td>' + (earn > 0 ? '<td>' + money(m[5]) + '</td>' : '') + '<td>' + esc(m[3]) + '</td></tr>'; });
         h += '</table>';
       } else {
         var work = STATS.work.filter(function (w) { return String(w[0]).slice(0, 7) === ym; });
