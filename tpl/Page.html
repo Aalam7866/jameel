@@ -1,259 +1,445 @@
 <!DOCTYPE html>
-<html dir="rtl">
+<html dir="rtl" lang="ar">
 <head>
 <base target="_top">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 14px; background: #f6f1e3; color: #222; }
-  .card { max-width: 460px; margin: 0 auto 14px; background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px #0002; }
-  h1 { font-size: 22px; margin: 0; color: #8a6d00; }
-  h3 { margin: 0 0 10px; }
-  .me { float: left; width: 84px; height: 84px; object-fit: cover; border-radius: 50%; border: 3px solid #bf9000; margin: -4px 0 6px 10px; }
-  .kind { display: inline-block; margin: 6px 0 14px; padding: 4px 12px; border-radius: 20px; background: #0b5d4b; color: #fff; font-weight: bold; }
-  .item { margin-bottom: 10px; clear: both; }
-  .row { display: flex; gap: 8px; }
-  .row input { font-size: 22px; padding: 10px; border: 2px solid #bf9000; border-radius: 10px; text-align: center; min-width: 0; }
-  .row .o { flex: 3; } .row .q { flex: 1; }
-  .info { min-height: 20px; font-size: 15px; padding: 3px 4px 0; color: #555; }
-  .info b { color: #0b5d4b; } .info.bad, .info.bad b { color: #b3261e; }
-  .labels { display: flex; gap: 8px; color: #666; font-size: 14px; margin-bottom: 4px; clear: both; }
+  :root {
+    --gold: #bf9000; --gold-light: #d4a520; --gold-bg: #fdf6e3;
+    --green: #0b5d4b; --green-light: #0d7a62; --red: #b3261e;
+    --bg: #f5f0e1; --card: #fff; --text: #1a1a1a; --muted: #777;
+    --radius: 14px; --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, Tahoma, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ─── HEADER ─── */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 16px 16px 0; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .brand { letter-spacing: 4px; font-size: 13px; font-weight: 600; color: var(--gold-light); text-transform: uppercase; margin-bottom: 2px; }
+  .brand-sub { font-size: 10px; color: #aaa; letter-spacing: 2px; }
+  .header-profile { display: flex; align-items: center; gap: 12px; padding: 14px 4px 16px; text-align: right; }
+  .header-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--gold); flex-shrink: 0; }
+  .header-photo-placeholder { width: 56px; height: 56px; border-radius: 50%; background: var(--gold); color: #fff; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .header-name { font-size: 19px; font-weight: 700; }
+  .header-role { font-size: 13px; color: #ccc; margin-top: 2px; }
+  .header-role b { color: var(--gold-light); }
+
+  /* ─── TABS ─── */
+  .tabs { display: flex; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 2px solid rgba(255,255,255,0.1); }
+  .tab { flex: 1; text-align: center; padding: 12px 6px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab.active { color: var(--gold-light); border-bottom-color: var(--gold-light); }
+  .tab:hover { color: #ddd; }
+
+  /* ─── CONTENT AREA ─── */
+  .content { max-width: 520px; margin: 0 auto; padding: 14px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ─── STAT TILES ─── */
+  .tiles { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tile { flex: 1; background: var(--card); border-radius: var(--radius); padding: 14px 6px; text-align: center; box-shadow: var(--shadow); transition: transform 0.15s; }
+  .tile b { display: block; font-size: 26px; color: var(--green); line-height: 1.2; }
+  .tile.earn b { color: var(--gold); }
+  .tile.alt b { color: var(--red); }
+  .tile span { font-size: 11px; color: var(--muted); display: block; margin-top: 4px; }
+
+  /* ─── CARDS ─── */
+  .card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card-title .icon { font-size: 20px; }
+
+  /* ─── FORM ─── */
+  .form-hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .labels { display: flex; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
   .labels span:first-child { flex: 3; text-align: center; } .labels span:last-child { flex: 1; text-align: center; }
-  button { font-size: 18px; width: 100%; padding: 14px; border: 0; border-radius: 10px; font-weight: bold; margin-top: 8px; }
-  .add { background: #eee; color: #333; }
-  .go { background: #0b5d4b; color: #fff; font-size: 21px; }
-  .go:disabled { background: #999; }
-  #msg { white-space: pre-line; margin-top: 12px; font-size: 16px; }
-  .ok { color: #1a7f37; font-weight: bold; } .err { color: #b3261e; font-weight: bold; }
-  table { width: 100%; border-collapse: collapse; font-size: 16px; }
-  td { padding: 6px 4px; border-bottom: 1px solid #eee; text-align: center; }
-  select { font-size: 18px; padding: 8px; width: 100%; border: 2px solid #bf9000; border-radius: 10px; background: #fff; margin-bottom: 12px; }
-  .tiles { display: flex; gap: 8px; margin-bottom: 12px; }
-  .tile { flex: 1; background: #f6f1e3; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .tile b { display: block; font-size: 24px; color: #0b5d4b; } .tile.alt b { color: #b3261e; }
-  .tile span { font-size: 13px; color: #555; }
-  .sub { font-weight: bold; margin: 12px 0 4px; }
-  .muted { color: #777; font-size: 14px; }
-  .pin { font-size: 22px; padding: 10px; border: 2px solid #0b5d4b; border-radius: 10px; text-align: center; width: 100%; box-sizing: border-box; margin-top: 10px; }
-  #waiting tr.w { cursor: pointer; } #waiting tr.w:active { background: #f6f1e3; }
-  .fitbox { display: block; margin: 6px 2px 0; padding: 8px 10px; border-radius: 10px; background: #fff3cd; border: 2px solid #bf9000; font-size: 17px; font-weight: bold; }
-  .fitbox input { width: 22px; height: 22px; vertical-align: middle; }
+  .item { margin-bottom: 10px; }
+  .row { display: flex; gap: 8px; }
+  .row input { font-size: 20px; padding: 12px; border: 2px solid #e0d5c0; border-radius: 10px; text-align: center; min-width: 0; background: var(--gold-bg); transition: border-color 0.2s; outline: none; }
+  .row input:focus { border-color: var(--gold); }
+  .row .o { flex: 3; } .row .q { flex: 1; }
+  .info { min-height: 18px; font-size: 14px; padding: 4px 4px 0; color: #555; }
+  .info b { color: var(--green); } .info.bad, .info.bad b { color: var(--red); }
+  .fitbox { display: block; margin: 6px 2px 0; padding: 10px 12px; border-radius: 10px; background: #fff8e7; border: 2px solid #e8d38a; font-size: 15px; font-weight: 600; }
+  .fitbox input { width: 20px; height: 20px; vertical-align: middle; accent-color: var(--green); }
+  .pin { font-size: 20px; padding: 12px; border: 2px solid var(--green); border-radius: 10px; text-align: center; width: 100%; margin-top: 10px; background: #f0faf6; outline: none; }
+  .pin:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(11,93,75,0.12); }
+
+  /* ─── BUTTONS ─── */
+  button { font-size: 16px; width: 100%; padding: 14px; border: 0; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .add { background: #f0ebe0; color: #555; margin-top: 6px; }
+  .add:active { background: #e4dece; }
+  .go { background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%); color: #fff; font-size: 19px; margin-top: 10px; letter-spacing: 0.5px; }
+  .go:active { transform: scale(0.98); }
+  .go:disabled { background: #ccc; color: #888; }
+  #msg { white-space: pre-line; margin-top: 12px; font-size: 15px; text-align: center; }
+  .ok { color: var(--green); font-weight: bold; } .err { color: var(--red); font-weight: bold; }
+
+  /* ─── TABLES ─── */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { padding: 8px 4px; text-align: center; background: var(--gold-bg); color: var(--gold); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #f0ebe0; }
+  tr:last-child td { border-bottom: none; }
+  .total-row td { font-weight: 700; background: #f8f5ec; }
+
+  /* ─── MONTH SELECTOR ─── */
+  select { font-size: 16px; padding: 10px 12px; width: 100%; border: 2px solid #e0d5c0; border-radius: 10px; background: var(--gold-bg); color: var(--text); margin-bottom: 14px; appearance: auto; outline: none; }
+  select:focus { border-color: var(--gold); }
+
+  /* ─── MONTHLY DETAIL ─── */
+  .month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: linear-gradient(90deg, #f8f5ec, #fff); border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
+  .month-header .amount { color: var(--gold); font-size: 18px; }
+  .deduction-bar { padding: 10px 14px; background: #fff0f0; border-radius: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; color: var(--red); font-weight: 600; }
+  .net-bar { padding: 10px 14px; background: #f0faf6; border-radius: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; color: var(--green); font-weight: 700; font-size: 16px; }
+  .work-item { padding: 12px 14px; background: #fafafa; border-radius: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border-right: 3px solid var(--gold); }
+  .work-item .order { font-weight: 700; font-size: 15px; }
+  .work-item .detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .work-item .amount { font-weight: 700; color: var(--gold); }
+
+  .sub { font-weight: 700; margin: 14px 0 6px; font-size: 14px; color: var(--green); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 8px; display: block; }
+
+  /* ─── WAITING TABLE ─── */
+  #waiting tr.w { cursor: pointer; transition: background 0.15s; }
+  #waiting tr.w:active { background: var(--gold-bg); }
+
+  /* ─── PWA INSTALL ─── */
+  .pwa-btn { position: fixed; bottom: 16px; left: 16px; background: var(--gold); color: #fff; border: none; border-radius: 50px; padding: 10px 18px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.15); cursor: pointer; z-index: 200; display: none; }
+  .pwa-btn:active { transform: scale(0.96); }
+
+  /* ─── FILTER PILLS ─── */
+  .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; }
+  .pill { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 2px solid #e0d5c0; background: #fff; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+  .pill.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 </style>
 </head>
 <body>
 <? if (!ok) { ?>
-  <div class="card"><h1>الرابط غير صالح</h1><p>Link not valid – please ask the shop for your personal link.</p></div>
-<? } else { ?>
-  <div class="card">
-    <? if (photo) { ?><img class="me" src="<?!= photo ?>" alt=""><? } ?>
-    <h1><?= name ?></h1>
-    <div class="kind"><?= kind === 'CUT' ? 'قص – Cutting' : kind === 'HINGE' ? 'زرار – Hinge button' : kind === 'MEASURE' ? 'مقاس – Measuring' : kind === 'ARRIVE' ? 'الورشة – Arrived' : kind === 'EMBROIDERY' ? 'تطريز – Embroidery' : 'خياطة – Stitching' ?></div>
-    <div class="labels"><span>رقم الطلب / Order No</span><span>العدد / Pcs</span></div>
-    <div id="rows"></div>
-    <button class="add" onclick="addRow()">+ سطر / Add row</button>
-    <? if (needPin) { ?>
-      <input id="pin" class="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="الرقم السري / PIN">
-    <? } ?>
-    <button class="go" id="go" onclick="send()"><?= kind === 'ARRIVE' ? 'تم الوصول ✔ Arrived' : 'تحويل ◀ Transfer' ?></button>
-    <div id="msg"></div>
+  <div style="padding:40px 20px;text-align:center;">
+    <div class="card" style="max-width:400px;margin:0 auto;">
+      <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+      <h1 style="font-size:20px;color:var(--red);margin-bottom:8px;">الرابط غير صالح</h1>
+      <p style="color:var(--muted);font-size:15px;">Link not valid – please ask the shop for your personal link.</p>
+    </div>
   </div>
+<? } else { ?>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">JAMEEL AL HINDAM</div>
+  <div class="brand-sub">جميل الهندام</div>
+  <div class="header-profile">
+    <? if (photo) { ?><img class="header-photo" src="<?!= photo ?>" alt=""><? } else { ?><div class="header-photo-placeholder"><?= name.charAt(0) ?></div><? } ?>
+    <div>
+      <div class="header-name"><?= name ?></div>
+      <div class="header-role"><b><?= kind === 'CUT' ? 'قص – Cutting' : kind === 'HINGE' ? 'زرار – Hinge' : kind === 'MEASURE' ? 'مقاس – Measure' : kind === 'ARRIVE' ? 'الورشة – Workshop' : kind === 'EMBROIDERY' ? 'تطريز – Embroidery' : 'خياطة – Stitching' ?></b> · جميل الهندام</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-panel="work" onclick="switchTab(this)">
+    <?= kind === 'ARRIVE' ? '📦 الوصول' : '+ إضافة عمل' ?>
+  </div>
+  <div class="tab" data-panel="account" onclick="switchTab(this)">📊 حسابي</div>
   <? if (kind === 'ARRIVE') { ?>
-  <div class="card">
-    <h3>لم تصل بعد / Not arrived yet</h3>
-    <div class="muted">اضغط على الطلب لإضافته – tap an order to add it</div>
-    <div id="waiting">…</div>
+  <div class="tab" data-panel="pending" onclick="switchTab(this)">⏳ بانتظار</div>
+  <? } ?>
+</div>
+
+<div class="content">
+  <!-- STAT TILES (always visible) -->
+  <div class="tiles" id="top-tiles" style="margin-top:4px;">
+    <div class="tile"><b id="t-pcs">–</b><span>قطعة هذا الشهر<br>this month</span></div>
+    <div class="tile earn"><b id="t-earn">–</b><span>الأجر<br>earned</span></div>
+    <div class="tile alt"><b id="t-alts">–</b><span>تعديلات<br>alterations</span></div>
+  </div>
+
+  <!-- PANEL: WORK ENTRY -->
+  <div class="panel active" id="p-work">
+    <div class="card">
+      <div class="card-title"><span class="icon"><?= kind === 'ARRIVE' ? '📦' : '🧵' ?></span> <?= kind === 'ARRIVE' ? 'تسجيل الوصول / Mark arrived' : 'إضافة عمل / Add work' ?></div>
+      <div class="form-hint">أدخل رقم الطلب والعدد – enter order number and pieces</div>
+      <div class="labels"><span>رقم الطلب / Order</span><span>العدد / Pcs</span></div>
+      <div id="rows"></div>
+      <button class="add" onclick="addRow()">+ إضافة سطر / Add row</button>
+      <? if (needPin) { ?>
+        <input id="pin" class="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="🔑 الرقم السري / PIN">
+      <? } ?>
+      <button class="go" id="go" onclick="send()"><?= kind === 'ARRIVE' ? '✔ تم الوصول / Arrived' : '◀ تحويل / Transfer' ?></button>
+      <div id="msg"></div>
+    </div>
+
+    <!-- TODAY'S WORK -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> عملي اليوم / Today</div>
+      <div id="today"><div class="empty-state"><span class="icon">✨</span>لا يوجد بعد – nothing yet</div></div>
+    </div>
+  </div>
+
+  <!-- PANEL: ACCOUNT / HISAAB -->
+  <div class="panel" id="p-account">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> حسابي الشهري / My Account</div>
+      <div id="month"><div class="empty-state"><span class="icon">📊</span>لا يوجد بعد – nothing yet</div></div>
+    </div>
+  </div>
+
+  <? if (kind === 'ARRIVE') { ?>
+  <!-- PANEL: PENDING (ARRIVE only) -->
+  <div class="panel" id="p-pending">
+    <div class="card">
+      <div class="card-title"><span class="icon">⏳</span> لم تصل بعد / Not arrived yet</div>
+      <div class="muted" style="margin-bottom:10px;">اضغط على الطلب لإضافته – tap to add</div>
+      <div id="waiting"><div class="empty-state"><span class="icon">📦</span>جاري التحميل…</div></div>
+    </div>
   </div>
   <? } ?>
-  <div class="card">
-    <h3>عملي اليوم / My work today</h3>
-    <div id="today">…</div>
-  </div>
-  <div class="card">
-    <h3>عملي الشهري / My work by month</h3>
-    <div id="month">…</div>
-  </div>
-  <script>
-    var TOKEN = <?= token ?>;
-    var IS_ARRIVE = <?= kind === 'ARRIVE' ?>;
-    var KIND = <?= kind ?>;
-    var STATS = null;
-    // the workshop: orders still to arrive; a tap puts the order and its pieces in the first empty row
-    function showWaiting(list) {
-      var el = document.getElementById('waiting');
-      if (!el) return;
-      if (!list || !list.length) { el.textContent = 'لا يوجد – nothing waiting'; return; }
-      var h = '<table><tr><td><b>الطلب</b></td><td><b>المتبقي</b></td><td><b>الإجمالي</b></td></tr>';
-      list.forEach(function (r) {
-        h += '<tr class="w" data-o="' + esc(r.order) + '" data-q="' + esc(r.left) + '"><td>' + esc(r.order) + '</td><td>' + esc(r.left) + '</td><td>' + esc(r.total) + '</td></tr>';
-      });
-      el.innerHTML = h + '</table><div class="muted">' + list.length + ' طلب – orders</div>';
-      el.querySelectorAll('tr.w').forEach(function (tr) {
-        tr.addEventListener('click', function () { pick(tr.getAttribute('data-o'), tr.getAttribute('data-q')); });
-      });
-    }
-    function pick(order, qty) {
-      var items = document.querySelectorAll('#rows .item'), d = null;
-      for (var i = 0; i < items.length; i++) if (!items[i].querySelector('.o').value.trim()) { d = items[i]; break; }
-      if (!d) { addRow(); items = document.querySelectorAll('#rows .item'); d = items[items.length - 1]; }
-      d.querySelector('.o').value = order;
-      d.querySelector('.q').value = qty;
-      lookup(d);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    function loadWaiting() { if (IS_ARRIVE) google.script.run.withSuccessHandler(showWaiting).waiting(TOKEN); }
-    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
-    function addRow() {
-      var d = document.createElement('div');
-      d.className = 'item';
-      d.innerHTML = '<div class="row"><input class="o" inputmode="numeric" placeholder="رقم الطلب"><input class="q" inputmode="numeric" value="1"></div>' +
-                    '<label class="fitbox" style="display:none"><input type="checkbox" class="fit"> <span></span></label>' +
-                    '<div class="info"></div>';
-      document.getElementById('rows').appendChild(d);
-      var o = d.querySelector('.o'), q = d.querySelector('.q'), timer = null;
-      o.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { lookup(d); }, 600); });
-      o.addEventListener('change', function () { clearTimeout(timer); lookup(d); });
-      q.addEventListener('input', function () { check(d); });
-      d.querySelector('.fit').addEventListener('change', function () { check(d); });
-    }
-    // total and pieces left of the typed order (for this worker's kind of work)
-    function lookup(d) {
-      var info = d.querySelector('.info'), no = d.querySelector('.o').value.replace(/\D/g, '');
-      d.data = null;
-      var fb = d.querySelector('.fitbox');
-      fb.style.display = 'none'; fb.querySelector('.fit').checked = false;
-      if (!no) { info.className = 'info'; info.textContent = ''; return; }
-      info.className = 'info'; info.textContent = '…';
-      google.script.run.withSuccessHandler(function (r) {
-        if (d.querySelector('.o').value.replace(/\D/g, '') !== no) return; // typed on meanwhile
-        if (!r) { info.textContent = ''; return; }
-        if (!r.found) { info.className = 'info bad'; info.textContent = 'غير موجود أو مكتمل – not found / finished'; return; }
-        d.data = r;
-        // fitting piece box: the master ticks "cut", the tailor "finished"
-        if (r.fit === 'cut' || r.fit === 'done') {
-          fb.style.display = '';
-          fb.querySelector('span').textContent = r.fit === 'cut' ? 'قص البروفة ✂ Fitting piece cut' : 'البروفة جاهزة ✔ Fitting piece finished';
-        }
-        // a tailor can stitch only what is cut: nothing cut yet → pieces 0 (the fitting piece can still be ticked)
-        if (KIND === 'STITCH' && r.cutAvail <= 0) d.querySelector('.q').value = '0';
-        check(d);
-      }).withFailureHandler(function () { info.textContent = ''; }).orderInfo(TOKEN, no);
-    }
-    function check(d) {
-      var r = d.data, info = d.querySelector('.info');
-      if (!r) return;
-      var q = parseInt(d.querySelector('.q').value, 10) || 0;
-      var fitOn = d.querySelector('.fit').checked;
-      var pcs = q + (fitOn ? 1 : 0);   // the fitting piece counts as one piece
-      var tailor = KIND === 'STITCH';
-      var notCut = tailor && pcs > r.cutAvail && pcs <= r.left;   // more than the masters have cut
-      var bad = pcs > r.left || notCut;
-      info.className = bad ? 'info bad' : 'info';
-      info.innerHTML = 'الإجمالي <b>' + r.total + '</b> – المتبقي <b>' + r.left + '</b>' +
-                       '&nbsp;&nbsp;|&nbsp;&nbsp;Total <b>' + r.total + '</b> – Left <b>' + r.left + '</b>' +
-                       (fitOn ? '<br>+1 بروفة – the fitting piece counts as 1 pc' : '') +
-                       (pcs > r.left ? '<br>أكثر من المتبقي – more than left' : '') +
-                       (tailor ? '<br>المقصوص الجاهز للخياطة <b>' + r.cutAvail + '</b> – cut, ready to stitch <b>' + r.cutAvail + '</b>' : '') +
-                       (notCut ? '<br><b>المقصوص ' + r.cutAvail + ' فقط – only ' + r.cutAvail + ' pcs cut</b>' : '') +
-                       (r.fit === 'waitcut' ? '<br>البروفة لم تُقص بعد – fitting piece not cut yet' : '');
-    }
-    function showToday(list) {
-      var el = document.getElementById('today');
-      if (!list || !list.length) { el.textContent = 'لا يوجد – nothing yet'; return; }
-      var total = 0, h = '<table><tr><td><b>الوقت</b></td><td><b>الطلب</b></td><td><b>العدد</b></td></tr>';
-      list.forEach(function (r) {
-        total += Number(r.qty);
-        // the fitting piece is one of the pieces: "2 + بروفة" = 3 pcs, "بروفة" = 1 pc
-        var shown = r.fit ? (r.qty - 1 > 0 ? (r.qty - 1) + ' + بروفة' : 'بروفة') : r.qty;
-        h += '<tr><td>' + esc(r.time) + '</td><td>' + esc(r.order) + '</td><td>' + esc(shown) + '</td></tr>';
-      });
-      el.innerHTML = h + '<tr><td></td><td><b>المجموع / Total</b></td><td><b>' + total + '</b></td></tr></table>';
-    }
-    // ---- my work by month (summary made by the shop app, updated every few minutes)
-    function monthName(ym) {
-      var names = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-      var p = ym.split('-');
-      return names[parseInt(p[1], 10) - 1] + ' ' + p[0];
-    }
-    function money(v) { return (Number(v) || 0).toFixed(2) + ' ر.س.'; }
-    function showStats(s) {
-      STATS = s || { months: [], work: [], alts: [] };
-      var el = document.getElementById('month');
-      if (!STATS.months.length) { el.textContent = 'لا يوجد بعد – nothing yet'; return; }
-      var tp = 0, ta = 0, te = 0;
-      STATS.months.forEach(function (m) { tp += Number(m[1]); ta += Number(m[3]); te += Number(m[5] || 0); });
-      var h = '<select id="ym" onchange="showMonth()"><option value="">المجموع (12 شهر) – Total 12 months</option>';
-      STATS.months.forEach(function (m, i) { h += '<option value="' + esc(m[0]) + '"' + (i === 0 ? ' selected' : '') + '>' + esc(monthName(m[0])) + '</option>'; });
-      h += '</select><div id="mdetail"></div>' +
-           '<div class="muted">المجموع 12 شهر: ' + tp + ' قطعة – ' + ta + ' تعديل' + (te > 0 ? ' – ' + money(te) : '') +
-           ' &nbsp;|&nbsp; 12 months: ' + tp + ' pcs – ' + ta + ' alts' + (te > 0 ? ' – ' + money(te) : '') + '</div>';
-      el.innerHTML = h;
-      showMonth();
-    }
-    function showMonth() {
-      var ym = document.getElementById('ym').value, el = document.getElementById('mdetail');
-      var pcs = 0, orders = 0, alts = 0, earn = 0;
-      STATS.months.forEach(function (m) { if (!ym || m[0] === ym) { pcs += Number(m[1]); orders += Number(m[2]); alts += Number(m[3]); earn += Number(m[5] || 0); } });
-      var h = '<div class="tiles"><div class="tile"><b>' + pcs + '</b><span>قطعة / pcs</span></div>' +
-              '<div class="tile"><b>' + orders + '</b><span>طلب / orders</span></div>' +
-              (earn > 0 ? '<div class="tile"><b>' + money(earn) + '</b><span>الأجر / earned</span></div>' : '') +
-              '<div class="tile alt"><b>' + alts + '</b><span>تعديل / alts</span></div></div>';
-      if (!ym) {
-        h += '<table><tr><td><b>الشهر</b></td><td><b>قطع</b></td><td><b>طلبات</b></td>' + (earn > 0 ? '<td><b>الأجر</b></td>' : '') + '<td><b>تعديلات</b></td></tr>';
-        STATS.months.forEach(function (m) { h += '<tr><td>' + esc(monthName(m[0])) + '</td><td>' + esc(m[1]) + '</td><td>' + esc(m[2]) + '</td>' + (earn > 0 ? '<td>' + money(m[5]) + '</td>' : '') + '<td>' + esc(m[3]) + '</td></tr>'; });
-        h += '</table>';
-      } else {
-        var work = STATS.work.filter(function (w) { return String(w[0]).slice(0, 7) === ym; });
-        if (work.length) {
-          h += '<div class="sub">عملي / My work</div><table><tr><td><b>التاريخ</b></td><td><b>الطلب</b></td><td><b>العدد</b></td></tr>';
-          work.forEach(function (w) { h += '<tr><td>' + esc(String(w[0]).slice(5).split('-').reverse().join('-')) + '</td><td>' + esc(w[1]) + '</td><td>' + esc(w[2]) + '</td></tr>'; });
-          h += '</table>';
-        } else if (pcs > 0) {
-          h += '<div class="muted">التفاصيل متاحة لآخر 3 أشهر فقط – details only for the last 3 months</div>';
-        }
-        var alts2 = STATS.alts.filter(function (a) { return String(a[0]).slice(0, 7) === ym; });
-        if (alts2.length) {
-          h += '<div class="sub">تعديلاتي / My alterations</div><table><tr><td><b>التاريخ</b></td><td><b>رقم التعديل</b></td><td><b>الطلب</b></td><td><b>العدد</b></td><td><b>الحالة</b></td></tr>';
-          alts2.forEach(function (a) {
-            var st = { Pending: 'قيد الانتظار', Ready: 'جاهز', Delivered: 'تم التسليم' }[a[4]] || a[4];
-            h += '<tr><td>' + esc(String(a[0]).slice(5).split('-').reverse().join('-')) + '</td><td>' + esc(a[1]) + '</td><td>' + esc(a[2] || '-') + '</td><td>' + esc(a[3]) + '</td><td>' + esc(st) + '</td></tr>';
-          });
-          h += '</table>';
-        }
+</div>
+
+<!-- PWA Install -->
+<button class="pwa-btn" id="pwa-install" onclick="pwaInstall()">📲 تثبيت التطبيق</button>
+
+<script>
+  var TOKEN = <?= token ?>;
+  var IS_ARRIVE = <?= kind === 'ARRIVE' ?>;
+  var KIND = <?= kind ?>;
+  var STATS = null;
+
+  /* ─── TABS ─── */
+  function switchTab(el) {
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+    el.classList.add('active');
+    var pnl = document.getElementById('p-' + el.getAttribute('data-panel'));
+    if (pnl) pnl.classList.add('active');
+  }
+
+  /* ─── WAITING LIST (ARRIVE) ─── */
+  function showWaiting(list) {
+    var el = document.getElementById('waiting');
+    if (!el) return;
+    if (!list || !list.length) { el.innerHTML = '<div class="empty-state"><span class="icon">✅</span>لا يوجد – nothing waiting</div>'; return; }
+    var h = '<table><tr><th>الطلب</th><th>المتبقي</th><th>الإجمالي</th></tr>';
+    list.forEach(function(r){
+      h += '<tr class="w" data-o="'+esc(r.order)+'" data-q="'+esc(r.left)+'"><td>'+esc(r.order)+'</td><td>'+esc(r.left)+'</td><td>'+esc(r.total)+'</td></tr>';
+    });
+    el.innerHTML = h + '</table><div class="muted" style="margin-top:8px;text-align:center;">'+list.length+' طلب – orders</div>';
+    el.querySelectorAll('tr.w').forEach(function(tr){
+      tr.addEventListener('click', function(){ pick(tr.getAttribute('data-o'), tr.getAttribute('data-q')); });
+    });
+  }
+  function pick(order, qty){
+    // switch to work tab
+    document.querySelector('.tab[data-panel="work"]').click();
+    var items = document.querySelectorAll('#rows .item'), d = null;
+    for(var i=0;i<items.length;i++) if(!items[i].querySelector('.o').value.trim()){ d=items[i]; break; }
+    if(!d){ addRow(); items=document.querySelectorAll('#rows .item'); d=items[items.length-1]; }
+    d.querySelector('.o').value=order;
+    d.querySelector('.q').value=qty;
+    lookup(d);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function loadWaiting(){ if(IS_ARRIVE) google.script.run.withSuccessHandler(showWaiting).waiting(TOKEN); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return '&#'+c.charCodeAt(0)+';'; }); }
+
+  /* ─── FORM ROWS ─── */
+  function addRow(){
+    var d=document.createElement('div'); d.className='item';
+    d.innerHTML='<div class="row"><input class="o" inputmode="numeric" placeholder="رقم الطلب"><input class="q" inputmode="numeric" value="1"></div>'+
+      '<label class="fitbox" style="display:none"><input type="checkbox" class="fit"> <span></span></label>'+
+      '<div class="info"></div>';
+    document.getElementById('rows').appendChild(d);
+    var o=d.querySelector('.o'),q=d.querySelector('.q'),timer=null;
+    o.addEventListener('input',function(){ clearTimeout(timer); timer=setTimeout(function(){ lookup(d); },600); });
+    o.addEventListener('change',function(){ clearTimeout(timer); lookup(d); });
+    q.addEventListener('input',function(){ check(d); });
+    d.querySelector('.fit').addEventListener('change',function(){ check(d); });
+  }
+
+  function lookup(d){
+    var info=d.querySelector('.info'),no=d.querySelector('.o').value.replace(/\D/g,'');
+    d.data=null;
+    var fb=d.querySelector('.fitbox');
+    fb.style.display='none'; fb.querySelector('.fit').checked=false;
+    if(!no){ info.className='info'; info.textContent=''; return; }
+    info.className='info'; info.textContent='…';
+    google.script.run.withSuccessHandler(function(r){
+      if(d.querySelector('.o').value.replace(/\D/g,'')!==no) return;
+      if(!r){ info.textContent=''; return; }
+      if(!r.found){ info.className='info bad'; info.textContent='غير موجود أو مكتمل – not found / finished'; return; }
+      d.data=r;
+      if(r.fit==='cut'||r.fit==='done'){
+        fb.style.display='';
+        fb.querySelector('span').textContent=r.fit==='cut'?'قص البروفة ✂ Fitting piece cut':'البروفة جاهزة ✔ Fitting piece finished';
       }
-      el.innerHTML = h;
-    }
-    function send() {
-      var rows = [];
-      document.querySelectorAll('#rows .item').forEach(function (r) {
-        var o = r.querySelector('.o').value.trim(), q = r.querySelector('.q').value.trim();
-        if (o) rows.push({ order: o, qty: q, fit: r.querySelector('.fit').checked });
+      if(KIND==='STITCH'&&r.cutAvail<=0) d.querySelector('.q').value='0';
+      check(d);
+    }).withFailureHandler(function(){ info.textContent=''; }).orderInfo(TOKEN,no);
+  }
+
+  function check(d){
+    var r=d.data,info=d.querySelector('.info');
+    if(!r) return;
+    var q=parseInt(d.querySelector('.q').value,10)||0;
+    var fitOn=d.querySelector('.fit').checked;
+    var pcs=q+(fitOn?1:0);
+    var tailor=KIND==='STITCH';
+    var notCut=tailor&&pcs>r.cutAvail&&pcs<=r.left;
+    var bad=pcs>r.left||notCut;
+    info.className=bad?'info bad':'info';
+    info.innerHTML='الإجمالي <b>'+r.total+'</b> – المتبقي <b>'+r.left+'</b>'+
+      '&nbsp;&nbsp;|&nbsp;&nbsp;Total <b>'+r.total+'</b> – Left <b>'+r.left+'</b>'+
+      (fitOn?'<br>+1 بروفة – fitting piece = 1 pc':'')+
+      (pcs>r.left?'<br>أكثر من المتبقي – more than left':'')+
+      (tailor?'<br>جاهز للخياطة <b>'+r.cutAvail+'</b> – cut ready <b>'+r.cutAvail+'</b>':'')+
+      (notCut?'<br><b>المقصوص '+r.cutAvail+' فقط – only '+r.cutAvail+' cut</b>':'')+
+      (r.fit==='waitcut'?'<br>البروفة لم تُقص بعد – fitting not cut yet':'');
+  }
+
+  /* ─── TODAY'S WORK ─── */
+  function showToday(list){
+    var el=document.getElementById('today');
+    if(!list||!list.length){ el.innerHTML='<div class="empty-state"><span class="icon">✨</span>لا يوجد بعد – nothing yet</div>'; return; }
+    var total=0, h='<table><tr><th>الوقت</th><th>الطلب</th><th>العدد</th></tr>';
+    list.forEach(function(r){
+      total+=Number(r.qty);
+      var shown=r.fit?(r.qty-1>0?(r.qty-1)+' + بروفة':'بروفة'):r.qty;
+      h+='<tr><td>'+esc(r.time)+'</td><td>'+esc(r.order)+'</td><td>'+esc(shown)+'</td></tr>';
+    });
+    h+='<tr class="total-row"><td></td><td><b>المجموع / Total</b></td><td><b>'+total+'</b></td></tr>';
+    el.innerHTML=h+'</table>';
+  }
+
+  /* ─── MONTHLY STATS ─── */
+  function monthName(ym){
+    var ar=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    var en=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var p=ym.split('-'); var mi=parseInt(p[1],10)-1;
+    return ar[mi]+' '+p[0]+' – '+en[mi];
+  }
+  function money(v){ return (Number(v)||0).toFixed(2)+' ر.س.'; }
+
+  function updateTopTiles(pcs,earn,alts){
+    document.getElementById('t-pcs').textContent=pcs;
+    document.getElementById('t-earn').textContent=earn>0?money(earn):'–';
+    document.getElementById('t-alts').textContent=alts;
+  }
+
+  function showStats(s){
+    STATS=s||{months:[],work:[],alts:[]};
+    var el=document.getElementById('month');
+    if(!STATS.months.length){ el.innerHTML='<div class="empty-state"><span class="icon">📊</span>لا يوجد بعد – nothing yet</div>'; updateTopTiles(0,'–',0); return; }
+
+    // top tiles: current month
+    var cm=STATS.months[0];
+    updateTopTiles(cm[1], cm[5]||0, cm[3]);
+
+    var tp=0,ta=0,te=0;
+    STATS.months.forEach(function(m){ tp+=Number(m[1]); ta+=Number(m[3]); te+=Number(m[5]||0); });
+
+    var h='<select id="ym" onchange="showMonth()"><option value="">المجموع (12 شهر) – Total 12 months</option>';
+    STATS.months.forEach(function(m,i){ h+='<option value="'+esc(m[0])+'"'+(i===0?' selected':'')+'>'+esc(monthName(m[0]))+'</option>'; });
+    h+='</select><div id="mdetail"></div>';
+    h+='<div class="muted" style="text-align:center;margin-top:10px;">المجموع 12 شهر: '+tp+' قطعة – '+ta+' تعديل'+(te>0?' – '+money(te):'')+
+       '<br>12-month total: '+tp+' pcs – '+ta+' alts'+(te>0?' – '+money(te):'')+'</div>';
+    el.innerHTML=h;
+    showMonth();
+  }
+
+  function showMonth(){
+    var ym=document.getElementById('ym').value, el=document.getElementById('mdetail');
+    var pcs=0,orders=0,alts=0,earn=0;
+    STATS.months.forEach(function(m){ if(!ym||m[0]===ym){ pcs+=Number(m[1]); orders+=Number(m[2]); alts+=Number(m[3]); earn+=Number(m[5]||0); } });
+
+    // update top tiles if a specific month selected
+    if(ym){ updateTopTiles(pcs,earn,alts); }
+    else { var cm=STATS.months[0]; updateTopTiles(cm[1],cm[5]||0,cm[3]); }
+
+    var h='<div class="tiles">'+
+      '<div class="tile"><b>'+pcs+'</b><span>قطعة / pcs</span></div>'+
+      '<div class="tile"><b>'+orders+'</b><span>طلب / orders</span></div>'+
+      (earn>0?'<div class="tile earn"><b>'+money(earn)+'</b><span>الأجر / earned</span></div>':'')+
+      '<div class="tile alt"><b>'+alts+'</b><span>تعديل / alts</span></div></div>';
+
+    if(!ym){
+      h+='<table><tr><th>الشهر</th><th>قطع</th><th>طلبات</th>'+(earn>0?'<th>الأجر</th>':'')+'<th>تعديلات</th></tr>';
+      STATS.months.forEach(function(m){
+        var mn=monthName(m[0]).split(' – ')[0]+' '+m[0].split('-')[0];
+        h+='<tr><td>'+esc(mn)+'</td><td>'+esc(m[1])+'</td><td>'+esc(m[2])+'</td>'+(earn>0?'<td>'+money(m[5])+'</td>':'')+'<td>'+esc(m[3])+'</td></tr>';
       });
-      var msg = document.getElementById('msg'), go = document.getElementById('go'), pinEl = document.getElementById('pin');
-      if (!rows.length) { msg.className = 'err'; msg.textContent = 'اكتب رقم الطلب – enter the order number'; return; }
-      if (pinEl && !pinEl.value.trim()) { msg.className = 'err'; msg.textContent = 'اكتب الرقم السري – enter your PIN'; pinEl.focus(); return; }
-      go.disabled = true; msg.className = ''; msg.textContent = '…';
-      google.script.run
-        .withSuccessHandler(function (r) {
-          go.disabled = false;
-          msg.className = r.ok ? 'ok' : 'err';
-          msg.textContent = r.msg;
-          if (r.ok) {
-            document.getElementById('rows').innerHTML = '';
-            addRow(); addRow(); addRow();
-            showToday(r.today);
-            loadWaiting();
-          } else if (r.pin && pinEl) { pinEl.value = ''; pinEl.focus(); }
-        })
-        .withFailureHandler(function () {
-          go.disabled = false; msg.className = 'err';
-          msg.textContent = 'لا يوجد اتصال، حاول مرة أخرى – No connection, try again';
-        })
-        .submit(TOKEN, rows, pinEl ? pinEl.value : '');
+      h+='</table>';
+    } else {
+      // per-order work items (Diamond Fashions style)
+      var work=STATS.work.filter(function(w){ return String(w[0]).slice(0,7)===ym; });
+      if(work.length){
+        h+='<div class="sub">🧵 عملي / My work</div>';
+        work.forEach(function(w){
+          var dt=String(w[0]).slice(5).split('-').reverse().join('/');
+          h+='<div class="work-item"><div><div class="order">'+esc(w[1])+'</div><div class="detail">'+esc(dt)+' · '+esc(w[2])+' قطعة</div></div><div class="amount">'+esc(w[2])+' pcs</div></div>';
+        });
+      } else if(pcs>0){
+        h+='<div class="muted" style="text-align:center;padding:10px;">التفاصيل لآخر 3 أشهر فقط<br>Details only for last 3 months</div>';
+      }
+      var alts2=STATS.alts.filter(function(a){ return String(a[0]).slice(0,7)===ym; });
+      if(alts2.length){
+        h+='<div class="sub">⚠ تعديلاتي / Alterations</div>';
+        h+='<table><tr><th>التاريخ</th><th>رقم</th><th>الطلب</th><th>العدد</th><th>الحالة</th></tr>';
+        alts2.forEach(function(a){
+          var st={Pending:'قيد الانتظار',Ready:'جاهز',Delivered:'تم التسليم'}[a[4]]||a[4];
+          h+='<tr><td>'+esc(String(a[0]).slice(5).split('-').reverse().join('/'))+
+            '</td><td>'+esc(a[1])+'</td><td>'+esc(a[2]||'-')+'</td><td>'+esc(a[3])+'</td><td>'+esc(st)+'</td></tr>';
+        });
+        h+='</table>';
+      }
     }
-    addRow(); addRow(); addRow();
-    loadWaiting();
-    google.script.run.withSuccessHandler(showToday).myToday(TOKEN);
-    google.script.run.withSuccessHandler(showStats).myStats(TOKEN);
-  </script>
+    el.innerHTML=h;
+  }
+
+  /* ─── SEND ─── */
+  function send(){
+    var rows=[];
+    document.querySelectorAll('#rows .item').forEach(function(r){
+      var o=r.querySelector('.o').value.trim(),q=r.querySelector('.q').value.trim();
+      if(o) rows.push({order:o,qty:q,fit:r.querySelector('.fit').checked});
+    });
+    var msg=document.getElementById('msg'),go=document.getElementById('go'),pinEl=document.getElementById('pin');
+    if(!rows.length){ msg.className='err'; msg.textContent='أدخل رقم الطلب – enter order number'; return; }
+    if(pinEl&&!pinEl.value.trim()){ msg.className='err'; msg.textContent='أدخل الرقم السري – enter PIN'; pinEl.focus(); return; }
+    go.disabled=true; msg.className=''; msg.textContent='⏳ جاري الإرسال…';
+    google.script.run
+      .withSuccessHandler(function(r){
+        go.disabled=false;
+        msg.className=r.ok?'ok':'err';
+        msg.textContent=r.msg;
+        if(r.ok){
+          document.getElementById('rows').innerHTML='';
+          addRow(); addRow(); addRow();
+          showToday(r.today);
+          loadWaiting();
+        } else if(r.pin&&pinEl){ pinEl.value=''; pinEl.focus(); }
+      })
+      .withFailureHandler(function(){
+        go.disabled=false; msg.className='err';
+        msg.textContent='لا يوجد اتصال – No connection, try again';
+      })
+      .submit(TOKEN, rows, pinEl?pinEl.value:'');
+  }
+
+  /* ─── PWA INSTALL ─── */
+  var deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredPrompt=e; document.getElementById('pwa-install').style.display='block'; });
+  function pwaInstall(){ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; document.getElementById('pwa-install').style.display='none'; } }
+
+  /* ─── INIT ─── */
+  addRow(); addRow(); addRow();
+  loadWaiting();
+  google.script.run.withSuccessHandler(showToday).myToday(TOKEN);
+  google.script.run.withSuccessHandler(showStats).myStats(TOKEN);
+</script>
 <? } ?>
 </body>
 </html>
