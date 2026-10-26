@@ -1,8 +1,9 @@
 {
   "name": "جميل الهندام – Jameel Al Hindam",
   "short_name": "Jameel",
-  "description": "Shop management – إدارة المحل",
-  "start_url": "/app/",
+  "id": "/exec",
+  "description": "Worker & Admin pages – صفحات العمال والإدارة",
+  "start_url": "/exec",
   "scope": "/",
   "display": "standalone",
   "background_color": "#eef5f3",
