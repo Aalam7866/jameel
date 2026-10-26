@@ -3,7 +3,7 @@
 // The shop PC (ShopSync) puts the data here and collects what the pages write.
 import { db, sha256, riyadh, workDay } from './fb.js';
 import {
-  doc, getDoc, getDocs, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp,
+  doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const J = (s, d) => { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } };
@@ -391,8 +391,33 @@ async function aAct(key, pin, act) {
   return { ok: true, acts: await actList(r) };
 }
 
+// ================================================================ admin: work rates (?a=KEY)
+const RATE_KINDS = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
+async function aRates(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const s = await getDoc(doc(db, 'sys', 'rates'));
+  const d = s.exists() ? s.data() : {};
+  const rates = {};
+  for (const k of RATE_KINDS) rates[k] = Number(d[k]) || 0;
+  return { rates, updated: d.at && d.at.toDate ? riyadh(d.at.toDate()) : '' };
+}
+async function aSetRates(key, pin, rates) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  if (!rates || typeof rates !== 'object') return { ok: false, msg: 'بيانات غير صحيحة – invalid data' };
+  const clean = { at: serverTimestamp() };
+  for (const k of RATE_KINDS) {
+    const v = Math.round((Number(rates[k]) || 0) * 100) / 100;
+    if (v < 0 || v > 99999) return { ok: false, msg: k + ': المبلغ غير صحيح – invalid amount' };
+    clean[k] = v;
+  }
+  await setDoc(doc(db, 'sys', 'rates'), clean, { merge: true });
+  return { ok: true, msg: 'تم الحفظ ✔ Rates saved' };
+}
+
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
 };

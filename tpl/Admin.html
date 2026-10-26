@@ -51,6 +51,13 @@
   .seg { display: flex; gap: 8px; } .seg button { flex: 1; background: #eee; color: #333; } .seg button.on { background: #0b5d4b; color: #fff; }
   .sum { background: #f6f1e3; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
   .sum b { font-size: 17px; } .warn { color: #b3261e; font-weight: bold; white-space: pre-line; margin-top: 8px; }
+  .rates-grid { display: grid; gap: 10px; }
+  .rate-row { display: flex; align-items: center; gap: 10px; background: #f6f1e3; border-radius: 10px; padding: 10px 14px; }
+  .rate-row label { flex: 1; font-weight: bold; font-size: 15px; white-space: nowrap; }
+  .rate-row input { width: 120px; flex: none; font-size: 22px; font-weight: bold; text-align: center; border: 2px solid #bf9000; border-radius: 10px; padding: 8px; background: #fff; }
+  .rate-row input:focus { border-color: #0b5d4b; outline: none; }
+  .rate-ok { background: #d7f0df; color: #0b5d4b; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
+  .rate-err { background: #fde8e7; color: #b3261e; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
 </style>
 </head>
 <body>
@@ -99,6 +106,24 @@
     <div class="card">
       <h3>اليوم / Today</h3>
       <div class="tiles" id="tiles"></div>
+    </div>
+
+    <div class="card" id="ratesCard">
+      <h3>💲 أسعار العمل / Work Rates (SAR)</h3>
+      <div class="muted" style="margin-bottom:10px">يحدد سعر كل قطعة حسب نوع العمل – يُستخدم لحساب أرباح العمال<br>Set the per-piece rate for each work type – used to calculate worker earnings</div>
+      <div id="ratesLoad" class="muted">جاري التحميل… / Loading…</div>
+      <div id="ratesBody" style="display:none">
+        <div class="rates-grid">
+          <div class="rate-row"><label>✂️ قص / Cutting</label><input id="rCUT" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+          <div class="rate-row"><label>🧵 خياطة / Stitching</label><input id="rSTITCH" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+          <div class="rate-row"><label>🔘 زرار / Hinge</label><input id="rHINGE" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+          <div class="rate-row"><label>📏 مقاس / Measuring</label><input id="rMEASURE" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+          <div class="rate-row"><label>🪡 تطريز / Embroidery</label><input id="rEMBROIDERY" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></div>
+        </div>
+        <div id="ratesUpdated" class="muted" style="margin-top:6px"></div>
+        <div id="ratesMsg"></div>
+        <button class="b1 wide" id="ratesSave" onclick="saveRates()">حفظ الأسعار / Save Rates</button>
+      </div>
     </div>
   </div>
 
@@ -149,6 +174,7 @@
         $('pinBox').style.display = 'none'; $('ctl').style.display = 'block'; $('main').style.display = 'block';
         show(r);
         showState();
+        loadRates();
         if (!timer) { timer = setInterval(poll, 20000); loadOrders(); setInterval(loadOrders, 60000); }
       }).withFailureHandler(function (e) { $('state').textContent = 'خطأ – ' + (e && e.message || e); }).aFeed(KEY, PIN);
     }
@@ -383,6 +409,36 @@
                (due > 0.005 || given < pcs ? '<td><button class="act' + (waitingFor(r[0]) ? ' wait' : '') + '" data-o="' + esc(r[0]) + '">' +
                                               (waitingFor(r[0]) ? '⏳' : '💰📦') + '</button></td>' : '<td class="c-no">✔</td>') + '</tr>';
       }).join('');
+    }
+
+    // ---------------- rates management
+    var RATE_KINDS = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
+    function loadRates() {
+      google.script.run.withSuccessHandler(function (r) {
+        $('ratesLoad').style.display = 'none';
+        if (!r) { $('ratesLoad').style.display = ''; $('ratesLoad').textContent = 'تعذر التحميل – could not load rates'; return; }
+        $('ratesBody').style.display = '';
+        RATE_KINDS.forEach(function (k) { $('r' + k).value = r.rates[k] || ''; });
+        if (r.updated) $('ratesUpdated').textContent = 'آخر تحديث / Last updated: ' + r.updated;
+      }).withFailureHandler(function (e) {
+        $('ratesLoad').textContent = 'خطأ – ' + (e && e.message || e);
+      }).aRates(KEY, PIN);
+    }
+    function saveRates() {
+      var rates = {};
+      RATE_KINDS.forEach(function (k) { rates[k] = Number($('r' + k).value) || 0; });
+      $('ratesSave').disabled = true;
+      $('ratesMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الحفظ… / Saving…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        $('ratesSave').disabled = false;
+        if (!r || !r.ok) { $('ratesMsg').innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ – error') + '</div>'; return; }
+        $('ratesMsg').innerHTML = '<div class="rate-ok">' + esc(r.msg) + '</div>';
+        $('ratesUpdated').textContent = 'آخر تحديث / Last updated: الآن – just now';
+        setTimeout(function () { $('ratesMsg').innerHTML = ''; }, 4000);
+      }).withFailureHandler(function (e) {
+        $('ratesSave').disabled = false;
+        $('ratesMsg').innerHTML = '<div class="rate-err">لا يوجد اتصال – no connection: ' + esc(e && e.message || e) + '</div>';
+      }).aSetRates(KEY, PIN, rates);
     }
 
     if (NEEDPIN) {
