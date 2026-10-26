@@ -228,6 +228,7 @@ async function homeView() {
   <div class="grid">
     <div class="stat tap" data-go="booked"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
     <div class="stat tap" data-go="booked"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
+    <div class="stat tap" data-go="booked"><b>${money(s.genixInv.amt)}</b><span>Genix invoice total (${s.genixInv.n})</span></div>
     <div class="stat tap" data-go="paid"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
     <div class="stat tap" data-go="duerecv"><b>${money(s.dueRecv.amt)}</b><span>Due received today – purane orders (${s.dueRecv.n})</span></div>
     <div class="stat tap" data-go="advance"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – aaj ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
@@ -445,6 +446,7 @@ async function summary() {
   return {
     today, now,
     booked: { n: bk.length, pcs: bk.reduce((s, o) => s + N(o.pcs), 0), amt: bk.reduce((s, o) => s + N(o.total), 0) },
+    genixInv: { n: bk.filter(o => o.invoice_no).length, amt: bk.filter(o => o.invoice_no).reduce((s, o) => s + N(o.total), 0) },
     paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
     dueRecv: (() => { const d = dueList(); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
     lists: { booked: bk, paid: pt, duerecv: dueList(), advance: pt.filter(p => !dueList().includes(p)), genix: gt },
@@ -569,7 +571,7 @@ async function dailySheet(day) {
   const hiddenCount = jh.rows.filter(x => String(x.day) === day && !dailyOverlay.clear.has(day)).length + [...dailyOverlay.add].filter(k => !jh.rows.some(x => String(x.key) === k)).length;
   return {
     day, lines, methods, grid, hiddenCount,
-    totals: { sell: lines.reduce((a, l) => a + (l.total || 0), 0), down: lines.reduce((a, l) => a + (l.down || 0), 0), due: lines.filter(l => l.src === 'PAY').reduce((a, l) => a + (l.due || 0), 0), tabby: paid('TABBY'), tamara: paid('TAMARA') },
+    totals: { sell: lines.reduce((a, l) => a + (l.total || 0), 0), down: lines.reduce((a, l) => a + (l.down || 0), 0), due: lines.filter(l => l.src === 'PAY').reduce((a, l) => a + (l.due || 0), 0), tabby: paid('TABBY'), tamara: paid('TAMARA'), genix: lines.filter(l => l.inv).reduce((a, l) => a + (l.total || 0), 0), genixN: lines.filter(l => l.inv).length },
   };
 }
 const n0 = (v) => { v = Number(v) || 0; return Math.abs(v % 1) >= 0.005 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'); };
@@ -638,6 +640,7 @@ function dailyCanvas(r) {
   line('#000', 1.6, x[3], top, x[3], bottom);
   const T = r.totals;
   const tot = [['TOTAL SELL', n0(T.sell), TOTL, 0], ['TOTAL DOWN PAYMENT', n0(T.down), LAV, 0], ['TOTAL DUE PAYMENT', n0(T.due), PEACH, 0],
+    ['GENIX INVOICE (' + T.genixN + ')', T.genix === 0 ? '' : n0(T.genix), 'rgb(215,240,223)', 0],
     ['TABBY', T.tabby === 0 ? '' : n0(T.tabby), LAV, 1], ['TAMARA', T.tamara === 0 ? '' : n0(T.tamara), LAV, 0]];
   let ty = bottom;
   tot.forEach(([lab, val, col, big], i) => {
@@ -741,6 +744,7 @@ async function dailyTableView(b) {
   t += `</tbody></table></div><div class="dstot">
     <div class="tl"><span>TOTAL SELL</span><b>${n0(r.totals.sell)}</b></div><div class="lav"><span>TOTAL DOWN PAYMENT</span><b>${n0(r.totals.down)}</b></div>
     <div class="peach"><span>TOTAL DUE PAYMENT</span><b>${n0(r.totals.due)}</b></div>
+    ${r.totals.genix ? `<div class="tl" style="background:#d7f0df"><span>TOTAL GENIX INVOICE (${r.totals.genixN})</span><b>${n0(r.totals.genix)}</b></div>` : ''}
     ${r.totals.tabby ? `<div class="lav"><span>TABBY</span><b>${n0(r.totals.tabby)}</b></div>` : ''}${r.totals.tamara ? `<div class="lav"><span>TAMARA</span><b>${n0(r.totals.tamara)}</b></div>` : ''}</div>
     ${r.lines.length ? '' : '<p class="muted center">Is din ka koi kaam nahin</p>'}</div>`;
   $('#dr', b).innerHTML = t;
