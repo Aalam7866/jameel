@@ -81,7 +81,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=7';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=8';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -112,6 +112,24 @@ const dmy = (s) => s ? String(s).slice(0, 10).split('-').reverse().join('-') : '
 const sar = (n) => (Math.round((+n || 0) * 100) / 100).toLocaleString('en-US') + ' ' + L('ر.س', 'SAR');
 const rate = (k) => +((me && me.rates) || {})[k] || 0;
 const amt = (w) => (+w.q || 0) * rate(w.kind);
+// my account: TailorShop's (all my work, from the shop PC) + what I sent that the shop has not taken yet (⏳)
+let acct = { pending: [], stats: { months: [], work: [] }, kstats: {} };
+function sources() { const ks = Object.keys(acct.kstats || {}); return me.kinds.length > 1 && ks.length ? ks.map(k => [k, acct.kstats[k]]) : [[me.kinds[0] || '', acct.stats || {}]]; }
+function items() {
+  const out = [];
+  sources().forEach(([k, st]) => (st.work || []).forEach(q => out.push({ d: String(q[0]).slice(0, 10), o: q[1], q: +q[2] || 0, kind: k, st: 'saved', time: '' })));
+  return out.concat(acct.pending || []);
+}
+function tally(mode, val) {
+  let pcs = 0, earn = 0;
+  const add = (k, n) => { pcs += n; earn += n * rate(k); };
+  if (mode === 'day') items().filter(w => w.d === val).forEach(w => add(w.kind, w.q));
+  else {
+    sources().forEach(([k, st]) => (st.months || []).forEach(m => { if (mode === 'all' || String(m[0]).slice(0, 7) === val) add(k, +m[1] || 0); }));
+    (acct.pending || []).filter(w => mode === 'all' || String(w.d).slice(0, 7) === val).forEach(w => add(w.kind, w.q));
+  }
+  return { pcs, earn };
+}
 let actx = null;
 function chime() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); [0, .15].forEach((dt, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = [880, 1320][i]; g.gain.setValueAtTime(.0001, actx.currentTime + dt); g.gain.exponentialRampToValueAtTime(.3, actx.currentTime + dt + .02); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + dt + .3); o.connect(g); g.connect(actx.destination); o.start(actx.currentTime + dt); o.stop(actx.currentTime + dt + .35); }); } catch (e) { } try { navigator.vibrate && navigator.vibrate(120); } catch (e) { } }
 document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { } }, { once: true });
@@ -145,7 +163,7 @@ async function refresh(quiet) {
   draw();
 }
 async function refreshWork() {
-  try { const r = await kWork(tok); if (r) { work = r.work; deds = r.ded; } } catch (e) { }
+  try { const r = await kWork(tok); if (r) { acct = r; deds = r.ded; } } catch (e) { }
   draw();
 }
 function pin() { try { return localStorage.getItem('k-pin-' + tok) || ''; } catch (e) { return ''; } }
@@ -176,9 +194,9 @@ function draw() {
   main.appendChild(el('div', { class: 'hello' }, [me.photo ? el('img', { class: 'av', src: me.photo, alt: '' }) : el('div', { class: 'av', text: String(me.name || '?').trim().charAt(0) }),
     el('div', null, [el('b', { text: L('أهلاً ', 'Hello, ') + me.name }), el('small', { text: me.kinds.map(kName).join(' · ') })])]));
   if (me.kinds.length > 1) main.appendChild(el('div', { class: 'kinds' }, me.kinds.map(k => el('button', { type: 'button', class: k === kind ? 'on' : '', text: kName(k), onclick: () => { kind = k; try { localStorage.setItem('k-kind-' + tok, k); } catch (e) { } found = null; open = null; lastForMe = -1; draw(); refresh(); } }))));
-  const m0 = today().slice(0, 7), mw = work.filter(w => String(w.d).slice(0, 7) === m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
-  const earn = mw.reduce((a, w) => a + amt(w), 0), ded = md.reduce((a, d) => a + d.amount, 0);
-  main.appendChild(el('div', { class: 'sum' }, [el('div', null, [el('b', { text: String(mw.reduce((a, w) => a + w.q, 0)) }), el('span', { text: L('قطع هذا الشهر', 'Pcs this month') })]),
+  const m0 = today().slice(0, 7), t0 = tally('month', m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
+  const earn = t0.earn, ded = md.reduce((a, d) => a + d.amount, 0);
+  main.appendChild(el('div', { class: 'sum' }, [el('div', null, [el('b', { text: String(t0.pcs) }), el('span', { text: L('قطع هذا الشهر', 'Pcs this month') })]),
     el('div', null, [el('b', { text: sar(earn) }), el('span', { text: L('الأجر', 'Earned') })]),
     el('div', null, [el('b', { style: 'color:var(--ok)', text: sar(Math.max(0, earn - ded)) }), el('span', { text: L('بعد الخصم', 'After deductions') })])]));
   if (tab === 'add') drawAdd(main); else if (tab === 'work') drawWork(main); else drawDed(main);
@@ -313,19 +331,19 @@ const inPeriod = (d) => { d = String(d || ''); return fmode === 'all' || (fmode 
 const periodLabel = () => fmode === 'day' ? dmy(fday) : fmode === 'month' ? new Date(fmonth + '-01T12:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn-ca-gregory', { month: 'long', year: 'numeric' }) : L('الكل', 'All');
 function drawWork(main) {
   filterBar(main);
-  const list = work.filter(w => inPeriod(w.d)).sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(b.time).localeCompare(String(a.time)));
-  const earn = list.reduce((a, w) => a + amt(w), 0), pcs = list.reduce((a, w) => a + w.q, 0);
+  const list = items().filter(w => inPeriod(w.d)).sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(b.time).localeCompare(String(a.time)) || (+b.o - +a.o));
+  const t = tally(fmode, fmode === 'day' ? fday : fmonth), earn = t.earn, pcs = t.pcs;
   const dd = deds.filter(d => inPeriod(d.date)), dsum = dd.reduce((a, d) => a + d.amount, 0);
   main.appendChild(el('div', { class: 'tot' }, [el('span', { text: periodLabel() + ' · ' + pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(earn) })]));
   if (dsum) main.appendChild(el('div', { class: 'tot bad', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '⚠ ' + L('الخصومات', 'Deductions') + ' (' + dd.length + ')' }), el('b', { text: '−' + sar(dsum) })]));
   main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: L('المستحق', 'To receive') }), el('b', { style: 'font-size:20px', text: sar(Math.max(0, earn - dsum)) })]));
   const byKind = {}; list.forEach(w => { byKind[w.kind] = (byKind[w.kind] || 0) + w.q; });
   if (Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
-  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
+  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), pcs ? L('التفاصيل لآخر 3 أشهر فقط.', 'Details only for the last 3 months.') : L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
   list.forEach(w => main.appendChild(el('div', { class: 'job' }, [
     el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
     el('div', { style: 'margin-top:4px', text: kName(w.kind) + ' · ' + w.q + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : '') + (rate(w.kind) ? ' × ' + sar(rate(w.kind)) : ' · ' + L('السعر يحدده المحل', 'rate pending')) }),
-    el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: dmy(w.d) + ' ' + w.time }),
+    el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: (dmy(w.d) + ' ' + (w.time || '')).trim() }),
       el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })])])));
 }
 function drawDed(main) {

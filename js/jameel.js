@@ -267,16 +267,25 @@ export async function kGiveBack(token, id) {
   if (s.exists() && s.data().token === w.token) await deleteDoc(ref);
   return { ok: true };
 }
+// TailorShop's own account of a worker (all his work: typed in the shop + imported from the links), sent by the shop PC:
+// months [ym 'YYYY-MM', pcs, orders, alts, …, earned], work [date, order, qty] (last 3 months). stats_KIND = one kind only.
+function shopStats(v) {
+  const kinds = String(v.kind || '').split(',').filter(Boolean), kstats = {};
+  for (const k of kinds) { const x = J(v['stats_' + k], null); if (x) kstats[k] = { months: x.months || [], work: x.work || [] }; }
+  const g = J(v.stats, null) || {};
+  return { stats: { months: g.months || [], work: g.work || [] }, kstats };
+}
 const entryOf = (x) => { const e = x.data(); return { id: x.id, kind: e.kind, o: e.o, q: Number(e.q) || 0, fit: e.fit === 1, st: e.st, d: e.d || '', time: tsStr(e.ts).slice(11, 16) }; };
 const dedOf = (x) => { const d = x.data(); return { id: x.id, amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '' }; };
 export async function kWork(token) {
   const w = await worker(token);
   if (!w) return null;
-  const [e, d] = await Promise.all([getDocs(collection(db, 'wk', w.token, 'e')), getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
-  const work = [], ded = [];
-  e.forEach(x => { const v = entryOf(x); if (v.st !== 'deleted') work.push(v); });
+  const [a, e, d] = await Promise.all([getDoc(doc(db, 'wk', w.token)), getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new'))),
+    getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
+  const pending = [], ded = [];
+  e.forEach(x => pending.push(entryOf(x)));            // sent from the link, not in TailorShop yet
   if (d) d.forEach(x => ded.push(dedOf(x)));
-  return { work, ded };
+  return { pending, ded, ...shopStats(a.exists() ? a.data() : w) };
 }
 
 // ================================================================ online new-order page (?o=KEY)
@@ -573,13 +582,14 @@ async function aWorkersAll(key, pin, ym) {
   for (const w of shop) { const t = String(w.web_token || ''); if (/^[0-9a-f]{32}$/.test(t) && Number(w.active) && !seen[t]) { seen[t] = 1; list.push({ token: t, src: 'shop', role: w.role || '' }); } }
   const out = await Promise.all(list.map(async (w) => {
     const [a, x, e, d] = await Promise.all([getDoc(doc(db, 'wk', w.token)), getDoc(doc(db, 'wkx', w.token)).catch(() => null),
-      getDocs(query(collection(db, 'wk', w.token, 'e'), where('d', '>=', ym + '-01'), where('d', '<=', ym + '-31'))).catch(() => null),
+      getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new'))).catch(() => null),
       getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
     if (!a.exists()) return null;
     const v = a.data(), xx = x && x.exists() ? x.data() : {}, work = [], ded = [];
-    if (e) e.forEach(y => { const q = entryOf(y); if (q.st !== 'deleted') work.push(q); });
+    if (e) e.forEach(y => work.push(entryOf(y)));       // pending: sent from the link, not in TailorShop yet
     if (d) d.forEach(y => ded.push(dedOf(y)));
-    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true, work, ded };
+    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
+             work, ded, ...shopStats(v) };
   }));
   const rd = rt.exists() ? rt.data() : {};
   return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),

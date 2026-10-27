@@ -542,22 +542,21 @@
         '</details></div>' : '';
       if (!list.length) { $('wList').innerHTML = '<div class="card muted">لا يوجد عمال – no workers yet</div>' + goneHtml; return; }
       $('wList').innerHTML = goneHtml + list.map(function (w) {
-        var t = esc(w.token), on = w.active, pcs = 0, earn = 0, ded = 0;
-        w.work.forEach(function (e) { pcs += e.q; earn += e.q * (rates[e.kind] || 0); });
+        var t = esc(w.token), on = w.active, ded = 0, a = wAccount(w, WD.ym, rates), pcs = a.pcs, earn = a.earn;
         var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; });
         dm.forEach(function (d) { ded += d.amount; });
-        var work = w.work.slice().sort(function (a, b) { return String(b.d + b.time).localeCompare(String(a.d + a.time)); });
+        var work = a.lines;
         var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
           '<div class="wtop"><div class="av">' + esc(String(w.name).trim().charAt(0) || '?') + '</div><div class="winfo"><b>' + esc(w.name) + '</b>' +
           '<div class="wkind">' + kindLabel(w.kind) + (w.phone ? ' · <span style="direction:ltr;unicode-bidi:isolate">' + esc(w.phone) + '</span>' : '') + (w.src === 'shop' ? ' · من المحل' : '') + '</div></div>' +
           '<span class="badge ' + (on ? 'ok' : 'bad') + '">' + (on ? 'نشط – active' : 'موقوف – blocked') + '</span></div>' +
-          '<div class="wsum"><div>' + pcs + '<span>قطعة / pcs</span></div><div>' + sar(earn) + '<span>الأجر / earned</span></div>' +
+          '<div class="wsum"><div>' + pcs + (a.pend ? '<small style="display:block;font-size:11px;color:#9a5b00">⏳ ' + a.pend + '</small>' : '') + '<span>قطعة / pcs</span></div><div>' + sar(earn) + '<span>الأجر / earned</span></div>' +
           '<div' + (ded ? ' style="color:#b3261e"' : '') + '>' + (ded ? '−' : '') + sar(ded) + '<span>خصم / deductions</span></div>' +
           '<div style="color:#1a7f37">' + sar(Math.max(0, earn - ded)) + '<span>المستحق / to pay</span></div></div>';
         if (work.length) h += '<details' + (WOPEN['w' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'w' + t + '\']=this.open"><summary>عمل هذا الشهر / this month (' + work.length + ')</summary>' +
           work.slice(0, 200).map(function (e) {
             return '<div class="wrow"><span>' + esc(day(e.d)) + ' · #' + esc(e.o) + ' · ' + (WKINDS[e.kind] || esc(e.kind)) + ' · ' + e.q + (e.fit ? ' (بروفة)' : '') + '</span>' +
-              '<span><b>' + (rates[e.kind] ? sar(e.q * rates[e.kind]) : '—') + '</b> ' + (e.st === 'new' ? '⏳' : '✔') + '</span></div>';
+              '<span><b>' + (rates[e.kind] ? sar(e.q * rates[e.kind]) : '—') + '</b> ' + (e.pending ? '⏳' : '✔') + '</span></div>';
           }).join('') + '</details>';
         if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات / deductions (' + w.ded.length + ')</summary>' +
           w.ded.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (d) {
@@ -583,6 +582,24 @@
           '</div></div>';
         return h;
       }).join('');
+    }
+    // a worker's month: TailorShop's account (shop PC) + what he sent from his link and TailorShop has not taken yet (⏳)
+    function wAccount(w, ym, rates) {
+      var kinds = String(w.kind || '').split(',').filter(Boolean), ks = Object.keys(w.kstats || {}), src = [];
+      if (kinds.length > 1 && ks.length) ks.forEach(function (k) { src.push([k, w.kstats[k]]); }); else src.push([kinds[0] || '', w.stats || {}]);
+      var r = { pcs: 0, earn: 0, pend: 0, lines: [] };
+      src.forEach(function (x) {
+        var k = x[0], st = x[1] || {};
+        (st.months || []).forEach(function (m) { if (String(m[0]).slice(0, 7) === ym) { var n = Number(m[1]) || 0; r.pcs += n; r.earn += n * (rates[k] || 0); } });
+        (st.work || []).forEach(function (q) { if (String(q[0]).slice(0, 7) === ym) r.lines.push({ d: String(q[0]).slice(0, 10), o: q[1], q: Number(q[2]) || 0, kind: k }); });
+      });
+      (w.work || []).forEach(function (e) {
+        if (String(e.d).slice(0, 7) !== ym) return;
+        r.pcs += e.q; r.pend += e.q; r.earn += e.q * (rates[e.kind] || 0);
+        r.lines.push({ d: e.d, o: e.o, q: e.q, kind: e.kind, fit: e.fit, pending: true });
+      });
+      r.lines.sort(function (a, b) { return String(b.d).localeCompare(String(a.d)) || (Number(b.o) - Number(a.o)); });
+      return r;
     }
     function wToggle(id) { var e = $(id); if (e) e.style.display = e.style.display === 'none' ? 'block' : 'none'; }
     function sendLink(t) {
