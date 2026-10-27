@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>جميل الهندام – العامل</title>
+<meta name="theme-color" content="#0e6b5c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jameel">
+<link rel="icon" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/img/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#eef5f3;--surface:#fff;--ink:#16302b;--muted:#5d6f6b;--line:#d6e5e1;--acc:#0e6b5c;--acc-soft:#e3efec;--gold:#7a5b00;--gold-soft:#fff3cd;
+  --ok:#1a7f37;--ok-soft:#dff3e4;--bad:#b3261e;--bad-soft:#fde8e7;--warn:#9a5b00;--blue:#1f4e8c;--blue-soft:#e3ecf8;--wa:#1c6e45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1918;--surface:#172423;--ink:#e6efed;--muted:#9fb3ae;--line:#26403c;--acc:#5fb3a3;--acc-soft:#1c3330;--gold:#e3c15e;--gold-soft:#3a3016;
+  --ok:#6fcf8f;--ok-soft:#173825;--bad:#ef8a83;--bad-soft:#3d1d1b;--warn:#e7a35e;--blue:#8db6f0;--blue-soft:#1a2a40;--wa:#34a56c;color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+button,input,select{font:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px}
+header{background:var(--acc);color:#fff;padding:12px 0 10px;padding-top:max(12px,env(safe-area-inset-top));position:sticky;top:0;z-index:5}
+@media (prefers-color-scheme:dark){header{background:#0b3d35}}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:18px}.brand small{display:block;font-size:12px;opacity:.85;font-weight:600}
+.hb{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-weight:600}
+.pill.on{background:#fff;color:var(--acc)}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:4}
+.tabs button{flex:1;border:0;background:none;padding:12px 6px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--acc);border-bottom-color:var(--acc)}
+main{padding:14px 0 80px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.num{font-variant-numeric:tabular-nums;font-weight:700;direction:ltr;unicode-bidi:isolate}
+.st{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;background:var(--gold-soft);color:var(--gold)}
+.st.ok{background:var(--ok-soft);color:var(--ok)}.st.bad{background:var(--bad-soft);color:var(--bad)}.st.blue{background:var(--blue-soft);color:var(--blue)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;cursor:pointer;text-decoration:none}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.line{background:transparent}
+.btn.sm{min-height:38px;padding:0 12px;font-size:14px}
+.btn[disabled]{opacity:.55}
+.grow{flex:1}
+.muted{color:var(--muted)}.small{font-size:13px}
+.msg{min-height:20px;margin:6px 0 0;font-weight:600;white-space:pre-line}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.center{max-width:440px;margin:40px auto;padding:0 16px;text-align:center}
+.empty{text-align:center;color:var(--muted);padding:36px 10px}.empty b{display:block;font-size:40px}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.sum b{display:block;font-size:20px}.sum span{font-size:12px;color:var(--muted)}
+.hello{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.hello .av{width:46px;height:46px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex:none;object-fit:cover}
+.hello b{display:block;font-size:19px}.hello small{color:var(--muted)}
+.kinds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.kinds button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer}
+.kinds button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.flt{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.flt input{min-height:44px;border-radius:10px;border:1px solid var(--line);padding:6px 10px;background:var(--surface);color:var(--ink);max-width:240px}
+.tot{display:flex;justify-content:space-between;align-items:center;background:var(--acc-soft);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-weight:600}
+.tot.bad{background:var(--bad-soft);color:var(--bad);cursor:pointer}.tot.ok{background:var(--ok-soft);color:var(--ok)}
+.job{display:block;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;color:inherit;font:inherit}
+button.job{cursor:pointer}
+.job.late{border:2px solid var(--bad)}.job.new{border:2px solid var(--acc)}.job.ded{border-inline-start:4px solid var(--bad)}
+.due{font-weight:700}.due.late{color:var(--bad)}
+.prog{font-size:13px;font-weight:700;margin-top:4px}
+.inp{flex:1;min-width:0;min-height:52px;border-radius:10px;border:1px solid var(--line);padding:6px 12px;font-size:20px;background:var(--bg);color:var(--ink);direction:ltr;text-align:center}
+.stepper{display:flex;align-items:center;gap:10px;margin-top:10px}
+.stepper b{font-size:24px;min-width:44px;text-align:center}
+label.chk{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-weight:600}
+label.chk input{width:22px;height:22px;accent-color:var(--acc)}
+.g{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;background:var(--bg)}
+</style>
+</head>
+<body>
+<div id="app"><p class="empty">…</p></div>
+<script type="module">
+// JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=5';
+import { db, workDay } from '/js/fb.js';
+import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+const app = document.getElementById('app');
+let LANG = 'ar'; try { LANG = localStorage.getItem('k-lang') || 'ar'; } catch (e) { }
+const L = (ar, en) => LANG === 'en' ? en : ar;
+document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'en' ? 'ltr' : 'rtl';
+let tok = new URLSearchParams(location.search).get('k') || '';
+try { if (tok) localStorage.setItem('k-token', tok); else tok = localStorage.getItem('k-token') || ''; } catch (e) { }
+if (tok && !/[?&]k=/.test(location.search)) try { history.replaceState(null, '', '?k=' + tok); } catch (e) { }
+
+const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
+const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
+let me = null, kind = '', tab = 'add', open = null, mine = [], work = [], deds = [], orders = {}, found = null, findMsg = '', busy = false;
+let olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
+try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
+
+function el(tag, a, kids) {
+  const n = document.createElement(tag);
+  if (a) for (const k in a) { const v = a[k];
+    if (k === 'text') n.textContent = v; else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined && v !== false) n.setAttribute(k, v); }
+  (kids || []).forEach(c => { if (c !== null && c !== undefined && c !== false) n.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c); });
+  return n;
+}
+const today = () => workDay();
+const dmy = (s) => s ? String(s).slice(0, 10).split('-').reverse().join('-') : '';
+const sar = (n) => (Math.round((+n || 0) * 100) / 100).toLocaleString('en-US') + ' ' + L('ر.س', 'SAR');
+const rate = (k) => +((me && me.rates) || {})[k] || 0;
+const amt = (w) => (+w.q || 0) * rate(w.kind);
+let actx = null;
+function chime() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); [0, .15].forEach((dt, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = [880, 1320][i]; g.gain.setValueAtTime(.0001, actx.currentTime + dt); g.gain.exponentialRampToValueAtTime(.3, actx.currentTime + dt + .02); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + dt + .3); o.connect(g); g.connect(actx.destination); o.start(actx.currentTime + dt); o.stop(actx.currentTime + dt + .35); }); } catch (e) { } try { navigator.vibrate && navigator.vibrate(120); } catch (e) { } }
+document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { } }, { once: true });
+const IS_APP = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').then(r => { sw = r; }).catch(() => { });
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); instEvt = e; });
+
+function screen(icon, title, text) {
+  app.innerHTML = '';
+  app.appendChild(el('div', { class: 'center' }, [el('div', { class: 'card' }, [el('div', { style: 'font-size:44px', text: icon }), el('h2', { text: title }), el('p', { class: 'muted', text: text })])]));
+}
+
+// ---- data
+async function loadOrders() {   // customer name + delivery date from the shop data (ShopSync)
+  try {
+    const s = await getDocs(collection(db, 'ds', 'j_orders', 'c'));
+    const m = {}; s.forEach(x => { try { JSON.parse(x.data().v).forEach(o => { m[String(o.order_no)] = o; }); } catch (e) { } });
+    orders = m;
+  } catch (e) { }
+}
+async function refresh(quiet) {
+  try {
+    const r = await kOpen(tok, kind);
+    if (!r) return screen('🚫', L('هذا الرابط مغلق', 'This link is closed'), L('اطلب رابطاً جديداً من المحل.', 'Ask the shop for a new link.'));
+    kind = r.kind; open = r.list; mine = r.mine;
+    if (found) found = open.find(x => x.o === found.o) || Object.assign({}, found, { avail: 0, left: 0 });
+    const forMe = open.filter(x => x.avail > 0).length;
+    if (lastForMe >= 0 && forMe > lastForMe) chime();
+    lastForMe = forMe;
+  } catch (e) { if (!quiet) findMsg = L('تحقق من الإنترنت', 'Check the internet') + ' (' + (e.message || e) + ')'; }
+  draw();
+}
+async function refreshWork() {
+  try { const r = await kWork(tok); if (r) { work = r.work; deds = r.ded; } } catch (e) { }
+  draw();
+}
+function pin() { try { return localStorage.getItem('k-pin-' + tok) || ''; } catch (e) { return ''; } }
+function askPin(again) {
+  const p = prompt(again ? L('الرقم السري غير صحيح – اكتبه مرة أخرى', 'Wrong PIN – type it again') : L('اكتب الرقم السري', 'Type your PIN'));
+  if (p === null) return null;
+  try { localStorage.setItem('k-pin-' + tok, p.trim()); } catch (e) { }
+  return p.trim();
+}
+async function withPin(fn) {   // runs fn(pin); asks the PIN when the shop set one
+  let p = me.needPin ? (pin() || askPin(false)) : '';
+  if (p === null) return { ok: false, msg: '' };
+  let r = await fn(p);
+  if (r && r.pin) { p = askPin(true); if (p === null) return { ok: false, msg: '' }; r = await fn(p); }
+  return r;
+}
+
+// ---- screens
+function draw() {
+  const y = scrollY; app.innerHTML = '';
+  const inst = IS_APP ? null : el('button', { class: 'pill', type: 'button', text: '📲 ' + L('تثبيت', 'Install'), onclick: () => { if (instEvt) instEvt.prompt(); else alert(L('في كروم: ⋮ ← "إضافة إلى الشاشة الرئيسية"', 'In Chrome tap ⋮ → "Add to Home screen"')); } });
+  app.appendChild(el('header', null, [el('div', { class: 'wrap' }, [el('div', { class: 'brand' }, [L('جميل الهندام', 'JAMEEL AL HINDAM'), el('small', { text: me.name })]),
+    el('div', { class: 'hb' }, [inst, el('button', { class: 'pill', type: 'button', text: LANG === 'en' ? 'عربي' : 'English', onclick: () => { try { localStorage.setItem('k-lang', LANG === 'en' ? 'ar' : 'en'); } catch (e) { } location.reload(); } })])])]));
+  const wipN = mine.length;
+  app.appendChild(el('nav', { class: 'tabs' }, [['add', '➕ ' + L('العمل', 'Work') + (wipN ? ' (' + wipN + ')' : '')], ['work', L('حسابي', 'My work')], ['ded', L('الخصومات', 'Deductions')]].map(t =>
+    el('button', { type: 'button', 'aria-selected': String(tab === t[0]), onclick: () => { tab = t[0]; if (t[0] !== 'add') refreshWork(); draw(); scrollTo(0, 0); } }, [t[1]]))));
+  const main = el('main', { class: 'wrap' }); app.appendChild(main);
+  main.appendChild(el('div', { class: 'hello' }, [me.photo ? el('img', { class: 'av', src: me.photo, alt: '' }) : el('div', { class: 'av', text: String(me.name || '?').trim().charAt(0) }),
+    el('div', null, [el('b', { text: L('أهلاً ', 'Hello, ') + me.name }), el('small', { text: me.kinds.map(kName).join(' · ') })])]));
+  if (me.kinds.length > 1) main.appendChild(el('div', { class: 'kinds' }, me.kinds.map(k => el('button', { type: 'button', class: k === kind ? 'on' : '', text: kName(k), onclick: () => { kind = k; try { localStorage.setItem('k-kind-' + tok, k); } catch (e) { } found = null; open = null; lastForMe = -1; draw(); refresh(); } }))));
+  const m0 = today().slice(0, 7), mw = work.filter(w => String(w.d).slice(0, 7) === m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
+  const earn = mw.reduce((a, w) => a + amt(w), 0), ded = md.reduce((a, d) => a + d.amount, 0);
+  main.appendChild(el('div', { class: 'sum' }, [el('div', null, [el('b', { text: String(mw.reduce((a, w) => a + w.q, 0)) }), el('span', { text: L('قطع هذا الشهر', 'Pcs this month') })]),
+    el('div', null, [el('b', { text: sar(earn) }), el('span', { text: L('الأجر', 'Earned') })]),
+    el('div', null, [el('b', { style: 'color:var(--ok)', text: sar(Math.max(0, earn - ded)) }), el('span', { text: L('بعد الخصم', 'After deductions') })])]));
+  if (tab === 'add') drawAdd(main); else if (tab === 'work') drawWork(main); else drawDed(main);
+  scrollTo(0, y);
+}
+function progress(a) {
+  const part = (icon, t, d, tot) => tot > 0 ? el('span', { style: 'color:' + (d >= tot ? 'var(--ok)' : 'var(--warn)'), text: icon + ' ' + t + ' ' + d + '/' + tot }) : null;
+  return el('div', { class: 'prog' }, [part('✂', L('مقصوص', 'Cut'), a.cut, a.cutT), a.cutT > 0 && a.sewT > 0 ? ' · ' : null, part('🧵', L('مخيط', 'Stitched'), a.sew, a.sewT),
+    a.wip ? el('span', { style: 'color:var(--blue)', text: ' · 🔄 ' + L('قيد العمل', 'In work') + ' ' + a.wip }) : null]);
+}
+function find(code) {
+  const o = String(code || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (!o) { findMsg = L('اكتب رقم الطلب أو امسح الباركود', 'Type or scan the order number'); found = null; draw(); return; }
+  const a = (open || []).find(x => String(x.o) === o);
+  if (a) { found = a; findMsg = ''; chime(); }
+  else { found = null; findMsg = L('الطلب غير موجود أو اكتمل عملك فيه: ', 'Order not found or your work on it is finished: ') + o; }
+  draw(); scrollTo(0, 0);
+}
+function drawAdd(main) {
+  const inp = el('input', { class: 'inp', inputmode: 'numeric', autocomplete: 'off', placeholder: '1234', value: found ? String(found.o) : '' });
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') find(inp.value); });
+  if (kind !== 'CUT') drawMine(main);
+  main.appendChild(el('div', { class: 'card' }, [el('b', { style: 'font-size:17px', text: L('رقم الطلب', 'Order number') }),
+    el('p', { class: 'small muted', style: 'margin:2px 0 8px', text: L('اختر طلباً من القائمة، أو امسح باركود الورقة / اكتب الرقم.', 'Pick an order from the list, or scan the slip barcode / type the number.') }),
+    el('div', { class: 'row' }, [inp, el('button', { class: 'btn acc', type: 'button', text: '🔍 ' + L('بحث', 'Find'), onclick: () => find(inp.value) })]),
+    el('button', { class: 'btn line', type: 'button', style: 'width:100%;margin-top:8px;min-height:54px;font-size:18px', text: '📷 ' + L('مسح الباركود', 'Scan barcode'), onclick: scan }),
+    findMsg ? el('p', { class: 'msg err', text: findMsg }) : null]));
+  if (!open) { main.appendChild(el('p', { class: 'muted', text: L('جاري تحميل الطلبات…', 'Loading orders…') })); return; }
+  if (found) return drawFound(main);
+  drawOpen(main);
+}
+function orderLine(o) {
+  const x = orders[String(o)] || {};
+  return [x.customer_name, x.pcs ? x.pcs + ' ' + L('قطعة', 'pcs') : ''].filter(Boolean).join(' · ');
+}
+function dueOf(o) { const x = orders[String(o)] || {}; return d10(x.delivery_date); }
+function d10(s) { return String(s || '').slice(0, 10); }
+function drawFound(main) {
+  const a = found, due = dueOf(a.o), late = due && due < today();
+  main.appendChild(el('button', { class: 'btn line sm', type: 'button', style: 'margin-bottom:10px', text: (LANG === 'en' ? '← ' : '→ ') + L('كل الطلبات', 'All orders'), onclick: () => { found = null; findMsg = ''; draw(); } }));
+  const c = el('div', { class: 'job new' });
+  c.appendChild(el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:20px', text: '#' + a.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: L('التسليم: ', 'Due: ') + dmy(due) }) : null]));
+  const info = orderLine(a.o); if (info) c.appendChild(el('div', { style: 'margin-top:4px;font-weight:600', text: info }));
+  c.appendChild(el('div', { style: 'margin-top:6px', text: kName(kind) + ' · ' + L('المتبقي ', 'left ') + a.left + '/' + a.total }));
+  c.appendChild(progress(a));
+  const msg = el('p', { class: 'msg' });
+  if (!a.avail) {
+    const why = a.wip >= a.left && a.wip ? '🔄 ' + L('القطع الباقية قيد العمل عند عامل آخر', 'The remaining pieces are in work')
+      : kind === 'STITCH' ? '✂ ' + L('بانتظار القص – سيظهر هنا بعد القص', 'Waiting for cutting – it shows here once cut')
+      : (kind === 'HINGE' || kind === 'EMBROIDERY') ? '🧵 ' + L('بانتظار الخياطة – سيظهر هنا بعد الخياطة', 'Waiting for stitching – it shows here once stitched')
+      : L('لا توجد قطع متاحة الآن', 'No pieces free right now');
+    c.appendChild(el('div', { class: 'g', style: 'font-weight:600', text: why }));
+    main.appendChild(c); return;
+  }
+  let pcs = a.avail, fit = false;
+  const cnt = el('b', { class: 'num', text: String(pcs) }), money = el('div', { class: 'small', style: 'font-weight:600;margin-top:6px' });
+  const upd = () => { cnt.textContent = String(pcs); const n = pcs + (fit ? 1 : 0); money.textContent = rate(kind) ? sar(rate(kind)) + ' × ' + n + ' = ' + sar(rate(kind) * n) : L('السعر لم يحدد بعد – يحدده المحل', 'Rate not set yet – the shop will set it'); };
+  const g = el('div', { class: 'g' });
+  g.appendChild(el('div', { class: 'stepper' }, [el('span', { text: L('القطع:', 'Pieces:') }),
+    el('button', { class: 'btn sm line', type: 'button', text: '−', onclick: () => { if (pcs > 0) { pcs--; upd(); } } }), cnt,
+    el('button', { class: 'btn sm line', type: 'button', text: '+', onclick: () => { if (pcs + (fit ? 1 : 0) < a.avail) { pcs++; upd(); } } }), el('span', { class: 'small muted', text: '/ ' + a.avail })]));
+  if (a.fit && (kind === 'CUT' || kind === 'STITCH')) {
+    const cb = el('input', { type: 'checkbox' });
+    cb.onchange = () => { fit = cb.checked; if (fit && pcs + 1 > a.avail) pcs = Math.max(0, a.avail - 1); upd(); };
+    g.appendChild(el('label', { class: 'chk' }, [cb, L('مع البروفة (قطعة القياس)', 'With the fitting piece')]));
+  }
+  g.appendChild(money);
+  const go = async (btn) => {
+    if (pcs + (fit ? 1 : 0) < 1) { msg.textContent = L('العدد؟', 'How many?'); msg.className = 'msg err'; return; }
+    btn.disabled = true; msg.textContent = '…'; msg.className = 'msg';
+    try {
+      const r = kind === 'CUT' ? await withPin(p => kDone(tok, kind, a.o, pcs, fit, p)) : await kStart(tok, kind, a.o, pcs, fit);
+      if (!r.ok) { btn.disabled = false; msg.textContent = r.msg || ''; msg.className = 'msg err'; return; }
+      chime(); found = null; findMsg = ''; await refresh(); if (kind === 'CUT') refreshWork(); scrollTo(0, 0);
+    } catch (e) { btn.disabled = false; msg.textContent = L('لم يتم: ', 'Failed: ') + (e.message || e); msg.className = 'msg err'; }
+  };
+  g.appendChild(kind === 'CUT'
+    ? el('button', { class: 'btn ok', type: 'button', style: 'width:100%;margin-top:10px', text: '✂ ' + L('تم القص – أضف إلى حسابي', 'Cutting done – add to my account'), onclick: (e) => go(e.currentTarget) })
+    : el('button', { class: 'btn acc', type: 'button', style: 'width:100%;margin-top:10px', text: '▶ ' + L('ابدأ العمل', 'Start work'), onclick: (e) => go(e.currentTarget) }));
+  g.appendChild(msg); c.appendChild(g); upd();
+  main.appendChild(c);
+}
+function drawMine(main) {
+  if (!mine.length) return;
+  const box = el('div', { class: 'card', style: 'border:2px solid var(--blue)' }, [el('b', { style: 'font-size:17px', text: '🔄 ' + L('عملي الجاري', 'My work in progress') + ' (' + mine.length + ')' })]);
+  mine.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999')).forEach(w => {
+    const due = dueOf(w.o), late = due && due < today(), n = w.q + (w.fit ? 1 : 0), m = el('p', { class: 'msg' });
+    box.appendChild(el('div', { class: 'g' }, [el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: dmy(due) }) : null]),
+      el('div', { style: 'font-weight:600;margin-top:4px', text: [orderLine(w.o), n + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : ''), rate(w.kind) ? sar(rate(w.kind) * n) : ''].filter(Boolean).join(' · ') }),
+      el('div', { class: 'row', style: 'margin-top:8px' }, [
+        el('button', { class: 'btn ok grow', type: 'button', text: '✓ ' + L('انتهى العمل – أضف إلى حسابي', 'Finished – add to my account'), onclick: async (e) => {
+          if (!confirm(L('انتهى عمل ' + n + ' قطعة في الطلب ' + w.o + '؟', 'Finished ' + n + ' pcs of order ' + w.o + '?'))) return;
+          const btn = e.currentTarget; btn.disabled = true; m.textContent = '…'; m.className = 'msg';
+          try { const r = await withPin(p => kFinish(tok, w.id, p)); if (!r.ok) { btn.disabled = false; m.textContent = r.msg || ''; m.className = 'msg err'; return; } chime(); await refresh(); refreshWork(); }
+          catch (er) { btn.disabled = false; m.textContent = L('لم يتم: ', 'Failed: ') + (er.message || er); m.className = 'msg err'; }
+        } }),
+        el('button', { class: 'btn line sm', type: 'button', text: L('إرجاع', 'Give back'), onclick: async () => {
+          if (!confirm(L('إرجاع هذا العمل؟ يستطيع عامل آخر أخذه.', 'Give this work back? Another worker can take it.'))) return;
+          await kGiveBack(tok, w.id); refresh();
+        } })]), m]));
+  });
+  main.appendChild(box);
+}
+function drawOpen(main) {
+  const td = today();
+  const all = open.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999') || x.o - y.o);
+  const todo = all.filter(x => x.avail > 0);
+  const seg = (k, t) => el('button', { type: 'button', class: 'btn sm ' + (olist === k ? 'acc' : 'line'), text: t, onclick: () => { olist = k; draw(); } });
+  main.appendChild(el('div', { class: 'row', style: 'justify-content:space-between;margin:4px 0 10px' }, [
+    el('b', { style: 'font-size:17px', text: kName(kind) + ' – ' + (kind === 'STITCH' ? L('المقصوص الجاهز', 'cut, ready to stitch') : (kind === 'HINGE' || kind === 'EMBROIDERY') ? L('المخيط الجاهز', 'stitched, ready') : L('الطلبات', 'orders')) }),
+    el('div', { class: 'row' }, [seg('todo', L('لي', 'For me') + ' (' + todo.length + ')'), seg('all', L('الكل', 'All open') + ' (' + all.length + ')')])]));
+  const list = olist === 'todo' ? todo : all;
+  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '✅' }), kind === 'STITCH' ? L('لا شيء للخياطة الآن – يظهر هنا بعد القص.', 'Nothing to stitch now – it shows here once cut.') : (kind === 'HINGE' || kind === 'EMBROIDERY') ? L('لا شيء الآن – يظهر هنا بعد الخياطة.', 'Nothing now – it shows here once stitched.') : L('لا يوجد عمل الآن.', 'No work right now.')])); return; }
+  list.slice(0, 300).forEach(a => {
+    const due = dueOf(a.o), late = due && due < td, info = orderLine(a.o);
+    main.appendChild(el('button', { type: 'button', class: 'job' + (late ? ' late' : ''), onclick: () => { found = a; findMsg = ''; draw(); scrollTo(0, 0); } }, [
+      el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:17px', text: '#' + a.o }), el('span', { class: 'st ' + (a.avail ? '' : 'blue'), text: a.avail ? a.avail + ' ' + L('قطعة لك', 'pcs for you') : (a.wip ? '🔄 ' + L('قيد العمل', 'in work') : L('بالانتظار', 'waiting')) })]),
+      due ? el('div', { class: 'due' + (late ? ' late' : ''), style: 'margin-top:4px', text: L('التسليم: ', 'Due: ') + dmy(due) + (late ? ' (' + L('متأخر', 'late') + ')' : '') }) : null,
+      info ? el('div', { class: 'small', style: 'margin-top:2px', text: info }) : null, progress(a)]));
+  });
+}
+function filterBar(main) {
+  if (!fday) fday = today(); if (!fmonth) fmonth = today().slice(0, 7);
+  const dIn = el('input', { type: 'date', value: fday, max: today() }), mIn = el('input', { type: 'month', value: fmonth, max: today().slice(0, 7) });
+  dIn.onchange = () => { fday = dIn.value || today(); fmode = 'day'; draw(); };
+  mIn.onchange = () => { fmonth = mIn.value || today().slice(0, 7); fmode = 'month'; draw(); };
+  const seg = (k, t) => el('button', { type: 'button', class: 'btn sm ' + (fmode === k ? 'acc' : 'line'), text: t, onclick: () => { fmode = k; draw(); } });
+  main.appendChild(el('div', { class: 'flt' }, [el('div', { class: 'row' }, [seg('day', L('تاريخ', 'Date')), seg('month', L('شهر', 'Month')), seg('all', L('الكل', 'All'))]), fmode === 'day' ? dIn : fmode === 'month' ? mIn : null]));
+}
+const inPeriod = (d) => { d = String(d || ''); return fmode === 'all' || (fmode === 'day' ? d === fday : d.slice(0, 7) === fmonth); };
+const periodLabel = () => fmode === 'day' ? dmy(fday) : fmode === 'month' ? new Date(fmonth + '-01T12:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn-ca-gregory', { month: 'long', year: 'numeric' }) : L('الكل', 'All');
+function drawWork(main) {
+  filterBar(main);
+  const list = work.filter(w => inPeriod(w.d)).sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(b.time).localeCompare(String(a.time)));
+  const earn = list.reduce((a, w) => a + amt(w), 0), pcs = list.reduce((a, w) => a + w.q, 0);
+  const dd = deds.filter(d => inPeriod(d.date)), dsum = dd.reduce((a, d) => a + d.amount, 0);
+  main.appendChild(el('div', { class: 'tot' }, [el('span', { text: periodLabel() + ' · ' + pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(earn) })]));
+  if (dsum) main.appendChild(el('div', { class: 'tot bad', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '⚠ ' + L('الخصومات', 'Deductions') + ' (' + dd.length + ')' }), el('b', { text: '−' + sar(dsum) })]));
+  main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: L('المستحق', 'To receive') }), el('b', { style: 'font-size:20px', text: sar(Math.max(0, earn - dsum)) })]));
+  const byKind = {}; list.forEach(w => { byKind[w.kind] = (byKind[w.kind] || 0) + w.q; });
+  if (Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
+  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
+  list.forEach(w => main.appendChild(el('div', { class: 'job' }, [
+    el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
+    el('div', { style: 'margin-top:4px', text: kName(w.kind) + ' · ' + w.q + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : '') + (rate(w.kind) ? ' × ' + sar(rate(w.kind)) : ' · ' + L('السعر يحدده المحل', 'rate pending')) }),
+    el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: dmy(w.d) + ' ' + w.time }),
+      el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })])])));
+}
+function drawDed(main) {
+  filterBar(main);
+  const list = deds.filter(d => inPeriod(d.date)).sort((a, b) => String(b.date).localeCompare(String(a.date))), sum = list.reduce((a, d) => a + d.amount, 0);
+  main.appendChild(el('div', { class: 'tot bad' }, [el('span', { text: periodLabel() + ' · ' + list.length + ' ' + L('خصم', 'deductions') }), el('b', { text: '−' + sar(sum) })]));
+  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '👍' }), L('لا توجد خصومات في هذه الفترة.', 'No deductions in this period.')])); return; }
+  list.forEach(d => main.appendChild(el('div', { class: 'job ded' }, [el('div', { class: 'top' }, [el('span', { text: dmy(d.date) }), el('b', { style: 'color:var(--bad);font-size:20px', text: '−' + sar(d.amount) })]),
+    el('div', { style: 'margin-top:6px;font-weight:600', text: d.reason }), d.order ? el('div', { class: 'small muted', text: L('الطلب: ', 'Order: ') + d.order }) : null])));
+}
+// barcode: Chrome on Android has BarcodeDetector built in
+function scan() {
+  if (!('BarcodeDetector' in window) || !navigator.mediaDevices) { alert(L('الماسح لا يعمل في هذا الجوال – اكتب الرقم واضغط بحث.', 'Scanning does not work on this phone – type the number and tap Find.')); return; }
+  const ov = el('div', { style: 'position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px' });
+  const v = el('video', { playsinline: '', muted: '', autoplay: '', style: 'width:100%;max-height:75vh;object-fit:cover' });
+  let stream = null, stop = false;
+  const close = () => { stop = true; if (stream) stream.getTracks().forEach(t => t.stop()); ov.remove(); };
+  ov.appendChild(v); ov.appendChild(el('p', { style: 'color:#fff;font-weight:700;text-align:center;padding:0 16px;margin:0', text: L('ضع الباركود في وسط الكاميرا', 'Hold the barcode in the middle') }));
+  ov.appendChild(el('button', { class: 'btn', type: 'button', text: '✕ ' + L('إغلاق', 'Close'), onclick: close }));
+  document.body.appendChild(ov);
+  const fm = ['code_128', 'qr_code', 'code_39', 'code_93', 'ean_13', 'ean_8', 'upc_a', 'itf', 'codabar', 'data_matrix'];
+  (BarcodeDetector.getSupportedFormats ? BarcodeDetector.getSupportedFormats() : Promise.resolve(fm)).then(sup => {
+    const det = new BarcodeDetector({ formats: fm.filter(f => sup.includes(f)) });
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(st => { stream = st; v.srcObject = st; return v.play(); }).then(() => {
+      (function loop() { if (stop) return; det.detect(v).then(r => { if (r && r.length && !stop) { close(); find(r[0].rawValue); } else setTimeout(loop, 200); }, () => setTimeout(loop, 300)); })();
+    });
+  }).catch(() => { close(); alert(L('لم تفتح الكاميرا – اسمح بها أو اكتب الرقم.', 'The camera did not open – allow it or type the number.')); });
+}
+// the installed app carries the worker's own name and link
+function personalise() {
+  document.title = me.name + ' – جميل الهندام';
+  const link = document.querySelector('link[rel="manifest"]');
+  fetch('manifest.json').then(r => r.json()).then(j => {
+    const abs = (u) => new URL(u, location.href).href;
+    j.name = me.name + ' – جميل الهندام'; j.short_name = String(me.name).split(' ')[0].slice(0, 12);
+    j.start_url = location.href; j.scope = abs('./'); j.id = location.href;
+    (j.icons || []).forEach(ic => { ic.src = abs(ic.src); });
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(j)], { type: 'application/manifest+json' }));
+  }).catch(() => { });
+}
+
+(async () => {
+  if (!/^[0-9a-f]{32}$/.test(tok)) return screen('🔗', L('الرابط ناقص', 'Link is incomplete'), L('افتح الرابط الكامل الذي أرسله المحل.', 'Open the full link the shop sent you.'));
+  try { me = await kVars(tok); }
+  catch (e) { return screen('📶', L('لا يوجد اتصال', 'No connection'), String(e.message || e)); }
+  if (!me.ok) return screen('🚫', L('هذا الرابط مغلق', 'This link is closed'), L('اطلب رابطاً جديداً من المحل.', 'Ask the shop for a new link.'));
+  if (!me.kinds.includes(kind)) kind = me.kinds[0] || '';
+  personalise();
+  draw();
+  await Promise.all([loadOrders(), refresh(), refreshWork()]);
+  setInterval(() => { if (!document.hidden && !found) refresh(true); }, 30000);
+  setInterval(() => { if (!document.hidden) loadOrders(); }, 300000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(true); refreshWork(); } });
+})();
+</script>
+</body>
+</html>

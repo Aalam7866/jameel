@@ -66,6 +66,19 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Worker extras set in Admin (mobile, blocked) + deductions – the shop PC never touches these
+    match /wkx/{token} {
+      allow read, write: if true;
+    }
+    match /wkx/{token}/ded/{dId} {
+      allow read, write: if true;
+    }
+
+    // Work in progress (worker pressed Start, not Finish yet)
+    match /jwip/{id} {
+      allow read, write: if true;
+    }
+
     // Space/order data (ShopSync writes, pages read)
     match /sp/{key} {
       allow read: if true;

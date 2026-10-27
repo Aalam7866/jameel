@@ -61,6 +61,25 @@
   .wlink:active { color: #0e6b5c; }
   .wadd { background: #f5f9f8; border-radius: 10px; padding: 12px; margin-top: 10px; }
   .wadd input, .wadd select { margin-bottom: 8px; }
+  .wkinds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .wkinds label { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #d6e5e1; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 15px; }
+  .wkinds input { width: 18px; height: 18px; accent-color: #0e6b5c; margin: 0; }
+  .wmonth { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
+  .wmonth input { max-width: 190px; margin: 0; }
+  .wk.off { opacity: .7; }
+  .wtop { display: flex; align-items: center; gap: 10px; }
+  .wtop .av { width: 42px; height: 42px; border-radius: 50%; background: #0e6b5c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex: none; }
+  .wtop .winfo { flex: 1; min-width: 0; } .wtop b { font-size: 17px; color: #0e6b5c; } .wkind { font-size: 13px; color: #777; }
+  .wsum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 6px; }
+  .wsum div { background: #f5f9f8; border-radius: 10px; padding: 8px 4px; text-align: center; font-weight: bold; font-size: 15px; }
+  .wsum span { display: block; font-size: 11px; color: #777; font-weight: normal; }
+  .wk details { margin: 6px 0; } .wk summary { cursor: pointer; color: #0e6b5c; font-weight: bold; font-size: 14px; }
+  .wrow { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #e3efec; padding: 5px 0; font-size: 14px; }
+  .wx { padding: 2px 8px; font-size: 12px; }
+  .wbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .wbtns button, .wbtns .btnl { font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 0; cursor: pointer; text-decoration: none; display: inline-block; }
+  .wbtns .wa { background: #1c6e45; color: #fff; flex-basis: 100%; font-size: 16px; padding: 11px; }
+  .wbtns .bad { background: #fde8e7; color: #b3261e; }
 
   /* ---- Shop Online ---- */
   #shopFrame { display: block; width: 100%; height: calc(100vh - 16px); height: calc(100dvh - 16px); border: 0; border-radius: 14px; background: #f4f1ea; }
@@ -129,30 +148,25 @@
       </div>
     </div>
 
-    <!-- Tab 3: Workers -->
+    <!-- Tab 3: Workers (Diamond-style: add, link on WhatsApp, month account, deductions, block) -->
     <div id="p3" style="display:none">
       <div class="card">
         <h3>👷 العمال / Workers</h3>
-        <div class="muted" style="margin-bottom:10px">أضف عمال وشارك رابط تحويل العمل – Add workers and share their work entry links</div>
-        <div id="wList">
-          <div class="muted">جاري التحميل… / Loading…</div>
-        </div>
-        <div class="wadd">
+        <div class="wadd" style="margin-top:0">
           <h3>➕ إضافة عامل / Add worker</h3>
           <input id="wName" placeholder="اسم العامل / Worker name">
-          <div style="margin:8px 0 4px;font-weight:bold;font-size:15px;color:#0e6b5c">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
-          <div id="wKinds" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="CUT" style="width:18px;height:18px;accent-color:#0e6b5c"> ✂️ قص</label>
-            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="STITCH" style="width:18px;height:18px;accent-color:#0e6b5c"> 🧵 خياطة</label>
-            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="HINGE" style="width:18px;height:18px;accent-color:#0e6b5c"> 🔘 زرار</label>
-            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="MEASURE" style="width:18px;height:18px;accent-color:#0e6b5c"> 📏 مقاس</label>
-            <label style="display:flex;align-items:center;gap:4px;background:#f5f9f8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px"><input type="checkbox" value="EMBROIDERY" style="width:18px;height:18px;accent-color:#0e6b5c"> 🪡 تطريز</label>
-          </div>
+          <input id="wPhone" inputmode="tel" placeholder="الجوال / Mobile 05xxxxxxxx" style="direction:ltr;text-align:right">
+          <div style="margin:4px 0;font-weight:bold;font-size:15px;color:#0e6b5c">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
+          <div id="wKinds" class="wkinds"></div>
           <button class="go wide" onclick="addWorker()">إضافة / Add</button>
           <div id="wMsg"></div>
         </div>
+        <div class="wmonth"><b>حساب شهر / Month</b> <input id="wYm" type="month" onchange="loadWorkers()"></div>
+        <div class="muted" style="font-size:13px">العمل: قص ← خياطة ← زرار / تطريز – Cutting → Stitching → Hinge / Embroidery</div>
       </div>
+      <div id="wList"><div class="card muted">جاري التحميل… / Loading…</div></div>
     </div>
+
 
     <!-- Tab 4: Settings -->
     <div id="p4" style="display:none">
@@ -497,60 +511,135 @@
       }).aSetRates(KEY, PIN, rates);
     }
 
-    // ---- workers ----
-    var WKINDS = { CUT: '✂️ قص', STITCH: '🧵 خياطة', HINGE: '🔘 زرار', MEASURE: '📏 مقاس', EMBROIDERY: '🪡 تطريز' };
+    // ---- workers (Diamond-style) ----
+    var WKINDS = { CUT: '✂️ قص', STITCH: '🧵 خياطة', HINGE: '🔘 زرار', MEASURE: '📏 مقاس', EMBROIDERY: '🪡 تطريز', ARRIVE: '📦 وصل' };
+    var WD = null, WOPEN = {};
+    (function () {
+      var h = '';
+      ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'].forEach(function (k) { h += '<label><input type="checkbox" value="' + k + '"> ' + WKINDS[k] + '</label>'; });
+      $('wKinds').innerHTML = h;
+    })();
+    function ymNow() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7); }
+    function kindLabel(k) { return String(k || '').split(',').filter(Boolean).map(function (x) { return WKINDS[x] || x; }).join(' · '); }
+    function sar(n) { return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US') + ' ر.س'; }
+    function waNum(p) { var d = String(p || '').replace(/\D/g, ''); if (d.indexOf('00') === 0) d = d.slice(2); if (/^05\d{8}$/.test(d)) d = '966' + d.slice(1); else if (/^5\d{8}$/.test(d)) d = '966' + d; return d; }
+    function wLink(w) { return location.origin + '/karigar/?k=' + w.token; }
+    function wFind(t) { return WD ? WD.list.filter(function (w) { return w.token === t; })[0] : null; }
     function loadWorkers() {
-      $('wList').innerHTML = '<div class="muted">جاري التحميل… / Loading…</div>';
-      google.script.run.withSuccessHandler(function (list) {
-        if (!list) { $('wList').innerHTML = '<div class="muted">تعذر التحميل</div>'; return; }
-        renderWorkers(list);
+      if (!$('wYm').value) $('wYm').value = ymNow();
+      if (!WD) $('wList').innerHTML = '<div class="card muted">جاري التحميل… / Loading…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r) { $('wList').innerHTML = '<div class="card muted">تعذر التحميل – could not load</div>'; return; }
+        WD = r; renderWorkers();
       }).withFailureHandler(function (e) {
-        $('wList').innerHTML = '<div class="muted">خطأ – ' + esc(e && e.message || e) + '</div>';
-      }).aWorkers(KEY, PIN);
+        $('wList').innerHTML = '<div class="card rate-err">خطأ – ' + esc(e && e.message || e) + '</div>';
+      }).aWorkersAll(KEY, PIN, $('wYm').value);
     }
-    function kindLabel(k) {
-      return k.split(',').map(function (x) { return WKINDS[x] || x; }).join(' · ');
-    }
-    function renderWorkers(list) {
-      if (!list.length) { $('wList').innerHTML = '<div class="muted">لا يوجد عمال – no workers added yet</div>'; return; }
-      var base = location.origin + '/exec?t=';
-      $('wList').innerHTML = list.filter(function (w) { return w.active !== false; }).map(function (w) {
-        return '<div class="wcard"><div class="winfo"><b>' + esc(w.name) + '</b> <span class="wkind">' + kindLabel(w.kind) + '</span>' +
-               '<div class="wlink" onclick="copyLink(this)" title="انسخ الرابط – Copy link">' + esc(base + w.token) + '</div></div>' +
-               '<button class="sec" style="font-size:13px;padding:6px 10px" onclick="delWorker(\'' + esc(w.token) + '\')">حذف</button></div>';
+    function renderWorkers() {
+      var list = WD.list, rates = WD.rates;
+      if (!list.length) { $('wList').innerHTML = '<div class="card muted">لا يوجد عمال – no workers yet</div>'; return; }
+      $('wList').innerHTML = list.map(function (w) {
+        var t = esc(w.token), on = w.active, pcs = 0, earn = 0, ded = 0;
+        w.work.forEach(function (e) { pcs += e.q; earn += e.q * (rates[e.kind] || 0); });
+        var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; });
+        dm.forEach(function (d) { ded += d.amount; });
+        var work = w.work.slice().sort(function (a, b) { return String(b.d + b.time).localeCompare(String(a.d + a.time)); });
+        var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
+          '<div class="wtop"><div class="av">' + esc(String(w.name).trim().charAt(0) || '?') + '</div><div class="winfo"><b>' + esc(w.name) + '</b>' +
+          '<div class="wkind">' + kindLabel(w.kind) + (w.phone ? ' · <span style="direction:ltr;unicode-bidi:isolate">' + esc(w.phone) + '</span>' : '') + (w.src === 'shop' ? ' · من المحل' : '') + '</div></div>' +
+          '<span class="badge ' + (on ? 'ok' : 'bad') + '">' + (on ? 'نشط – active' : 'موقوف – blocked') + '</span></div>' +
+          '<div class="wsum"><div>' + pcs + '<span>قطعة / pcs</span></div><div>' + sar(earn) + '<span>الأجر / earned</span></div>' +
+          '<div' + (ded ? ' style="color:#b3261e"' : '') + '>' + (ded ? '−' : '') + sar(ded) + '<span>خصم / deductions</span></div>' +
+          '<div style="color:#1a7f37">' + sar(Math.max(0, earn - ded)) + '<span>المستحق / to pay</span></div></div>';
+        if (work.length) h += '<details' + (WOPEN['w' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'w' + t + '\']=this.open"><summary>عمل هذا الشهر / this month (' + work.length + ')</summary>' +
+          work.slice(0, 200).map(function (e) {
+            return '<div class="wrow"><span>' + esc(day(e.d)) + ' · #' + esc(e.o) + ' · ' + (WKINDS[e.kind] || esc(e.kind)) + ' · ' + e.q + (e.fit ? ' (بروفة)' : '') + '</span>' +
+              '<span><b>' + (rates[e.kind] ? sar(e.q * rates[e.kind]) : '—') + '</b> ' + (e.st === 'new' ? '⏳' : '✔') + '</span></div>';
+          }).join('') + '</details>';
+        if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات / deductions (' + w.ded.length + ')</summary>' +
+          w.ded.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (d) {
+            return '<div class="wrow"><span>' + esc(day(d.date)) + ' · ' + esc(d.reason) + (d.order ? ' · #' + esc(d.order) : '') + '</span>' +
+              '<span><b style="color:#b3261e">−' + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
+          }).join('') + '</details>';
+        h += '<div id="wded_' + t + '" class="wadd" style="display:none">' +
+          '<input id="da_' + t + '" type="number" inputmode="decimal" min="0" step="0.5" placeholder="المبلغ / Amount (SAR)">' +
+          '<input id="dr_' + t + '" placeholder="السبب / Reason (مثل: قص خطأ، تأخير)">' +
+          '<div style="display:flex;gap:6px"><input id="do_' + t + '" inputmode="numeric" placeholder="رقم الطلب / Order (اختياري)"><input id="dd_' + t + '" type="date"></div>' +
+          '<button class="go wide" onclick="saveDed(\'' + t + '\')">حفظ الخصم / Save deduction</button><div id="dm_' + t + '"></div></div>';
+        h += '<div id="wph_' + t + '" class="wadd" style="display:none"><input id="pv_' + t + '" inputmode="tel" placeholder="05xxxxxxxx" value="' + esc(w.phone) + '" style="direction:ltr;text-align:right">' +
+          '<button class="go wide" onclick="savePhone(\'' + t + '\')">حفظ الجوال / Save mobile</button></div>';
+        h += '<div class="wbtns">' +
+          '<button class="wa" onclick="sendLink(\'' + t + '\')">🟢 إرسال الرابط واتساب / WhatsApp link</button>' +
+          '<button class="sec" onclick="copyLink(\'' + t + '\', this)">📋 نسخ / Copy</button>' +
+          '<a class="sec btnl" href="' + esc(wLink(w)) + '" target="_blank" rel="noopener">↗ فتح / Open</a>' +
+          '<button class="sec" onclick="wToggle(\'wph_' + t + '\')">📞 الجوال / Mobile</button>' +
+          '<button class="sec" style="color:#b3261e" onclick="wToggle(\'wded_' + t + '\')">− خصم / Deduct</button>' +
+          (on ? '<button class="bad" onclick="setActive(\'' + t + '\', false)">🚫 إيقاف / Block</button>'
+              : '<button class="go" onclick="setActive(\'' + t + '\', true)">✓ تفعيل / Unblock</button>') +
+          (w.src === 'admin' ? '<button class="sec" onclick="delWorker(\'' + t + '\')">حذف / Remove</button>' : '') +
+          '</div></div>';
+        return h;
       }).join('');
     }
-    function copyLink(el) {
-      try { navigator.clipboard.writeText(el.textContent); el.style.color = '#1a7f37'; el.textContent = '✔ تم النسخ – Copied!'; setTimeout(function () { loadWorkers(); }, 1500); }
-      catch (x) { prompt('انسخ الرابط / Copy link:', el.textContent); }
+    function wToggle(id) { var e = $(id); if (e) e.style.display = e.style.display === 'none' ? 'block' : 'none'; }
+    function sendLink(t) {
+      var w = wFind(t); if (!w) return;
+      if (!w.phone) { alert('أضف رقم جوال العامل أولاً – add the worker\'s mobile first'); wToggle('wph_' + t); return; }
+      var msg = 'السلام عليكم ' + w.name + '،\nهذا رابط عملك في جميل الهندام للخياطة الرجالية (لا ترسله لأحد):\nThis is your work link at Jameel Al Hindam (do not share it):\n' + wLink(w);
+      window.open('https://wa.me/' + waNum(w.phone) + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+    function copyLink(t, btn) {
+      var w = wFind(t); if (!w) return; var link = wLink(w);
+      (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { btn.textContent = '✔ تم النسخ – Copied'; }, function () { prompt('انسخ الرابط / Copy link:', link); });
+    }
+    function wSave(t, patch) {
+      google.script.run.withSuccessHandler(function (r) { if (!r || !r.ok) { alert(r && r.msg || 'خطأ'); return; } loadWorkers(); })
+        .withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e) + '\n(Firestore Rules?)'); }).aWorkerSave(KEY, PIN, t, patch);
+    }
+    function savePhone(t) { wSave(t, { phone: $('pv_' + t).value }); }
+    function setActive(t, on) {
+      if (!on && !confirm('إيقاف هذا العامل؟ رابطه يتوقف فوراً – Block? The link stops at once.')) return;
+      wSave(t, { active: on });
+    }
+    function saveDed(t) {
+      var d = { amount: $('da_' + t).value, reason: $('dr_' + t).value, order: $('do_' + t).value, date: $('dd_' + t).value };
+      $('dm_' + t).innerHTML = '<div class="muted">…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { $('dm_' + t).innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
+        loadWorkers();
+      }).withFailureHandler(function (e) { $('dm_' + t).innerHTML = '<div class="rate-err">خطأ – ' + esc(e && e.message || e) + ' (Firestore Rules?)</div>'; }).aDedAdd(KEY, PIN, t, d);
+    }
+    function delDed(t, id) {
+      if (!confirm('حذف هذا الخصم؟ – Remove this deduction?')) return;
+      google.script.run.withSuccessHandler(function () { loadWorkers(); }).withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e)); }).aDedDel(KEY, PIN, t, id);
     }
     function addWorker() {
-      var name = $('wName').value.trim();
-      var checks = $('wKinds').querySelectorAll('input[type=checkbox]:checked');
-      var kinds = []; checks.forEach(function (c) { kinds.push(c.value); });
-      var kind = kinds.join(',');
+      var name = $('wName').value.trim(), phone = $('wPhone').value.trim();
+      var kinds = []; $('wKinds').querySelectorAll('input[type=checkbox]:checked').forEach(function (c) { kinds.push(c.value); });
       if (!name) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اكتب اسم العامل – enter name</div>'; return; }
-      if (!kind) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر نوع العمل – choose work type</div>'; return; }
+      if (!kinds.length) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر نوع العمل – choose work type</div>'; return; }
       $('wMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الإضافة…</div>';
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.ok) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
-        $('wMsg').innerHTML = '<div class="rate-ok" style="margin-top:8px">تمت الإضافة ✔ – Worker added</div>';
-        $('wName').value = '';
-        $('wKinds').querySelectorAll('input[type=checkbox]').forEach(function (c) { c.checked = false; });
-        if (r.list) renderWorkers(r.list);
-        else loadWorkers();
-        setTimeout(function () { $('wMsg').innerHTML = ''; }, 4000);
+        var done = function () {
+          $('wMsg').innerHTML = '<div class="rate-ok" style="margin-top:8px">تمت الإضافة ✔ أرسل له الرابط – added, now send the link</div>';
+          $('wName').value = ''; $('wPhone').value = '';
+          $('wKinds').querySelectorAll('input[type=checkbox]').forEach(function (c) { c.checked = false; });
+          loadWorkers();
+        };
+        if (phone) google.script.run.withSuccessHandler(done).withFailureHandler(done).aWorkerSave(KEY, PIN, r.token, { phone: phone }); else done();
       }).withFailureHandler(function (e) {
         $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">خطأ – ' + esc(e && e.message || e) + '</div>';
-      }).aAddWorker(KEY, PIN, { name: name, kind: kind });
+      }).aAddWorker(KEY, PIN, { name: name, kind: kinds.join(',') });
     }
     function delWorker(token) {
-      if (!confirm('حذف هذا العامل؟ – Remove this worker?')) return;
+      if (!confirm('حذف هذا العامل نهائياً؟ رابطه القديم يبقى، استخدم الإيقاف لإغلاقه – Remove? Use Block to stop the link.')) return;
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.ok) { alert(r && r.msg || 'خطأ'); return; }
-        renderWorkers(r.list);
+        wSave(token, { active: false });
       }).withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e)); }).aDelWorker(KEY, PIN, token);
     }
+
 
     // ---- Shop Online: the real /app/ page inside this admin page (checks this page's KEY + PIN itself) ----
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };

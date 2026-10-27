@@ -3,7 +3,7 @@
 // The shop PC (ShopSync) puts the data here and collects what the pages write.
 import { db, sha256, riyadh, workDay } from './fb.js';
 import {
-  doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp,
+  doc, getDoc, getDocs, setDoc, deleteDoc, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const J = (s, d) => { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } };
@@ -17,8 +17,9 @@ async function worker(token) {
   token = String(token || '');
   if (!/^[0-9a-f]{32}$/.test(token)) return null;
   if (cacheW[token]) return cacheW[token];
-  const s = await getDoc(doc(db, 'wk', token));
+  const [s, x] = await Promise.all([getDoc(doc(db, 'wk', token)), getDoc(doc(db, 'wkx', token)).catch(() => null)]);
   if (!s.exists()) return null;
+  if (x && x.exists() && x.data().active === false) return null;   // blocked by the admin
   return (cacheW[token] = { token, ...s.data() });
 }
 export async function pageVars(token) {
@@ -175,6 +176,104 @@ async function submit(token, rows, pin, ak) {
     throw x;
   }
   return { ok: true, msg: 'تم التحويل ✔ Saved', today: await today(w) };
+}
+
+// ================================================================ karigar page (/karigar/?k=TOKEN) – the Diamond-style worker app
+// A piece goes Cutting → Stitching → Hinge / Embroidery. "Start" keeps it in jwip (so nobody else takes it);
+// "Finish" is the same transfer as the old page (wk/{token}/e, st:'new') that the shop PC imports.
+const STAGE_BEFORE = { STITCH: 'CUT', HINGE: 'STITCH', EMBROIDERY: 'STITCH' };
+export async function kVars(token) {
+  const w = await worker(token);
+  if (!w) return { ok: false };
+  const r = await getDoc(doc(db, 'sys', 'rates')).catch(() => null);
+  const rates = r && r.exists() ? r.data() : {};
+  return { ok: true, name: w.name, kinds: String(w.kind || '').split(',').filter(Boolean), needPin: !!w.pin,
+           photo: /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(w.photo || '') ? w.photo : '',
+           rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rates[k]) || 0])) };
+}
+async function board(w) {
+  const [sp, ws] = await Promise.all([space(w), getDocs(collection(db, 'jwip')).catch(() => null)]);
+  const wip = {}, mine = [];
+  if (ws) ws.forEach(x => {
+    const d = x.data(), k = d.kind + ':' + d.o;
+    wip[k] = (wip[k] || 0) + Number(d.q || 0) + (d.fit ? 1 : 0);
+    if (d.token === w.token) mine.push({ id: x.id, kind: d.kind, o: d.o, q: Number(d.q || 0), fit: !!d.fit, at: d.at && d.at.toMillis ? d.at.toMillis() : 0 });
+  });
+  const pend = {};
+  for (const e of sp.pend) { const k = e.kind + ':' + e.o; pend[k] = (pend[k] || 0) + Number(e.q); }
+  return { sp, wip, pend, mine };
+}
+function availOf(b, kind, o) {
+  const od = b.sp.orders[String(o)];
+  if (!od || !(od.total[kind] > 0)) return null;
+  const done = (k) => od.total[k] - od[k] + (b.pend[k + ':' + o] || 0);
+  const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0));
+  let avail = left;
+  const before = STAGE_BEFORE[kind];
+  if (before && od.total[before] > 0) avail = Math.min(avail, done(before) - done(kind));
+  const wip = b.wip[kind + ':' + o] || 0;
+  return { o: Number(o), left, wip, avail: Math.max(0, avail - wip), total: od.total[kind],
+           cut: done('CUT'), cutT: od.total.CUT, sew: done('STITCH'), sewT: od.total.STITCH,
+           fit: od.fit && !od.fitDone ? 1 : 0 };
+}
+export async function kOpen(token, kind) {
+  const w = await worker(token);
+  if (!w) return null;
+  kind = activeKindOf(w, kind);
+  const b = await board(w), list = [];
+  for (const o of Object.keys(b.sp.orders)) { const a = availOf(b, kind, o); if (a && a.left > 0) list.push(a); }
+  return { kind, list, mine: b.mine.filter(x => x.kind === kind) };
+}
+export async function kStart(token, kind, order, qty, fit) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  kind = activeKindOf(w, kind);
+  const o = orderKey(order), q = Math.floor(Number(qty)) || 0;
+  const a = availOf(await board(w), kind, o);
+  if (!a) return { ok: false, msg: 'طلب ' + o + ': غير موجود – not found' };
+  if (q < 0 || q + (fit ? 1 : 0) < 1) return { ok: false, msg: 'العدد؟ – qty?' };
+  if (q + (fit ? 1 : 0) > a.avail) return { ok: false, msg: 'طلب ' + o + ': المتاح ' + a.avail + ' فقط – only ' + a.avail + ' pcs free' };
+  await addDoc(collection(db, 'jwip'), { token, name: w.name, kind, o: Number(o), q, fit: fit ? 1 : 0, s: w.s || '', at: serverTimestamp() });
+  return { ok: true };
+}
+// cutting: no start – straight to the shop PC (as before)
+export async function kDone(token, kind, order, qty, fit, pin) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  kind = activeKindOf(w, kind);
+  const o = orderKey(order), q = Math.floor(Number(qty)) || 0;
+  const a = availOf(await board(w), kind, o);
+  if (!a) return { ok: false, msg: 'طلب ' + o + ': غير موجود – not found' };
+  if (q + (fit ? 1 : 0) > a.avail) return { ok: false, msg: 'طلب ' + o + ': المتاح ' + a.avail + ' فقط – only ' + a.avail + ' pcs free' };
+  return submit(token, [{ order: o, qty: q, fit: !!fit }], pin, kind);
+}
+export async function kFinish(token, id, pin) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  const ref = doc(db, 'jwip', String(id)), s = await getDoc(ref);
+  if (!s.exists() || s.data().token !== w.token) return { ok: false, msg: 'غير موجود – not found' };
+  const x = s.data();
+  const r = await submit(token, [{ order: x.o, qty: x.q, fit: !!x.fit }], pin, x.kind);
+  if (r.ok) await deleteDoc(ref);
+  return r;
+}
+export async function kGiveBack(token, id) {
+  const w = await worker(token);
+  if (!w) return { ok: false };
+  const ref = doc(db, 'jwip', String(id)), s = await getDoc(ref);
+  if (s.exists() && s.data().token === w.token) await deleteDoc(ref);
+  return { ok: true };
+}
+const entryOf = (x) => { const e = x.data(); return { id: x.id, kind: e.kind, o: e.o, q: Number(e.q) || 0, fit: e.fit === 1, st: e.st, d: e.d || '', time: tsStr(e.ts).slice(11, 16) }; };
+const dedOf = (x) => { const d = x.data(); return { id: x.id, amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '' }; };
+export async function kWork(token) {
+  const w = await worker(token);
+  if (!w) return null;
+  const [e, d] = await Promise.all([getDocs(collection(db, 'wk', w.token, 'e')), getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
+  const work = [], ded = [];
+  e.forEach(x => { const v = entryOf(x); if (v.st !== 'deleted') work.push(v); });
+  if (d) d.forEach(x => ded.push(dedOf(x)));
+  return { work, ded };
 }
 
 // ================================================================ online new-order page (?o=KEY)
@@ -455,6 +554,61 @@ async function aDelWorker(key, pin, token) {
   return { ok: true, list: updated, msg: 'تم الحذف ✔ Worker removed' };
 }
 
+// ---- admin: every worker (added here + the shop PC's) with phone / block / month work / deductions
+async function dsRows(name) {
+  const s = await getDocs(collection(db, 'ds', name, 'c'));
+  let all = []; s.forEach(x => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
+  return all;
+}
+async function aWorkersAll(key, pin, ym) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  ym = /^\d{4}-\d{2}$/.test(String(ym || '')) ? ym : riyadh().slice(0, 7);
+  const [s, shop, rt] = await Promise.all([getDoc(doc(db, 'ak', r.id, 'd', 'workers')), dsRows('j_workers').catch(() => []), getDoc(doc(db, 'sys', 'rates'))]);
+  const seen = {}, list = [];
+  for (const w of J(s.exists() && s.data().v, [])) if (w.active !== false && /^[0-9a-f]{32}$/.test(w.token || '')) { seen[w.token] = 1; list.push({ token: w.token, src: 'admin' }); }
+  for (const w of shop) { const t = String(w.web_token || ''); if (/^[0-9a-f]{32}$/.test(t) && Number(w.active) && !seen[t]) { seen[t] = 1; list.push({ token: t, src: 'shop', role: w.role || '' }); } }
+  const out = await Promise.all(list.map(async (w) => {
+    const [a, x, e, d] = await Promise.all([getDoc(doc(db, 'wk', w.token)), getDoc(doc(db, 'wkx', w.token)).catch(() => null),
+      getDocs(query(collection(db, 'wk', w.token, 'e'), where('d', '>=', ym + '-01'), where('d', '<=', ym + '-31'))).catch(() => null),
+      getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
+    if (!a.exists()) return null;
+    const v = a.data(), xx = x && x.exists() ? x.data() : {}, work = [], ded = [];
+    if (e) e.forEach(y => { const q = entryOf(y); if (q.st !== 'deleted') work.push(q); });
+    if (d) d.forEach(y => ded.push(dedOf(y)));
+    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, work, ded };
+  }));
+  const rd = rt.exists() ? rt.data() : {};
+  return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),
+           list: out.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name)) };
+}
+async function aWorkerSave(key, pin, token, patch) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  if (!/^[0-9a-f]{32}$/.test(String(token || ''))) return { ok: false, msg: 'رمز غير صالح – invalid token' };
+  const clean = {};
+  if (patch && patch.phone !== undefined) clean.phone = digits(patch.phone).slice(-12);
+  if (patch && patch.active !== undefined) clean.active = !!patch.active;
+  await setDoc(doc(db, 'wkx', token), clean, { merge: true });
+  return { ok: true };
+}
+async function aDedAdd(key, pin, token, d) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const amount = Math.round((Number(d && d.amount) || 0) * 100) / 100, reason = String((d && d.reason) || '').trim().slice(0, 200);
+  if (!(amount > 0)) return { ok: false, msg: 'اكتب المبلغ – enter the amount' };
+  if (!reason) return { ok: false, msg: 'اكتب السبب – enter the reason' };
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d.date || '')) ? d.date : riyadh().slice(0, 10);
+  await addDoc(collection(db, 'wkx', token, 'ded'), { amount, reason, order: orderKey(d.order), date, at: serverTimestamp() });
+  return { ok: true };
+}
+async function aDedDel(key, pin, token, id) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  await deleteDoc(doc(db, 'wkx', String(token), 'ded', String(id)));
+  return { ok: true };
+}
+
 // ================================================================ admin: work rates (?a=KEY)
 const RATE_KINDS = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
 async function aRates(key, pin) {
@@ -484,5 +638,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel,
 };
