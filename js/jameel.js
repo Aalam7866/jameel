@@ -603,6 +603,19 @@ async function aWorkerSave(key, pin, token, patch) {
   if (patch && patch.phone !== undefined) clean.phone = digits(patch.phone).slice(-12);
   if (patch && patch.active !== undefined) clean.active = !!patch.active;
   if (patch && patch.hidden !== undefined) clean.hidden = !!patch.hidden;
+  // the work the worker does (role): on his link document; the admin page's own list follows
+  if (patch && patch.kind !== undefined) {
+    const VALID = ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'];
+    const kinds = [...new Set(String(patch.kind || '').split(',').map(k => k.trim()).filter(Boolean))];
+    if (!kinds.length || !kinds.every(k => VALID.includes(k))) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
+    await updateDoc(doc(db, 'wk', token), { kind: kinds.join(',') });
+    delete cacheW[token];
+    const ref = doc(db, 'ak', r.id, 'd', 'workers'), s2 = await getDoc(ref);
+    const list = J(s2.exists() && s2.data().v, []);
+    const it = list.find(w => w.token === token);
+    if (it) { it.kind = kinds.join(','); await setDoc(ref, { v: JSON.stringify(list) }); }
+  }
+  if (!Object.keys(clean).length) return { ok: true };
   await setDoc(doc(db, 'wkx', token), clean, { merge: true });
   return { ok: true };
 }

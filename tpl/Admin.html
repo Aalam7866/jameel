@@ -568,6 +568,11 @@
           '<input id="dr_' + t + '" placeholder="السبب / Reason (مثل: قص خطأ، تأخير)">' +
           '<div style="display:flex;gap:6px"><input id="do_' + t + '" inputmode="numeric" placeholder="رقم الطلب / Order (اختياري)"><input id="dd_' + t + '" type="date"></div>' +
           '<button class="go wide" onclick="saveDed(\'' + t + '\')">حفظ الخصم / Save deduction</button><div id="dm_' + t + '"></div></div>';
+        h += '<div id="wrole_' + t + '" class="wadd" style="display:none"><div class="wkinds">' +
+          ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'].map(function (k) {
+            return '<label><input type="checkbox" value="' + k + '"' + (String(w.kind).split(',').indexOf(k) >= 0 ? ' checked' : '') + '> ' + WKINDS[k] + '</label>';
+          }).join('') + '</div>' + (w.src === 'shop' ? '<div class="muted" style="font-size:13px;margin-bottom:6px">من المحل: غيّره في برنامج جميل أيضاً، وإلا يرجع عند تعديل العامل هناك – shop worker: change it in TailorShop too</div>' : '') +
+          '<button class="go wide" onclick="saveRole(\'' + t + '\')">حفظ العمل / Save role</button></div>';
         h += '<div id="wph_' + t + '" class="wadd" style="display:none"><input id="pv_' + t + '" inputmode="tel" placeholder="05xxxxxxxx" value="' + esc(w.phone) + '" style="direction:ltr;text-align:right">' +
           '<button class="go wide" onclick="savePhone(\'' + t + '\')">حفظ الجوال / Save mobile</button></div>';
         h += '<div class="wbtns">' +
@@ -575,6 +580,7 @@
           '<button class="sec" onclick="copyLink(\'' + t + '\', this)">📋 نسخ / Copy</button>' +
           '<a class="sec btnl" href="' + esc(wLink(w)) + '" target="_blank" rel="noopener">↗ فتح / Open</a>' +
           '<button class="sec" onclick="wToggle(\'wph_' + t + '\')">📞 الجوال / Mobile</button>' +
+          '<button class="sec" onclick="wToggle(\'wrole_' + t + '\')">✏️ العمل / Role</button>' +
           '<button class="sec" style="color:#b3261e" onclick="wToggle(\'wded_' + t + '\')">− خصم / Deduct</button>' +
           (on ? '<button class="bad" onclick="setActive(\'' + t + '\', false)">🚫 إيقاف / Block</button>'
               : '<button class="go" onclick="setActive(\'' + t + '\', true)">✓ تفعيل / Unblock</button>') +
@@ -615,6 +621,11 @@
     function wSave(t, patch) {
       google.script.run.withSuccessHandler(function (r) { if (!r || !r.ok) { alert(r && r.msg || 'خطأ'); return; } loadWorkers(); })
         .withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e) + '\n(Firestore Rules?)'); }).aWorkerSave(KEY, PIN, t, patch);
+    }
+    function saveRole(t) {
+      var kinds = []; $('wrole_' + t).querySelectorAll('input[type=checkbox]:checked').forEach(function (c) { kinds.push(c.value); });
+      if (!kinds.length) { alert('اختر نوع العمل – choose work type'); return; }
+      wSave(t, { kind: kinds.join(',') });
     }
     function savePhone(t) { wSave(t, { phone: $('pv_' + t).value }); }
     function setActive(t, on) {

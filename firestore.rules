@@ -15,7 +15,10 @@ service cloud.firestore {
     match /wk/{tok} {
       allow get: if true;                       // whoever has the link
       allow list: if staff();
-      allow update, delete: if isPc();
+      allow delete: if isPc();
+      // the shop PC; or Admin → Workers changes the work he does (role)
+      allow update: if isPc() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kind'])
+        && request.resource.data.kind.matches('^(CUT|STITCH|HINGE|MEASURE|EMBROIDERY)(,(CUT|STITCH|HINGE|MEASURE|EMBROIDERY))*$'));
       // the shop PC; or Admin → Workers adds a new worker (a new random link, never over an existing one)
       allow create: if isPc() || (isKey(tok)
         && request.resource.data.keys().hasOnly(['name', 'kind', 'emp', 's'])
