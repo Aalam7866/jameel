@@ -589,7 +589,7 @@ function dailyCanvas(r) {
   const PURPLE = 'rgb(76,40,80)', LAV = 'rgb(241,237,248)', GRID = 'rgb(200,200,200)', BAND = 'rgb(232,232,232)', PEACH = 'rgb(252,228,214)', TOTL = 'rgb(246,246,246)';
   const rowsN = Math.max(12, r.lines.length + 3, r.methods.length + 1);
   const x = [0]; COLS.forEach((c, i) => x.push(x[i] + c[1]));
-  const W = x[COLS.length], Hh = 145 + rowsN * 30 + 150 + 4;
+  const W = x[COLS.length], Hh = 145 + rowsN * 30 + 120 + 4;
   const sc = 2, cv = document.createElement('canvas'); cv.width = W * sc; cv.height = Hh * sc;
   const g = cv.getContext('2d'); g.scale(sc, sc);
   const F = (px, bold, fam) => `${bold ? 'bold ' : ''}${px}px ${fam || 'Calibri, Carlito, "Segoe UI", Arial, sans-serif'}`;
@@ -648,7 +648,6 @@ function dailyCanvas(r) {
   line('#000', 1.6, x[3], top, x[3], bottom);
   const T = r.totals;
   const tot = [['TOTAL SELL', n0(T.sell), TOTL, 0], ['TOTAL DOWN PAYMENT', n0(T.down), LAV, 0], ['TOTAL DUE PAYMENT', n0(T.due), PEACH, 0],
-    ['GENIX INVOICE (' + T.genixN + ')', T.genix === 0 ? '' : n0(T.genix), 'rgb(215,240,223)', 0],
     ['TABBY', T.tabby === 0 ? '' : n0(T.tabby), LAV, 1], ['TAMARA', T.tamara === 0 ? '' : n0(T.tamara), LAV, 0]];
   let ty = bottom;
   tot.forEach(([lab, val, col, big], i) => {
@@ -752,7 +751,6 @@ async function dailyTableView(b) {
   t += `</tbody></table></div><div class="dstot">
     <div class="tl"><span>TOTAL SELL</span><b>${n0(r.totals.sell)}</b></div><div class="lav"><span>TOTAL DOWN PAYMENT</span><b>${n0(r.totals.down)}</b></div>
     <div class="peach"><span>TOTAL DUE PAYMENT</span><b>${n0(r.totals.due)}</b></div>
-    ${r.totals.genix ? `<div class="tl" style="background:#d7f0df"><span>TOTAL GENIX INVOICE (${r.totals.genixN})</span><b>${n0(r.totals.genix)}</b></div>` : ''}
     ${r.totals.tabby ? `<div class="lav"><span>TABBY</span><b>${n0(r.totals.tabby)}</b></div>` : ''}${r.totals.tamara ? `<div class="lav"><span>TAMARA</span><b>${n0(r.totals.tamara)}</b></div>` : ''}</div>
     ${r.lines.length ? '' : '<p class="muted center">Is din ka koi kaam nahin</p>'}</div>`;
   $('#dr', b).innerHTML = t;
