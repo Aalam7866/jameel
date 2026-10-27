@@ -156,7 +156,7 @@ async function refresh(quiet) {
     if (!r) return screen('🚫', L('هذا الرابط مغلق', 'This link is closed'), L('اطلب رابطاً جديداً من المحل.', 'Ask the shop for a new link.'));
     kind = r.kind; open = r.list; mine = r.mine;
     if (found) found = open.find(x => x.o === found.o) || Object.assign({}, found, { avail: 0, left: 0 });
-    const forMe = open.filter(x => x.avail > 0).length;
+    const forMe = open.filter(x => x.avail > 0 && recent(x.o)).length;
     if (lastForMe >= 0 && forMe > lastForMe) chime();
     lastForMe = forMe;
   } catch (e) { if (!quiet) findMsg = L('تحقق من الإنترنت', 'Check the internet') + ' (' + (e.message || e) + ')'; }
@@ -210,7 +210,7 @@ function progress(a) {
 function find(code) {
   const o = String(code || '').replace(/\D/g, '').replace(/^0+/, '');
   if (!o) { findMsg = L('اكتب رقم الطلب أو امسح الباركود', 'Type or scan the order number'); found = null; draw(); return; }
-  const a = (open || []).find(x => String(x.o) === o);
+  const a = (open || []).find(x => String(x.o) === o && recent(x.o));
   if (a) { found = a; findMsg = ''; chime(); }
   else { found = null; findMsg = L('الطلب غير موجود أو اكتمل عملك فيه: ', 'Order not found or your work on it is finished: ') + o; }
   draw(); scrollTo(0, 0);
@@ -233,6 +233,9 @@ function orderLine(o) {
   return [x.customer_name, x.pcs ? x.pcs + ' ' + L('قطعة', 'pcs') : ''].filter(Boolean).join(' · ');
 }
 function dueOf(o) { const x = orders[String(o)] || {}; return d10(x.delivery_date); }
+// only orders booked from 1 Oct 2026 on (older ones are not worked from the app); an order not in the shop data yet stays
+const FROM_BOOKING = '2026-10-01';
+function recent(o) { const b = d10((orders[String(o)] || {}).booking_date); return !b || b >= FROM_BOOKING; }
 function d10(s) { return String(s || '').slice(0, 10); }
 function drawFound(main) {
   const a = found, due = dueOf(a.o), late = due && due < today();
@@ -303,7 +306,7 @@ function drawMine(main) {
 }
 function drawOpen(main) {
   const td = today();
-  const all = open.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999') || x.o - y.o);
+  const all = open.filter(x => recent(x.o)).sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999') || x.o - y.o);
   const todo = all.filter(x => x.avail > 0);
   const seg = (k, t) => el('button', { type: 'button', class: 'btn sm ' + (olist === k ? 'acc' : 'line'), text: t, onclick: () => { olist = k; draw(); } });
   main.appendChild(el('div', { class: 'row', style: 'justify-content:space-between;margin:4px 0 10px' }, [
