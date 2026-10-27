@@ -17,13 +17,13 @@ service cloud.firestore {
       allow list: if staff();
       allow delete: if isPc();
       // the shop PC; or Admin → Workers changes the work he does (role)
-      allow update: if isPc() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kind'])
-        && request.resource.data.kind.matches('^(CUT|STITCH|HINGE|MEASURE|EMBROIDERY)(,(CUT|STITCH|HINGE|MEASURE|EMBROIDERY))*$'));
+      allow update: if isPc() || workerEdit();
       // the shop PC; or Admin → Workers adds a new worker (a new random link, never over an existing one)
       allow create: if isPc() || (isKey(tok)
         && request.resource.data.keys().hasOnly(['name', 'kind', 'emp', 's'])
         && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 40
-        && request.resource.data.kind is string && request.resource.data.kind.size() <= 60);
+        && request.resource.data.kind is string && request.resource.data.kind.size() <= 60
+        && request.resource.data.emp is int && request.resource.data.emp > 0);
       match /pin/{ph} { allow read, write: if isPc(); }   // only "does this PIN hash exist" is used, by the rules
       // the worker's own transfers
       match /e/{id} {
@@ -31,6 +31,13 @@ service cloud.firestore {
         allow create: if validEntry(tok);
         allow update, delete: if isPc();
       }
+    }
+    // Admin → Workers: the work he does (role) and the TailorShop employee he is
+    function workerEdit() {
+      let k = request.resource.data.diff(resource.data).affectedKeys();
+      return k.hasOnly(['kind', 'emp'])
+        && request.resource.data.kind.matches('^(CUT|STITCH|HINGE|MEASURE|EMBROIDERY)(,(CUT|STITCH|HINGE|MEASURE|EMBROIDERY))*$')
+        && (!k.hasAny(['emp']) || (request.resource.data.emp is int && request.resource.data.emp > 0));
     }
     function validEntry(tok) {
       let d = request.resource.data;

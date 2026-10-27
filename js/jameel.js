@@ -534,12 +534,15 @@ async function aAddWorker(key, pin, w) {
   if (!name) return { ok: false, msg: 'اكتب اسم العامل – enter worker name' };
   if (!kinds.length || !kinds.every(k => VALID.includes(k))) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
   const kind = kinds.join(',');
+  // the TailorShop employee he is: the shop PC saves his work under this number (without it: "Employee 0 – not saved")
+  const emp = await shopEmp(w && w.emp);
+  if (!emp) return { ok: false, msg: 'اختر الموظف في برنامج جميل – choose the TailorShop employee' };
   // generate 32-char hex token
   const buf = new Uint8Array(16);
   crypto.getRandomValues(buf);
   const token = [...buf].map(x => x.toString(16).padStart(2, '0')).join('');
   // create wk/{token} doc
-  await setDoc(doc(db, 'wk', token), { name, kind, emp: name, s: r.s });
+  await setDoc(doc(db, 'wk', token), { name, kind, emp, s: r.s });
   // update worker list in admin sub-doc
   const ref = doc(db, 'ak', r.id, 'd', 'workers');
   const s = await getDoc(ref);
@@ -572,6 +575,19 @@ async function dsRows(name) {
   let all = []; s.forEach(x => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
   return all;
 }
+// TailorShop's employees (the shop PC sends them): every worker link must belong to one of them
+async function shopEmp(v) {
+  const n = Math.floor(Number(v)) || 0;
+  if (n <= 0) return 0;
+  const rows = await dsRows('j_workers').catch(() => []);
+  return rows.some(x => Number(x.emp_no) === n) ? n : 0;
+}
+async function aShopEmployees(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  return (await dsRows('j_workers').catch(() => [])).filter(x => Number(x.active) !== 0)
+    .map(x => ({ emp: Number(x.emp_no), name: String(x.name || ''), role: String(x.role || '') })).sort((a, b) => a.emp - b.emp);
+}
 async function aWorkersAll(key, pin, ym) {
   const r = await root('ak', key, pin);
   if (!r) return null;
@@ -588,7 +604,7 @@ async function aWorkersAll(key, pin, ym) {
     const v = a.data(), xx = x && x.exists() ? x.data() : {}, work = [], ded = [];
     if (e) e.forEach(y => work.push(entryOf(y)));       // pending: sent from the link, not in TailorShop yet
     if (d) d.forEach(y => ded.push(dedOf(y)));
-    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
+    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', emp: typeof v.emp === 'number' && v.emp > 0 ? v.emp : 0, phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
              work, ded, ...shopStats(v) };
   }));
   const rd = rt.exists() ? rt.data() : {};
@@ -624,6 +640,13 @@ async function aWorkerSave(key, pin, token, patch) {
     const list = J(s2.exists() && s2.data().v, []);
     const it = list.find(w => w.token === token);
     if (it) { it.kind = kinds.join(','); await setDoc(ref, { v: JSON.stringify(list) }); }
+  }
+  // link to a TailorShop employee (workers added on this page before the link existed)
+  if (patch && patch.emp !== undefined) {
+    const emp = await shopEmp(patch.emp);
+    if (!emp) return { ok: false, msg: 'اختر الموظف في برنامج جميل – choose the TailorShop employee' };
+    await updateDoc(doc(db, 'wk', token), { emp });
+    delete cacheW[token];
   }
   if (!Object.keys(clean).length) return { ok: true };
   await setDoc(doc(db, 'wkx', token), clean, { merge: true });
@@ -675,5 +698,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aOrderWip,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aOrderWip, aShopEmployees,
 };
