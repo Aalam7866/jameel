@@ -536,9 +536,12 @@
       }).aWorkersAll(KEY, PIN, $('wYm').value);
     }
     function renderWorkers() {
-      var list = WD.list, rates = WD.rates;
-      if (!list.length) { $('wList').innerHTML = '<div class="card muted">لا يوجد عمال – no workers yet</div>'; return; }
-      $('wList').innerHTML = list.map(function (w) {
+      var rates = WD.rates, gone = WD.list.filter(function (w) { return w.hidden; }), list = WD.list.filter(function (w) { return !w.hidden; });
+      var goneHtml = gone.length ? '<div class="card"><details><summary>العمال المحذوفون / removed workers (' + gone.length + ')</summary>' +
+        gone.map(function (w) { return '<div class="wrow"><span>' + esc(w.name) + ' · ' + kindLabel(w.kind) + '</span><button class="sec wx" onclick="restoreWorker(\'' + esc(w.token) + '\')">↩ إرجاع / restore</button></div>'; }).join('') +
+        '</details></div>' : '';
+      if (!list.length) { $('wList').innerHTML = '<div class="card muted">لا يوجد عمال – no workers yet</div>' + goneHtml; return; }
+      $('wList').innerHTML = goneHtml + list.map(function (w) {
         var t = esc(w.token), on = w.active, pcs = 0, earn = 0, ded = 0;
         w.work.forEach(function (e) { pcs += e.q; earn += e.q * (rates[e.kind] || 0); });
         var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; });
@@ -576,7 +579,7 @@
           '<button class="sec" style="color:#b3261e" onclick="wToggle(\'wded_' + t + '\')">− خصم / Deduct</button>' +
           (on ? '<button class="bad" onclick="setActive(\'' + t + '\', false)">🚫 إيقاف / Block</button>'
               : '<button class="go" onclick="setActive(\'' + t + '\', true)">✓ تفعيل / Unblock</button>') +
-          (w.src === 'admin' ? '<button class="sec" onclick="delWorker(\'' + t + '\')">حذف / Remove</button>' : '') +
+          '<button class="bad" onclick="delWorker(\'' + t + '\')">🗑 حذف / Delete</button>' +
           '</div></div>';
         return h;
       }).join('');
@@ -632,13 +635,13 @@
         $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">خطأ – ' + esc(e && e.message || e) + '</div>';
       }).aAddWorker(KEY, PIN, { name: name, kind: kinds.join(',') });
     }
+    // delete: the link stops at once and the worker leaves the list (his work stays in the accounts; "restore" brings him back)
     function delWorker(token) {
-      if (!confirm('حذف هذا العامل نهائياً؟ رابطه القديم يبقى، استخدم الإيقاف لإغلاقه – Remove? Use Block to stop the link.')) return;
-      google.script.run.withSuccessHandler(function (r) {
-        if (!r || !r.ok) { alert(r && r.msg || 'خطأ'); return; }
-        wSave(token, { active: false });
-      }).withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e)); }).aDelWorker(KEY, PIN, token);
+      var w = wFind(token); if (!w) return;
+      if (!confirm('حذف ' + w.name + '؟ رابطه يتوقف فوراً ويختفي من القائمة – Delete ' + w.name + '? The link stops and he leaves the list.')) return;
+      wSave(token, { active: false, hidden: true });
     }
+    function restoreWorker(token) { wSave(token, { active: true, hidden: false }); }
 
 
     // ---- Shop Online: the real /app/ page inside this admin page (checks this page's KEY + PIN itself) ----

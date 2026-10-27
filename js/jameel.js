@@ -579,7 +579,7 @@ async function aWorkersAll(key, pin, ym) {
     const v = a.data(), xx = x && x.exists() ? x.data() : {}, work = [], ded = [];
     if (e) e.forEach(y => { const q = entryOf(y); if (q.st !== 'deleted') work.push(q); });
     if (d) d.forEach(y => ded.push(dedOf(y)));
-    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, work, ded };
+    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true, work, ded };
   }));
   const rd = rt.exists() ? rt.data() : {};
   return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),
@@ -592,6 +592,7 @@ async function aWorkerSave(key, pin, token, patch) {
   const clean = {};
   if (patch && patch.phone !== undefined) clean.phone = digits(patch.phone).slice(-12);
   if (patch && patch.active !== undefined) clean.active = !!patch.active;
+  if (patch && patch.hidden !== undefined) clean.hidden = !!patch.hidden;
   await setDoc(doc(db, 'wkx', token), clean, { merge: true });
   return { ok: true };
 }
