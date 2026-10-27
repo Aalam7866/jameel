@@ -1,114 +1,133 @@
 rules_version = '2';
+// saudithobe.best – JAMEEL AL HINDAM online (own Firebase project, nothing shared with any other shop)
+//  * the shop PC (ShopSync, pc@saudithobe.best) and the owner app (owner@saudithobe.best) sign in
+//  * worker / order / admin pages have no login: their secret link is the path (a 32-hex key nobody can guess)
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admin gateway (read-only, key-based access)
-    match /akk/{key} {
-      allow read: if true;
-      allow write: if false;
-    }
+    function email() { return request.auth != null && request.auth.token.email != null ? request.auth.token.email.lower() : ''; }
+    function isPc() { return email() == 'pc@saudithobe.best'; }
+    function isOwner() { return email() == 'owner@saudithobe.best'; }
+    function staff() { return isPc() || isOwner(); }
+    function isKey(k) { return k is string && k.matches('^[0-9a-f]{32}$'); }
 
-    // Admin root docs
-    match /ak/{id} {
-      allow read: if true;
-      allow write: if false;
+    // ---------------------------------------------------------------- worker links  (/exec?t=TOKEN, /karigar/?k=TOKEN)
+    match /wk/{tok} {
+      allow get: if true;                       // whoever has the link
+      allow list: if staff();
+      allow update, delete: if isPc();
+      // the shop PC; or Admin → Workers adds a new worker (a new random link, never over an existing one)
+      allow create: if isPc() || (isKey(tok)
+        && request.resource.data.keys().hasOnly(['name', 'kind', 'emp', 's'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 40
+        && request.resource.data.kind is string && request.resource.data.kind.size() <= 60);
+      match /pin/{ph} { allow read, write: if isPc(); }   // only "does this PIN hash exist" is used, by the rules
+      // the worker's own transfers
+      match /e/{id} {
+        allow get, list: if true;
+        allow create: if validEntry(tok);
+        allow update, delete: if isPc();
+      }
     }
+    function validEntry(tok) {
+      let d = request.resource.data;
+      let w = get(/databases/$(database)/documents/wk/$(tok)).data;
+      return d.keys().hasOnly(['emp', 'name', 'kind', 'o', 'q', 'fit', 'st', 'ts', 'd', 'ph'])
+        && d.emp == w.emp && d.name == w.name && d.kind in w.kind.split(',')
+        && d.st == 'new' && d.o is int && d.o > 0 && d.o < 100000000
+        && d.q is int && d.q >= 1 && d.q <= 1000 && d.fit in [0, 1]
+        && d.ts == request.time && d.d is string && d.d.size() == 10
+        && (w.get('pin', false) == false || (d.ph is string && exists(/databases/$(database)/documents/wk/$(tok)/pin/$(d.ph))));
+    }
+    // all workers' transfers at once: only the shop PC / owner (ShopSync imports them)
+    match /{path=**}/e/{id} { allow read: if staff(); }
 
-    // Admin sub-docs (workers list, etc.)
-    match /ak/{id}/d/{sub} {
+    // Admin → Workers extras (mobile, blocked) and deductions – the shop PC never touches these
+    match /wkx/{tok} {
       allow read, write: if true;
+      match /ded/{id} { allow read, write: if true; }
+    }
+    // work in progress on the worker app (Start pressed, Finish not yet)
+    match /jwip/{id} { allow read, write: if true; }
+
+    // open orders (numbers and pieces left – no names, no prices) + transfers not collected yet
+    match /sp/{s} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isPc();
     }
 
-    // Admin activity log
-    match /ak/{id}/act/{logId} {
-      allow read, write: if true;
+    // ---------------------------------------------------------------- online new-order page  (/exec?o=KEY)
+    match /okk/{key} { allow get: if true; allow list: if false; allow write: if isPc(); }
+    // root = sha256("ok:" + KEY + ":" + PIN hash): without the right PIN the data is not found
+    match /ok/{r} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isPc();
+      match /d/{id} { allow get: if true; allow list, write: if isPc(); }
+      match /c/{id} { allow get, list: if true; allow write: if isPc(); }
+      match /o/{id} {
+        allow get, list: if true;
+        allow create: if request.resource.data.keys().hasOnly(['ts', 'st', 'data', 'by', 'name', 'pcs', 'total'])
+          && request.resource.data.st == 'new' && request.resource.data.ts == request.time
+          && request.resource.data.data is string && request.resource.data.data.size() < 45000
+          && request.resource.data.by is string && request.resource.data.by.size() <= 40
+          && request.resource.data.name is string && request.resource.data.name.size() <= 60
+          && request.resource.data.pcs is number && request.resource.data.total is number;
+        // delete from the page: not saved yet → deleted; saved → delete request for the shop PC
+        allow update: if isPc() || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st', 'note'])
+          && ((resource.data.st in ['new', 'error'] && request.resource.data.st == 'deleted')
+              || (resource.data.st == 'saved' && request.resource.data.st == 'delreq'
+                  && request.resource.data.note is string && request.resource.data.note.size() <= 50)));
+        allow delete: if isPc();
+      }
     }
 
-    // Admin alert orders
-    match /ak/{id}/ao/{orderId} {
-      allow read: if true;
+    // ---------------------------------------------------------------- admin page  (/exec?a=KEY)
+    match /akk/{key} { allow get: if true; allow list: if false; allow write: if isPc(); }
+    match /ak/{r} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isPc();
+      match /ao/{id} { allow get, list: if true; allow write: if isPc(); }
+      match /d/{id} { allow read, write: if true; }      // the workers added on the admin page
+      match /act/{id} {
+        allow get, list: if true;
+        allow create: if request.resource.data.keys().hasOnly(['ts', 'st', 'data', 'by', 'order_no', 'kind', 'amount', 'qty'])
+          && request.resource.data.st == 'new' && request.resource.data.ts == request.time
+          && request.resource.data.kind in ['PAY', 'DELIVER']
+          && request.resource.data.data is string && request.resource.data.data.size() < 2000
+          && request.resource.data.order_no is int && request.resource.data.amount is number && request.resource.data.qty is int;
+        allow update, delete: if isPc();
+      }
     }
 
-    // Order gateway (read-only)
-    match /okk/{key} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Order root docs
-    match /ok/{id} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Order sub-docs (items, emb, img_*, pics_*)
-    match /ok/{id}/d/{sub} {
-      allow read: if true;
-    }
-
-    // Order customer entries
-    match /ok/{id}/c/{cId} {
-      allow read: if true;
-    }
-
-    // Order entries (new orders from web)
-    match /ok/{id}/o/{oId} {
-      allow read, write: if true;
-    }
-
-    // Worker docs
-    match /wk/{token} {
-      allow read, write: if true;
-    }
-
-    // Worker work entries
-    match /wk/{token}/e/{entryId} {
-      allow read, write: if true;
-    }
-
-    // Worker extras set in Admin (mobile, blocked) + deductions – the shop PC never touches these
-    match /wkx/{token} {
-      allow read, write: if true;
-    }
-    match /wkx/{token}/ded/{dId} {
-      allow read, write: if true;
-    }
-
-    // Work in progress (worker pressed Start, not Finish yet)
-    match /jwip/{id} {
-      allow read, write: if true;
-    }
-
-    // Space/order data (ShopSync writes, pages read)
-    match /sp/{key} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // System config (rates etc.)
-    match /sys/{docId} {
-      allow read, write: if true;
-    }
-
-    // Data sync (ShopSync writes shop data here for the phone app)
+    // ---------------------------------------------------------------- Shop Online (owner app, and inside the admin page)
     match /ds/{name} {
-      allow read, write: if true;
-    }
-    match /ds/{name}/c/{piece} {
-      allow read, write: if true;
-    }
-
-    // Jobs (phone → shop PC task queue)
-    match /jobs/{jobId} {
-      allow read, write: if true;
-    }
-
-    // Files (PDF storage from shop PC)
-    match /files/{fileId} {
       allow read: if true;
+      allow write: if isPc();
+      match /c/{id} { allow read: if true; allow write: if isPc(); }
     }
-    match /files/{fileId}/p/{partId} {
+    match /sys/{id} {
       allow read: if true;
+      allow write: if isPc();
+      // Admin → Settings: the work rates
+      allow create, update: if id == 'rates'
+        && request.resource.data.keys().hasOnly(['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY', 'at']);
+    }
+    match /jobs/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.st == 'new' && request.resource.data.ts == request.time
+        && request.resource.data.kind in ['pdf', 'invoice', 'inv_order', 'inv_meas', 'daily_hide'];
+      allow update: if isPc() || (resource.data.st == 'new' && request.resource.data.st == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st']));
+      allow delete: if isOwner();
+    }
+    match /files/{id} {
+      allow read: if true;
+      allow write: if isPc();
+      match /p/{i} { allow read: if true; allow write: if isPc(); }
     }
   }
 }
