@@ -380,15 +380,10 @@ function scan() {
 // the installed app carries the worker's own name and link
 function personalise() {
   document.title = me.name + ' – جميل الهندام';
+  // a real manifest file at the worker's own address (made by the service worker): his app's scope is his address only
   let link = document.querySelector('link[rel="manifest"]');
   if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
-  fetch('/karigar/manifest.json').then(r => r.json()).then(j => {
-    const abs = (u) => new URL(u, location.origin).href, home = abs(HOME(tok));
-    j.name = me.name + ' – جميل الهندام'; j.short_name = String(me.name).split(' ')[0].slice(0, 12);
-    j.start_url = home; j.scope = home; j.id = home;
-    (j.icons || []).forEach(ic => { ic.src = abs(ic.src); });
-    link.href = URL.createObjectURL(new Blob([JSON.stringify(j)], { type: 'application/manifest+json' }));
-  }).catch(() => { });
+  link.href = HOME(tok) + 'manifest.json?n=' + encodeURIComponent(me.name || '');
 }
 
 (async () => {

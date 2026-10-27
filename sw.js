@@ -1,5 +1,5 @@
 // Jameel Al Hindam – Service Worker (cache-first for static, network-first for API/data)
-const CACHE = 'jameel-v11';
+const CACHE = 'jameel-v12';
 const STATIC = ['/', '/exec', '/exec.html', '/app/', '/app/index.html',
                 '/favicon.svg', '/img/icon-192.png', '/img/icon-512.png',
                 '/js/fb.js', '/js/config.js', '/js/jameel.js',
@@ -17,6 +17,17 @@ self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   // Firebase / external API: always network
   if (u.hostname !== location.hostname) return;
+  // a worker's own app manifest (a real https file, not a blob – Android then makes a proper app whose scope is his address only)
+  const wm = u.pathname.match(/^\/(karigar\/w|t)\/([0-9a-f]{32})\/manifest\.json$/);
+  if (wm) {
+    const home = location.origin + '/' + wm[1] + '/' + wm[2] + '/', n = (u.searchParams.get('n') || '').trim().slice(0, 40);
+    const m = { name: (n ? n + ' – ' : '') + 'جميل الهندام', short_name: (n.split(' ')[0] || 'Jameel').slice(0, 12), id: home, start_url: home, scope: home,
+      display: 'standalone', orientation: 'portrait', background_color: '#eef5f3', theme_color: '#0e6b5c',
+      icons: [{ src: location.origin + '/img/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+              { src: location.origin + '/img/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
+    e.respondWith(new Response(JSON.stringify(m), { headers: { 'Content-Type': 'application/manifest+json; charset=utf-8' } }));
+    return;
+  }
   // own addresses (one installed app each): /karigar/w/TOKEN/ = worker app; /a/KEY/, /o/KEY/, /t/TOKEN/ = exec.html
   const page = e.request.mode !== 'navigate' ? null
     : /^\/karigar\/w\/[0-9a-f]{32}\/?$/.test(u.pathname) ? '/karigar/index.html'

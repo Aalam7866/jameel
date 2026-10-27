@@ -61,7 +61,7 @@ else try {
   // the app starts at /a/ which opens the page this phone opened last. Work-entry pages keep their own per-worker manifest.
   if (vars.ok && (KIND === 'a' || KIND === 'o')) try { localStorage.setItem('jameel-home-' + KIND, '/' + KIND + '/' + KEYV + '/'); } catch (e) { }
   const mLink = '<link rel="manifest" href="' + (KIND === 'a' || KIND === 'o' ? '/' + KIND + '/manifest.json'
-    : URL.createObjectURL(new Blob([JSON.stringify(mani)], { type: 'application/json' }))) + '">';
+    : '/t/' + KEYV + '/manifest.json?n=' + encodeURIComponent(wName)) + '">';
   const src = await (await fetch('/tpl/' + tpl + '.html?v=5', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
   const html = render(src, vars)
