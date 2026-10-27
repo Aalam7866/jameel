@@ -556,7 +556,7 @@
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };
     function shopTab(n) {
       var f = $('shopFrame'), h = SHOP_HASH[n] || 'home';
-      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1#' + h);
+      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=7#' + h);
       else try { f.contentWindow.location.hash = h + '-' + Date.now(); } catch (x) { }
       setTimeout(function () { $('p5').scrollIntoView({ block: 'start' }); }, 50);
     }
