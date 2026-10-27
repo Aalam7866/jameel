@@ -1090,13 +1090,12 @@ async function moreView() {
   const m = shell('More');
   const [cur, b] = subTabs(m, 'more', [['links', 'Online links'], ['jobs', 'Jobs']].concat(EMBED ? [] : [['settings', 'Settings']]));
   if (cur === 'links') {
-    const [l, w] = await Promise.all([links(), rows('j_workers', { limit: 100, asc: true })]);
+    const l = await links();
     const base = 'https://saudithobe.best';
     const row = (title, sub, url) => `<div class="linkrow"><div class="main"><b>${H(title)}</b> <span class="muted">${H(sub)}</span><br><code>${H(url)}</code></div>
       <button class="btn ghost small" data-copy="${H(url)}">Copy</button><a class="btn ghost small" href="${H(url)}" target="_blank" rel="noopener">Open</a></div>`;
     b.innerHTML = `<p class="muted">Yeh JAMEEL ke online pages hain – ab apne domain par. Link secret hai: sirf usi ko bhejiye jiska hai.</p>
-    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد', base + '/o/' + l.OnlineOrderKey + '/') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>
-    <h2>Workers – work entry links</h2><div class="card">${w.rows.filter(x => x.web_token && N(x.active)).map(x => row(x.name, x.role, base + '/karigar/w/' + x.web_token + '/')).join('') || '<p class="muted">No workers with a link</p>'}</div>`;
+    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد', base + '/o/' + l.OnlineOrderKey + '/') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>`;
     b.querySelectorAll('[data-copy]').forEach(el => el.onclick = async () => { try { await navigator.clipboard.writeText(el.dataset.copy); el.textContent = 'Copied ✓'; } catch (e) { prompt('Copy:', el.dataset.copy); } });
     return;
   }
