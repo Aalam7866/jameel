@@ -76,5 +76,26 @@ service cloud.firestore {
     match /sys/{docId} {
       allow read, write: if true;
     }
+
+    // Data sync (ShopSync writes shop data here for the phone app)
+    match /ds/{name} {
+      allow read, write: if true;
+    }
+    match /ds/{name}/c/{piece} {
+      allow read, write: if true;
+    }
+
+    // Jobs (phone → shop PC task queue)
+    match /jobs/{jobId} {
+      allow read, write: if true;
+    }
+
+    // Files (PDF storage from shop PC)
+    match /files/{fileId} {
+      allow read: if true;
+    }
+    match /files/{fileId}/p/{partId} {
+      allow read: if true;
+    }
   }
 }
