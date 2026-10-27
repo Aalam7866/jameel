@@ -67,6 +67,10 @@
   .wmonth { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .wmonth input { max-width: 190px; margin: 0; }
   .wk.off { opacity: .7; }
+  .wsearch input { font-size: 17px; margin: 10px 0 0; }
+  .wot { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .wot th, .wot td { border-bottom: 1px solid #e3efec; padding: 5px 4px; text-align: center; }
+  .wot th { font-size: 12px; color: #777; }
   .wtop { display: flex; align-items: center; gap: 10px; }
   .wtop .av { width: 42px; height: 42px; border-radius: 50%; background: #0e6b5c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex: none; }
   .wtop .winfo { flex: 1; min-width: 0; } .wtop b { font-size: 17px; color: #0e6b5c; } .wkind { font-size: 13px; color: #777; }
@@ -161,6 +165,8 @@
           <button class="go wide" onclick="addWorker()">إضافة / Add</button>
           <div id="wMsg"></div>
         </div>
+        <div class="wsearch"><input id="wOrd" type="search" inputmode="numeric" placeholder="🔎 رقم الطلب – من قص، من خاط… / Order no – who cut, who stitched…" oninput="orderWhoSoon()"></div>
+        <div id="wOrdRes"></div>
         <div class="wmonth"><b>حساب شهر / Month</b> <input id="wYm" type="month" onchange="loadWorkers()"></div>
         <div class="muted" style="font-size:13px">العمل: قص ← خياطة · تطريز عند بدء الخياطة · زرار بعد انتهاء الخياطة – Cutting → Stitching · Embroidery when stitching starts · Hinge when stitching is finished</div>
       </div>
@@ -530,7 +536,7 @@
       if (!WD) $('wList').innerHTML = '<div class="card muted">جاري التحميل… / Loading…</div>';
       google.script.run.withSuccessHandler(function (r) {
         if (!r) { $('wList').innerHTML = '<div class="card muted">تعذر التحميل – could not load</div>'; return; }
-        WD = r; renderWorkers();
+        WD = r; renderWorkers(); if ($('wOrd').value) orderWho();
       }).withFailureHandler(function (e) {
         $('wList').innerHTML = '<div class="card rate-err">خطأ – ' + esc(e && e.message || e) + '</div>';
       }).aWorkersAll(KEY, PIN, $('wYm').value);
@@ -606,6 +612,37 @@
       });
       r.lines.sort(function (a, b) { return String(b.d).localeCompare(String(a.d)) || (Number(b.o) - Number(a.o)); });
       return r;
+    }
+    // order search: every worker's pieces of one order – TailorShop's account (✔), sent from a link not taken yet (⏳), started now (🔄)
+    var ORD_T = null, KORDER = ['CUT', 'STITCH', 'EMBROIDERY', 'HINGE', 'MEASURE', 'ARRIVE'];
+    function orderWhoSoon() { clearTimeout(ORD_T); ORD_T = setTimeout(orderWho, 350); }
+    function orderWho() {
+      var no = String($('wOrd').value || '').replace(/\D/g, '').replace(/^0+/, ''), box = $('wOrdRes');
+      if (!no) { box.innerHTML = ''; return; }
+      if (!WD) { box.innerHTML = '<div class="muted">جاري التحميل… / Loading…</div>'; return; }
+      var rows = [];
+      WD.list.forEach(function (w) {
+        var kinds = String(w.kind || '').split(',').filter(Boolean), ks = Object.keys(w.kstats || {}), src = [];
+        if (kinds.length > 1 && ks.length) ks.forEach(function (k) { src.push([k, w.kstats[k]]); }); else src.push([kinds[0] || '', w.stats || {}]);
+        src.forEach(function (x) {
+          ((x[1] || {}).work || []).forEach(function (q) { if (String(q[1]) === no) rows.push({ kind: x[0], name: w.name, q: Number(q[2]) || 0, d: String(q[0]).slice(0, 10), st: 'ok' }); });
+        });
+        (w.work || []).forEach(function (e) { if (String(e.o) === no) rows.push({ kind: e.kind, name: w.name, q: e.q, d: e.d, st: 'wait', fit: e.fit }); });
+      });
+      box.innerHTML = '<div class="muted">…</div>';
+      google.script.run.withSuccessHandler(function (wip) {
+        (wip || []).forEach(function (x) { rows.push({ kind: x.kind, name: x.name, q: x.q, d: x.d, st: 'wip', fit: x.fit }); });
+        if (no !== String($('wOrd').value || '').replace(/\D/g, '').replace(/^0+/, '')) return;   // typed on
+        if (!rows.length) { box.innerHTML = '<div class="card muted" style="margin:8px 0">لا يوجد عمل مسجل للطلب ' + esc(no) + ' – no work recorded for order ' + esc(no) + '<br><small>(تفاصيل آخر 3 أشهر – details of the last 3 months)</small></div>'; return; }
+        rows.sort(function (a, b) { return (KORDER.indexOf(a.kind) - KORDER.indexOf(b.kind)) || String(a.d).localeCompare(String(b.d)); });
+        var tot = {}; rows.forEach(function (r) { if (r.st !== 'wip') tot[r.kind] = (tot[r.kind] || 0) + r.q; });
+        var ST = { ok: '<span class="badge ok">✔</span>', wait: '<span class="badge w" title="بانتظار المحل – waiting for the shop">⏳</span>', wip: '<span class="badge" style="background:#e3ecf8;color:#1f4e8c" title="قيد العمل – in work">🔄</span>' };
+        box.innerHTML = '<div class="card" style="margin:8px 0;padding:10px"><b>طلب / Order #' + esc(no) + '</b>' +
+          '<div style="margin:6px 0">' + Object.keys(tot).sort(function (a, b) { return KORDER.indexOf(a) - KORDER.indexOf(b); }).map(function (k) { return '<span class="badge" style="background:#e3efec;margin:2px">' + (WKINDS[k] || esc(k)) + ' ' + tot[k] + '</span>'; }).join('') + '</div>' +
+          '<table class="wot"><tr><th>العمل<br>Work</th><th>العامل<br>Worker</th><th>القطع<br>Pcs</th><th>التاريخ<br>Date</th><th></th></tr>' +
+          rows.map(function (r) { return '<tr><td>' + (WKINDS[r.kind] || esc(r.kind)) + '</td><td>' + esc(r.name) + '</td><td>' + r.q + (r.fit ? ' <small>(بروفة)</small>' : '') + '</td><td>' + esc(day(r.d)) + '</td><td>' + ST[r.st] + '</td></tr>'; }).join('') +
+          '</table><div class="muted" style="font-size:12px;margin-top:4px">✔ محفوظ في المحل – saved · ⏳ بانتظار المحل – waiting for the shop · 🔄 قيد العمل – in work</div></div>';
+      }).withFailureHandler(function (e) { box.innerHTML = '<div class="rate-err">خطأ – ' + esc(e && e.message || e) + '</div>'; }).aOrderWip(KEY, PIN, no);
     }
     function wToggle(id) { var e = $(id); if (e) e.style.display = e.style.display === 'none' ? 'block' : 'none'; }
     function sendLink(t) {

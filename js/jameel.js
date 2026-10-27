@@ -595,6 +595,16 @@ async function aWorkersAll(key, pin, ym) {
   return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),
            list: out.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name)) };
 }
+// who has an order's pieces in work right now (Start pressed on the worker app)
+async function aOrderWip(key, pin, order) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const o = Number(orderKey(order));
+  if (!o) return [];
+  const s = await getDocs(query(collection(db, 'jwip'), where('o', '==', o))).catch(() => null), out = [];
+  if (s) s.forEach(x => { const d = x.data(); out.push({ token: d.token, name: d.name || '', kind: d.kind, q: Number(d.q || 0) + (d.fit ? 1 : 0), fit: !!d.fit, d: d.at && d.at.toDate ? riyadh(d.at.toDate()).slice(0, 10) : '' }); });
+  return out;
+}
 async function aWorkerSave(key, pin, token, patch) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -665,5 +675,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aOrderWip,
 };
