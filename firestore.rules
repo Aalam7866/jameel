@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin gateway (read-only, key-based access)
+    match /akk/{key} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admin root docs
+    match /ak/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admin sub-docs (workers list, etc.)
+    match /ak/{id}/d/{sub} {
+      allow read, write: if true;
+    }
+
+    // Admin activity log
+    match /ak/{id}/act/{logId} {
+      allow read, write: if true;
+    }
+
+    // Admin alert orders
+    match /ak/{id}/ao/{orderId} {
+      allow read: if true;
+    }
+
+    // Order gateway (read-only)
+    match /okk/{key} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Order root docs
+    match /ok/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Order sub-docs (items, emb, img_*, pics_*)
+    match /ok/{id}/d/{sub} {
+      allow read: if true;
+    }
+
+    // Order customer entries
+    match /ok/{id}/c/{cId} {
+      allow read: if true;
+    }
+
+    // Order entries (new orders from web)
+    match /ok/{id}/o/{oId} {
+      allow read, write: if true;
+    }
+
+    // Worker docs
+    match /wk/{token} {
+      allow read, write: if true;
+    }
+
+    // Worker work entries
+    match /wk/{token}/e/{entryId} {
+      allow read, write: if true;
+    }
+
+    // Space/order data (ShopSync writes, pages read)
+    match /sp/{key} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // System config (rates etc.)
+    match /sys/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
