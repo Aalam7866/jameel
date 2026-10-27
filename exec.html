@@ -57,7 +57,11 @@ else try {
     background_color: '#eef5f3', theme_color: '#0e6b5c', orientation: 'portrait',
     icons: [{ src: location.origin + '/img/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
             { src: location.origin + '/img/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
-  const mLink = '<link rel="manifest" href="' + URL.createObjectURL(new Blob([JSON.stringify(mani)], { type: 'application/json' })) + '">';
+  // admin / order page: a real manifest file (scope /a/ or /o/) so Android makes a proper app that never takes /app/ etc.;
+  // the app starts at /a/ which opens the page this phone opened last. Work-entry pages keep their own per-worker manifest.
+  if (vars.ok && (KIND === 'a' || KIND === 'o')) try { localStorage.setItem('jameel-home-' + KIND, '/' + KIND + '/' + KEYV + '/'); } catch (e) { }
+  const mLink = '<link rel="manifest" href="' + (KIND === 'a' || KIND === 'o' ? '/' + KIND + '/manifest.json'
+    : URL.createObjectURL(new Blob([JSON.stringify(mani)], { type: 'application/json' }))) + '">';
   const src = await (await fetch('/tpl/' + tpl + '.html?v=5', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
   const html = render(src, vars)

@@ -1,0 +1,25 @@
+{
+  "name": "Jameel Order – طلب جديد",
+  "short_name": "Jameel Order",
+  "id": "/o/",
+  "start_url": "/o/",
+  "scope": "/o/",
+  "display": "standalone",
+  "background_color": "#eef5f3",
+  "theme_color": "#0e6b5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

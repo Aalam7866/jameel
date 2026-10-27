@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jameel Order</title><link rel="icon" href="/favicon.svg"><link rel="manifest" href="/o/manifest.json"><meta name="theme-color" content="#0e6b5c">
+<style>body{font-family:system-ui,Tahoma,sans-serif;background:#eef5f3;color:#16302b;display:grid;place-items:center;min-height:90vh;margin:0;text-align:center;padding:0 16px}</style></head>
+<body><p id="m">… جاري التحميل – Loading</p>
+<script>
+// the installed app starts here: open the page this phone opened last (its own secret link)
+var h = ''; try { h = localStorage.getItem('jameel-home-o') || ''; } catch (e) { }
+if (/^\/o\/[0-9a-f]{32}\/$/.test(h)) location.replace(h);
+else document.getElementById('m').textContent = 'افتح الرابط الذي أرسله المحل مرة واحدة – Open the link from the shop once';
+</script></body></html>
