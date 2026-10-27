@@ -11,7 +11,6 @@
 <meta name="apple-mobile-web-app-title" content="Jameel">
 <link rel="icon" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/img/icon-192.png">
-<link rel="manifest" href="manifest.json">
 <style>
 :root{--bg:#eef5f3;--surface:#fff;--ink:#16302b;--muted:#5d6f6b;--line:#d6e5e1;--acc:#0e6b5c;--acc-soft:#e3efec;--gold:#7a5b00;--gold-soft:#fff3cd;
   --ok:#1a7f37;--ok-soft:#dff3e4;--bad:#b3261e;--bad-soft:#fde8e7;--warn:#9a5b00;--blue:#1f4e8c;--blue-soft:#e3ecf8;--wa:#1c6e45;color-scheme:light}
@@ -89,9 +88,12 @@ const app = document.getElementById('app');
 let LANG = 'ar'; try { LANG = localStorage.getItem('k-lang') || 'ar'; } catch (e) { }
 const L = (ar, en) => LANG === 'en' ? en : ar;
 document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'en' ? 'ltr' : 'rtl';
-let tok = new URLSearchParams(location.search).get('k') || '';
-try { if (tok) localStorage.setItem('k-token', tok); else tok = localStorage.getItem('k-token') || ''; } catch (e) { }
-if (tok && !/[?&]k=/.test(location.search)) try { history.replaceState(null, '', '?k=' + tok); } catch (e) { }
+// each worker has his own address /karigar/w/TOKEN/ – so each installed app has its own scope and a link opens in its own app
+const HOME = (t) => '/karigar/w/' + t + '/';
+const pm = location.pathname.match(/^\/karigar\/w\/([0-9a-f]{32})\/?$/);
+let tok = pm ? pm[1] : (new URLSearchParams(location.search).get('k') || '').trim();
+const MOVING = !pm && /^[0-9a-f]{32}$/.test(tok);   // an old ?k= link: go to the worker's own address
+if (MOVING) location.replace(HOME(tok));
 
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
@@ -378,17 +380,19 @@ function scan() {
 // the installed app carries the worker's own name and link
 function personalise() {
   document.title = me.name + ' – جميل الهندام';
-  const link = document.querySelector('link[rel="manifest"]');
-  fetch('manifest.json').then(r => r.json()).then(j => {
-    const abs = (u) => new URL(u, location.href).href;
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
+  fetch('/karigar/manifest.json').then(r => r.json()).then(j => {
+    const abs = (u) => new URL(u, location.origin).href, home = abs(HOME(tok));
     j.name = me.name + ' – جميل الهندام'; j.short_name = String(me.name).split(' ')[0].slice(0, 12);
-    j.start_url = location.href; j.scope = abs('./'); j.id = location.href;
+    j.start_url = home; j.scope = home; j.id = home;
     (j.icons || []).forEach(ic => { ic.src = abs(ic.src); });
     link.href = URL.createObjectURL(new Blob([JSON.stringify(j)], { type: 'application/manifest+json' }));
   }).catch(() => { });
 }
 
 (async () => {
+  if (MOVING) return;
   if (!/^[0-9a-f]{32}$/.test(tok)) return screen('🔗', L('الرابط ناقص', 'Link is incomplete'), L('افتح الرابط الكامل الذي أرسله المحل.', 'Open the full link the shop sent you.'));
   try { me = await kVars(tok); }
   catch (e) { return screen('📶', L('لا يوجد اتصال', 'No connection'), String(e.message || e)); }

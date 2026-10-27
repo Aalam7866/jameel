@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جميل الهندام</title>
+<link rel="icon" href="/favicon.svg">
+<style>body{font-family:system-ui,Tahoma,sans-serif;background:#eef5f3;color:#16302b;display:grid;place-items:center;min-height:90vh;margin:0;text-align:center}</style>
+</head>
+<body>
+<p id="m">… جاري التحميل – Loading</p>
+<script>
+// A worker's own address (/karigar/w/TOKEN/) is made by the service worker. The very first time (no service worker yet)
+// GitHub Pages lands here: start the service worker, then open the address again through it.
+(function () {
+  var m = document.getElementById('m');
+  if (!/^\/karigar\/w\/[0-9a-f]{32}\/?$/.test(location.pathname) || !('serviceWorker' in navigator)) {
+    m.textContent = 'الصفحة غير موجودة – Page not found';
+    return;
+  }
+  var key = 'sw-retry:' + location.pathname, n = 0;
+  try { n = +sessionStorage.getItem(key) || 0; sessionStorage.setItem(key, n + 1); } catch (e) { }
+  if (n >= 2) { m.textContent = 'تعذر الفتح – could not open. Refresh / أعد التحميل'; return; }
+  navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; })
+    .then(function () { setTimeout(function () { location.reload(); }, 300); })
+    .catch(function () { m.textContent = 'تعذر الفتح – could not open'; });
+})();
+</script>
+</body>
+</html>

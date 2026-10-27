@@ -529,7 +529,7 @@
     function kindLabel(k) { return String(k || '').split(',').filter(Boolean).map(function (x) { return WKINDS[x] || x; }).join(' · '); }
     function sar(n) { return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US') + ' ر.س'; }
     function waNum(p) { var d = String(p || '').replace(/\D/g, ''); if (d.indexOf('00') === 0) d = d.slice(2); if (/^05\d{8}$/.test(d)) d = '966' + d.slice(1); else if (/^5\d{8}$/.test(d)) d = '966' + d; return d; }
-    function wLink(w) { return location.origin + '/karigar/?k=' + w.token; }
+    function wLink(w) { return location.origin + '/karigar/w/' + w.token + '/'; }   // own address = own app on the phone
     function wFind(t) { return WD ? WD.list.filter(function (w) { return w.token === t; })[0] : null; }
     function loadWorkers() {
       if (!$('wYm').value) $('wYm').value = ymNow();
