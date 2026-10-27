@@ -10,11 +10,11 @@
 <body>
 <p id="m">… جاري التحميل – Loading</p>
 <script>
-// A worker's own address (/karigar/w/TOKEN/) is made by the service worker. The very first time (no service worker yet)
+// The pages' own addresses (/karigar/w/TOKEN/, /a/KEY/, /o/KEY/, /t/TOKEN/) are made by the service worker. The very first time (no service worker yet)
 // GitHub Pages lands here: start the service worker, then open the address again through it.
 (function () {
   var m = document.getElementById('m');
-  if (!/^\/karigar\/w\/[0-9a-f]{32}\/?$/.test(location.pathname) || !('serviceWorker' in navigator)) {
+  if (!/^\/(karigar\/w|a|o|t)\/[0-9a-f]{32}\/?$/.test(location.pathname) || !('serviceWorker' in navigator)) {
     m.textContent = 'الصفحة غير موجودة – Page not found';
     return;
   }

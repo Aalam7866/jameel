@@ -16,7 +16,7 @@
 <script type="module">
 // JAMEEL AL HINDAM online pages:  /exec?t=TOKEN (worker)  /exec?o=KEY (new order)  /exec?a=KEY (alerts)
 // The same Page/Order/Admin pages as before; their google.script.run calls now go to Firebase (js/jameel.js).
-import { SERVER, pageVars, orderVars, adminVars } from './js/jameel.js?v=10';
+import { SERVER, pageVars, orderVars, adminVars } from '/js/jameel.js?v=10';
 
 // google.script.run → Firebase
 const SHIM = `<script>(function () {
@@ -35,20 +35,28 @@ const SHIM = `<script>(function () {
   window.google = { script: { run: R(null, null) } };
 })();<\/script>`;
 
+// Each page has its own address – /a/KEY/ (admin), /o/KEY/ (new order), /t/TOKEN/ (work entry) – so each installed app has
+// its own scope and Android opens a link in its own app. An old /exec?a=KEY link moves to its address.
 const P = new URLSearchParams(location.search);
+const ROUTE = location.pathname.match(/^\/(a|o|t)\/([0-9a-f]{32})\/?$/);
+const OLD = ROUTE ? null : ['a', 'o', 't'].find(k => /^[0-9a-f]{32}$/.test(P.get(k) || ''));
+const KIND = ROUTE ? ROUTE[1] : OLD || (P.get('o') ? 'o' : P.get('a') ? 'a' : 't');
+const KEYV = ROUTE ? ROUTE[2] : P.get(KIND);
+const HOME = location.origin + '/' + KIND + '/' + KEYV + '/';
 let tpl, vars, title;
-try {
-  if (P.get('o')) { tpl = 'Order'; vars = await orderVars(P.get('o')); title = 'طلب جديد – New order'; }
-  else if (P.get('a')) { tpl = 'Admin'; vars = await adminVars(P.get('a')); title = 'إدارة – Admin'; }
-  else { tpl = 'Page'; vars = await pageVars(P.get('t')); title = (vars.ok && vars.name) ? vars.name + ' – جميل' : 'Work entry'; }
+if (OLD) location.replace(HOME);
+else try {
+  if (KIND === 'o') { tpl = 'Order'; vars = await orderVars(KEYV); title = 'طلب جديد – New order'; }
+  else if (KIND === 'a') { tpl = 'Admin'; vars = await adminVars(KEYV); title = 'إدارة – Admin'; }
+  else { tpl = 'Page'; vars = await pageVars(KEYV); title = (vars.ok && vars.name) ? vars.name + ' – جميل' : 'Work entry'; }
   // PWA: set manifest with current URL as start_url so each page installs as its own app
   const wName = (tpl === 'Page' && vars.ok && vars.name) ? vars.name : '';
   const mani = { name: wName ? wName + ' – جميل الهندام' : 'جميل الهندام – ' + title,
     short_name: wName || (tpl === 'Admin' ? 'Jameel Admin' : tpl === 'Order' ? 'Jameel Order' : 'Jameel'),
-    start_url: location.pathname + location.search, scope: '/', display: 'standalone',
+    start_url: HOME, scope: HOME, id: HOME, display: 'standalone',
     background_color: '#eef5f3', theme_color: '#0e6b5c', orientation: 'portrait',
-    icons: [{ src: '/img/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-            { src: '/img/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
+    icons: [{ src: location.origin + '/img/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: location.origin + '/img/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
   const mLink = '<link rel="manifest" href="' + URL.createObjectURL(new Blob([JSON.stringify(mani)], { type: 'application/json' })) + '">';
   const src = await (await fetch('/tpl/' + tpl + '.html?v=5', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
