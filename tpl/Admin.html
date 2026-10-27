@@ -159,6 +159,7 @@
         <div class="wadd" style="margin-top:0">
           <h3>➕ إضافة عامل / Add worker</h3>
           <select id="wEmp" onchange="empPicked()"><option value="">الموظف في برنامج جميل / TailorShop employee…</option></select>
+          <div id="wEmpMore"></div>
           <input id="wName" placeholder="اسم العامل / Worker name">
           <input id="wPhone" inputmode="tel" placeholder="الجوال / Mobile 05xxxxxxxx" style="direction:ltr;text-align:right">
           <div style="margin:4px 0;font-weight:bold;font-size:15px;color:#0e6b5c">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
@@ -534,21 +535,49 @@
         if (WD) renderWorkers();
       }).withFailureHandler(function () { }).aShopEmployees(KEY, PIN);
     }
+    // two or more kinds: one TailorShop employee for each (the first select is hidden then)
+    function addKindsChanged() {
+      var kinds = []; $('wKinds').querySelectorAll('input:checked').forEach(function (c) { kinds.push(c.value); });
+      $('wEmp').style.display = kinds.length > 1 ? 'none' : '';
+      $('wEmpMore').innerHTML = kinds.length > 1 ? '<div class="muted" style="font-size:13px">لكل عمل موظفه في برنامج جميل – each work: its TailorShop employee</div>' + empSelects('wEmpK', kinds.join(','), null) : '';
+    }
     function empPicked() {
       var e = EMPS.filter(function (x) { return x.emp === Number($('wEmp').value); })[0]; if (!e) return;
       if (!$('wName').value.trim()) $('wName').value = e.name;
       var k = ROLEK[String(e.role).toLowerCase()];
       if (k) $('wKinds').querySelectorAll('input').forEach(function (c) { if (c.value === k) c.checked = true; });
+      addKindsChanged();
+    }
+    // one TailorShop employee per kind of work (ABDUL SATTAR: زرار = #6, تطريز = #7)
+    function empSelects(id, kind, cur) {
+      var kinds = String(kind || '').split(',').filter(Boolean);
+      return kinds.map(function (k) {
+        var sel = (cur && cur[k]) || 0;
+        if (!sel) { var g = EMPS.filter(function (e) { return ROLEK[String(e.role).toLowerCase()] === k; }); if (g.length === 1) sel = g[0].emp; }
+        return '<div style="display:flex;gap:6px;align-items:center;margin-top:6px">' + (kinds.length > 1 ? '<b style="white-space:nowrap;min-width:80px">' + (WKINDS[k] || k) + '</b>' : '') +
+          '<select id="' + id + '_' + k + '" style="margin:0">' + empOptions(sel) + '</select></div>';
+      }).join('');
+    }
+    function readEmps(id, kind) {
+      var out = {}, ok = true;
+      String(kind || '').split(',').filter(Boolean).forEach(function (k) { var e = $(id + '_' + k), v = e ? Number(e.value) : 0; if (!v) ok = false; out[k] = v; });
+      return ok ? out : null;
+    }
+    function empLabel(w) {
+      var kinds = String(w.kind || '').split(',').filter(Boolean);
+      return kinds.map(function (k) { return (WKINDS[k] || k) + (w.emps && w.emps[k] ? ' #' + w.emps[k] : ''); }).join(' · ');
     }
     function linkEmp(t) {
-      var v = Number($('le_' + t).value);
-      if (!v) { alert('اختر الموظف – choose the employee'); return; }
-      wSave(t, { emp: v });
+      var w = wFind(t); if (!w) return;
+      var emps = readEmps('le_' + t, w.kind);
+      if (!emps) { alert('اختر الموظف لكل عمل – choose the employee for each work'); return; }
+      wSave(t, { emps: emps });
     }
     (function () {
       var h = '';
       ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'].forEach(function (k) { h += '<label><input type="checkbox" value="' + k + '"> ' + WKINDS[k] + '</label>'; });
       $('wKinds').innerHTML = h;
+      $('wKinds').addEventListener('change', addKindsChanged);
     })();
     function ymNow() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7); }
     function kindLabel(k) { return String(k || '').split(',').filter(Boolean).map(function (x) { return WKINDS[x] || x; }).join(' · '); }
@@ -580,11 +609,11 @@
         var work = a.lines;
         var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
           '<div class="wtop"><div class="av">' + esc(String(w.name).trim().charAt(0) || '?') + '</div><div class="winfo"><b>' + esc(w.name) + '</b>' +
-          '<div class="wkind">' + kindLabel(w.kind) + (w.emp ? ' · #' + w.emp : '') + (w.phone ? ' · <span style="direction:ltr;unicode-bidi:isolate">' + esc(w.phone) + '</span>' : '') + (w.src === 'shop' ? ' · من المحل' : '') + '</div></div>' +
+          '<div class="wkind">' + empLabel(w) + (w.phone ? ' · <span style="direction:ltr;unicode-bidi:isolate">' + esc(w.phone) + '</span>' : '') + (w.src === 'shop' ? ' · من المحل' : '') + '</div></div>' +
           '<span class="badge ' + (on ? 'ok' : 'bad') + '">' + (on ? 'نشط – active' : 'موقوف – blocked') + '</span></div>' +
-          (w.emp ? '' : '<div class="rate-err" style="margin:8px 0;text-align:right">⚠ غير مربوط بموظف في برنامج جميل – عمله لا يُحفظ<br>Not linked to a TailorShop employee – his work is not saved' +
-            '<div style="display:flex;gap:6px;margin-top:6px"><select id="le_' + t + '" style="margin:0">' + empOptions(0) + '</select>' +
-            '<button class="go" style="white-space:nowrap" onclick="linkEmp(\'' + t + '\')">ربط / Link</button></div></div>') +
+          (w.linked ? '' : '<div class="rate-err" style="margin:8px 0;text-align:right">⚠ غير مربوط بموظف في برنامج جميل – عمله لا يُحفظ<br>Not linked to a TailorShop employee – his work is not saved' +
+            empSelects('le_' + t, w.kind, w.emps) +
+            '<button class="go wide" style="margin-top:6px" onclick="linkEmp(\'' + t + '\')">ربط / Link</button></div>') +
           '<div class="wsum"><div>' + pcs + (a.pend ? '<small style="display:block;font-size:11px;color:#9a5b00">⏳ ' + a.pend + '</small>' : '') + '<span>قطعة / pcs</span></div><div>' + sar(earn) + '<span>الأجر / earned</span></div>' +
           '<div' + (ded ? ' style="color:#b3261e"' : '') + '>' + (ded ? '−' : '') + sar(ded) + '<span>خصم / deductions</span></div>' +
           '<div style="color:#1a7f37">' + sar(Math.max(0, earn - ded)) + '<span>المستحق / to pay</span></div></div>';
@@ -712,23 +741,24 @@
     }
     function addWorker() {
       var name = $('wName').value.trim(), phone = $('wPhone').value.trim(), emp = Number($('wEmp').value);
-      if (!emp) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر الموظف في برنامج جميل – choose the TailorShop employee</div>'; return; }
       var kinds = []; $('wKinds').querySelectorAll('input[type=checkbox]:checked').forEach(function (c) { kinds.push(c.value); });
       if (!name) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اكتب اسم العامل – enter name</div>'; return; }
       if (!kinds.length) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر نوع العمل – choose work type</div>'; return; }
+      var emps = kinds.length > 1 ? readEmps('wEmpK', kinds.join(',')) : (emp ? (function () { var o = {}; o[kinds[0]] = emp; return o; })() : null);
+      if (!emps) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">اختر الموظف في برنامج جميل لكل عمل – choose the TailorShop employee for each work</div>'; return; }
       $('wMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الإضافة…</div>';
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.ok) { $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
         var done = function () {
           $('wMsg').innerHTML = '<div class="rate-ok" style="margin-top:8px">تمت الإضافة ✔ أرسل له الرابط – added, now send the link</div>';
-          $('wName').value = ''; $('wPhone').value = ''; $('wEmp').value = '';
+          $('wName').value = ''; $('wPhone').value = ''; $('wEmp').value = ''; $('wEmpMore').innerHTML = ''; $('wEmp').style.display = '';
           $('wKinds').querySelectorAll('input[type=checkbox]').forEach(function (c) { c.checked = false; });
           loadWorkers();
         };
         if (phone) google.script.run.withSuccessHandler(done).withFailureHandler(done).aWorkerSave(KEY, PIN, r.token, { phone: phone }); else done();
       }).withFailureHandler(function (e) {
         $('wMsg').innerHTML = '<div class="rate-err" style="margin-top:8px">خطأ – ' + esc(e && e.message || e) + '</div>';
-      }).aAddWorker(KEY, PIN, { name: name, kind: kinds.join(','), emp: emp });
+      }).aAddWorker(KEY, PIN, { name: name, kind: kinds.join(','), emps: emps });
     }
     // delete: the link stops at once and the worker leaves the list (his work stays in the accounts; "restore" brings him back)
     function delWorker(token) {

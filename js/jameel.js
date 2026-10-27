@@ -166,7 +166,7 @@ async function submit(token, rows, pin, ak) {
   const ph = w.pin ? await sha256('tspin:' + w.emp + ':' + String(pin || '').trim()) : null;
   const b = writeBatch(db), d = workDay();
   for (const c of clean) {
-    const e = { emp: w.emp, name: w.name, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
+    const e = { emp: empFor(w, kind), name: w.name, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
     if (ph) e.ph = ph;
     b.set(doc(collection(db, 'wk', w.token, 'e')), e);
   }
@@ -269,6 +269,24 @@ export async function kGiveBack(token, id) {
 }
 // TailorShop's own account of a worker (all his work: typed in the shop + imported from the links), sent by the shop PC:
 // months [ym 'YYYY-MM', pcs, orders, alts, …, earned], work [date, order, qty] (last 3 months). stats_KIND = one kind only.
+// the TailorShop employee a kind of work is saved under: a worker doing two kinds can be two employees there
+// (ABDUL SATTAR = #6 Hinge + #7 Embroidery) – emps {HINGE: 6, EMBROIDERY: 7}; else his one emp
+function empFor(w, kind) { const m = w && w.emps; const n = m && Number(m[kind]); return n > 0 ? n : w.emp; }
+// a worker made on the admin page has no account of his own from the shop PC: take his employees' (their shop links carry it)
+async function statsOf(v) {
+  if (v.stats || Object.keys(v).some(k => k.startsWith('stats_'))) return shopStats(v);
+  const kinds = String(v.kind || '').split(',').filter(Boolean);
+  const emps = [...new Set(kinds.map(k => empFor(v, k)).filter(n => Number(n) > 0))];
+  if (!emps.length) return shopStats({});
+  const rows = await dsRows('j_workers').catch(() => []);
+  const tokOf = (n) => (rows.find(x => Number(x.emp_no) === Number(n) && /^[0-9a-f]{32}$/.test(String(x.web_token || ''))) || {}).web_token;
+  const docs = {};
+  await Promise.all(emps.map(async n => { const t = tokOf(n); if (t) { const d = await getDoc(doc(db, 'wk', t)).catch(() => null); if (d && d.exists()) docs[n] = d.data(); } }));
+  const kstats = {};
+  for (const k of kinds) { const d = docs[empFor(v, k)]; if (!d) continue; const x = J(d['stats_' + k], null) || J(d.stats, null); if (x) kstats[k] = { months: x.months || [], work: x.work || [] }; }
+  const one = kinds.length === 1 && kstats[kinds[0]];
+  return { stats: one || { months: [], work: [] }, kstats: kinds.length > 1 ? kstats : {} };
+}
 function shopStats(v) {
   const kinds = String(v.kind || '').split(',').filter(Boolean), kstats = {};
   for (const k of kinds) { const x = J(v['stats_' + k], null); if (x) kstats[k] = { months: x.months || [], work: x.work || [] }; }
@@ -285,7 +303,7 @@ export async function kWork(token) {
   const pending = [], ded = [];
   e.forEach(x => pending.push(entryOf(x)));            // sent from the link, not in TailorShop yet
   if (d) d.forEach(x => ded.push(dedOf(x)));
-  return { pending, ded, ...shopStats(a.exists() ? a.data() : w) };
+  return { pending, ded, ...(await statsOf(a.exists() ? a.data() : w)) };
 }
 
 // ================================================================ online new-order page (?o=KEY)
@@ -535,14 +553,15 @@ async function aAddWorker(key, pin, w) {
   if (!kinds.length || !kinds.every(k => VALID.includes(k))) return { ok: false, msg: 'اختر نوع العمل – choose work type' };
   const kind = kinds.join(',');
   // the TailorShop employee he is: the shop PC saves his work under this number (without it: "Employee 0 – not saved")
-  const emp = await shopEmp(w && w.emp);
-  if (!emp) return { ok: false, msg: 'اختر الموظف في برنامج جميل – choose the TailorShop employee' };
+  const emps = {};
+  for (const k of kinds) { const n = await shopEmp(w && w.emps ? w.emps[k] : w && w.emp); if (!n) return { ok: false, msg: 'اختر الموظف لكل عمل – choose the TailorShop employee for each work' }; emps[k] = n; }
+  const emp = emps[kinds[0]];
   // generate 32-char hex token
   const buf = new Uint8Array(16);
   crypto.getRandomValues(buf);
   const token = [...buf].map(x => x.toString(16).padStart(2, '0')).join('');
   // create wk/{token} doc
-  await setDoc(doc(db, 'wk', token), { name, kind, emp, s: r.s });
+  await setDoc(doc(db, 'wk', token), { name, kind, emp, emps, s: r.s });
   // update worker list in admin sub-doc
   const ref = doc(db, 'ak', r.id, 'd', 'workers');
   const s = await getDoc(ref);
@@ -604,8 +623,11 @@ async function aWorkersAll(key, pin, ym) {
     const v = a.data(), xx = x && x.exists() ? x.data() : {}, work = [], ded = [];
     if (e) e.forEach(y => work.push(entryOf(y)));       // pending: sent from the link, not in TailorShop yet
     if (d) d.forEach(y => ded.push(dedOf(y)));
-    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', emp: typeof v.emp === 'number' && v.emp > 0 ? v.emp : 0, phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
-             work, ded, ...shopStats(v) };
+    const kinds = String(v.kind || '').split(',').filter(Boolean);
+    const emps = {}; kinds.forEach(k => { const n = empFor(v, k); if (typeof n === 'number' && n > 0) emps[k] = n; });
+    return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', emp: typeof v.emp === 'number' && v.emp > 0 ? v.emp : 0, emps,
+             linked: kinds.length > 0 && kinds.every(k => emps[k]) && (kinds.length === 1 || w.src === 'shop' || (v.emps && kinds.every(k => Number(v.emps[k]) > 0))), phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
+             work, ded, ...(await statsOf(v)) };
   }));
   const rd = rt.exists() ? rt.data() : {};
   return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),
@@ -642,10 +664,16 @@ async function aWorkerSave(key, pin, token, patch) {
     if (it) { it.kind = kinds.join(','); await setDoc(ref, { v: JSON.stringify(list) }); }
   }
   // link to a TailorShop employee (workers added on this page before the link existed)
-  if (patch && patch.emp !== undefined) {
-    const emp = await shopEmp(patch.emp);
-    if (!emp) return { ok: false, msg: 'اختر الموظف في برنامج جميل – choose the TailorShop employee' };
-    await updateDoc(doc(db, 'wk', token), { emp });
+  if (patch && (patch.emp !== undefined || patch.emps !== undefined)) {
+    const cur = await getDoc(doc(db, 'wk', token));
+    const kinds = String(cur.exists() ? cur.data().kind : '').split(',').filter(Boolean);
+    const emps = {};
+    for (const k of kinds) {
+      const n = await shopEmp(patch.emps ? patch.emps[k] : patch.emp);
+      if (!n) return { ok: false, msg: 'اختر الموظف لكل عمل – choose the TailorShop employee for each work' };
+      emps[k] = n;
+    }
+    await updateDoc(doc(db, 'wk', token), { emp: emps[kinds[0]], emps });
     delete cacheW[token];
   }
   if (!Object.keys(clean).length) return { ok: true };

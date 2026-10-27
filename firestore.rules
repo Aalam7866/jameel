@@ -20,10 +20,10 @@ service cloud.firestore {
       allow update: if isPc() || workerEdit();
       // the shop PC; or Admin → Workers adds a new worker (a new random link, never over an existing one)
       allow create: if isPc() || (isKey(tok)
-        && request.resource.data.keys().hasOnly(['name', 'kind', 'emp', 's'])
+        && request.resource.data.keys().hasOnly(['name', 'kind', 'emp', 'emps', 's'])
         && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 40
         && request.resource.data.kind is string && request.resource.data.kind.size() <= 60
-        && request.resource.data.emp is int && request.resource.data.emp > 0);
+        && request.resource.data.emp is int && request.resource.data.emp > 0 && request.resource.data.get('emps', {}) is map);
       match /pin/{ph} { allow read, write: if isPc(); }   // only "does this PIN hash exist" is used, by the rules
       // the worker's own transfers
       match /e/{id} {
@@ -32,18 +32,19 @@ service cloud.firestore {
         allow update, delete: if isPc();
       }
     }
-    // Admin → Workers: the work he does (role) and the TailorShop employee he is
+    // Admin → Workers: the work he does (role) and the TailorShop employee he is (emps: one per kind of work)
     function workerEdit() {
       let k = request.resource.data.diff(resource.data).affectedKeys();
-      return k.hasOnly(['kind', 'emp'])
+      return k.hasOnly(['kind', 'emp', 'emps'])
         && request.resource.data.kind.matches('^(CUT|STITCH|HINGE|MEASURE|EMBROIDERY)(,(CUT|STITCH|HINGE|MEASURE|EMBROIDERY))*$')
-        && (!k.hasAny(['emp']) || (request.resource.data.emp is int && request.resource.data.emp > 0));
+        && (!k.hasAny(['emp']) || (request.resource.data.emp is int && request.resource.data.emp > 0))
+        && (!k.hasAny(['emps']) || request.resource.data.emps is map);
     }
     function validEntry(tok) {
       let d = request.resource.data;
       let w = get(/databases/$(database)/documents/wk/$(tok)).data;
       return d.keys().hasOnly(['emp', 'name', 'kind', 'o', 'q', 'fit', 'st', 'ts', 'd', 'ph'])
-        && d.emp == w.emp && d.name == w.name && d.kind in w.kind.split(',')
+        && d.emp == w.get('emps', {}).get(d.kind, w.emp) && d.name == w.name && d.kind in w.kind.split(',')
         && d.st == 'new' && d.o is int && d.o > 0 && d.o < 100000000
         && d.q is int && d.q >= 1 && d.q <= 1000 && d.fit in [0, 1]
         && d.ts == request.time && d.d is string && d.d.size() == 10
