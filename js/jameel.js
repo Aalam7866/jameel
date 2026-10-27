@@ -179,9 +179,8 @@ async function submit(token, rows, pin, ak) {
 }
 
 // ================================================================ karigar page (/karigar/?k=TOKEN) – the Diamond-style worker app
-// A piece goes Cutting → Stitching → Hinge / Embroidery. "Start" keeps it in jwip (so nobody else takes it);
+// A piece goes Cutting → Stitching; Embroidery as soon as stitching starts, Hinge once stitching is finished. "Start" keeps it in jwip (so nobody else takes it);
 // "Finish" is the same transfer as the old page (wk/{token}/e, st:'new') that the shop PC imports.
-const STAGE_BEFORE = { STITCH: 'CUT', HINGE: 'STITCH', EMBROIDERY: 'STITCH' };
 export async function kVars(token) {
   const w = await worker(token);
   if (!w) return { ok: false };
@@ -209,8 +208,12 @@ function availOf(b, kind, o) {
   const done = (k) => od.total[k] - od[k] + (b.pend[k + ':' + o] || 0);
   const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0));
   let avail = left;
-  const before = STAGE_BEFORE[kind];
-  if (before && od.total[before] > 0) avail = Math.min(avail, done(before) - done(kind));
+  const taken = (k) => done(k) + (b.wip[k + ':' + o] || 0);   // finished + started
+  if (kind === 'STITCH' && od.total.CUT > 0) avail = Math.min(avail, done('CUT') - done('STITCH'));
+  // embroidery: as soon as the tailor has started the piece (no need to wait for his Finish)
+  if (kind === 'EMBROIDERY' && od.total.STITCH > 0) avail = Math.min(avail, taken('STITCH') - done('EMBROIDERY'));
+  // hinge: once the tailor has finished stitching
+  if (kind === 'HINGE' && od.total.STITCH > 0) avail = Math.min(avail, done('STITCH') - done('HINGE'));
   const wip = b.wip[kind + ':' + o] || 0;
   return { o: Number(o), left, wip, avail: Math.max(0, avail - wip), total: od.total[kind],
            cut: done('CUT'), cutT: od.total.CUT, sew: done('STITCH'), sewT: od.total.STITCH,

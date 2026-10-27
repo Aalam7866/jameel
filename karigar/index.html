@@ -81,7 +81,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=5';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=6';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -228,7 +228,8 @@ function drawFound(main) {
   if (!a.avail) {
     const why = a.wip >= a.left && a.wip ? '🔄 ' + L('القطع الباقية قيد العمل عند عامل آخر', 'The remaining pieces are in work')
       : kind === 'STITCH' ? '✂ ' + L('بانتظار القص – سيظهر هنا بعد القص', 'Waiting for cutting – it shows here once cut')
-      : (kind === 'HINGE' || kind === 'EMBROIDERY') ? '🧵 ' + L('بانتظار الخياطة – سيظهر هنا بعد الخياطة', 'Waiting for stitching – it shows here once stitched')
+      : kind === 'EMBROIDERY' ? '🧵 ' + L('بانتظار الخياط – يظهر هنا عندما يبدأ الخياطة', 'Waiting for the tailor – it shows here once stitching starts')
+      : kind === 'HINGE' ? '🧵 ' + L('بانتظار انتهاء الخياطة – يظهر هنا بعدها', 'Waiting for stitching to finish – it shows here then')
       : L('لا توجد قطع متاحة الآن', 'No pieces free right now');
     c.appendChild(el('div', { class: 'g', style: 'font-weight:600', text: why }));
     main.appendChild(c); return;
@@ -288,10 +289,10 @@ function drawOpen(main) {
   const todo = all.filter(x => x.avail > 0);
   const seg = (k, t) => el('button', { type: 'button', class: 'btn sm ' + (olist === k ? 'acc' : 'line'), text: t, onclick: () => { olist = k; draw(); } });
   main.appendChild(el('div', { class: 'row', style: 'justify-content:space-between;margin:4px 0 10px' }, [
-    el('b', { style: 'font-size:17px', text: kName(kind) + ' – ' + (kind === 'STITCH' ? L('المقصوص الجاهز', 'cut, ready to stitch') : (kind === 'HINGE' || kind === 'EMBROIDERY') ? L('المخيط الجاهز', 'stitched, ready') : L('الطلبات', 'orders')) }),
+    el('b', { style: 'font-size:17px', text: kName(kind) + ' – ' + (kind === 'STITCH' ? L('المقصوص الجاهز', 'cut, ready to stitch') : kind === 'EMBROIDERY' ? L('بدأت خياطته', 'stitching started') : kind === 'HINGE' ? L('جاهز للزرار', 'ready for hinge') : L('الطلبات', 'orders')) }),
     el('div', { class: 'row' }, [seg('todo', L('لي', 'For me') + ' (' + todo.length + ')'), seg('all', L('الكل', 'All open') + ' (' + all.length + ')')])]));
   const list = olist === 'todo' ? todo : all;
-  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '✅' }), kind === 'STITCH' ? L('لا شيء للخياطة الآن – يظهر هنا بعد القص.', 'Nothing to stitch now – it shows here once cut.') : (kind === 'HINGE' || kind === 'EMBROIDERY') ? L('لا شيء الآن – يظهر هنا بعد الخياطة.', 'Nothing now – it shows here once stitched.') : L('لا يوجد عمل الآن.', 'No work right now.')])); return; }
+  if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '✅' }), kind === 'STITCH' ? L('لا شيء للخياطة الآن – يظهر هنا بعد القص.', 'Nothing to stitch now – it shows here once cut.') : kind === 'EMBROIDERY' ? L('لا شيء الآن – يظهر هنا عندما يبدأ الخياط.', 'Nothing now – it shows here once the tailor starts.') : kind === 'HINGE' ? L('لا شيء الآن – يظهر هنا بعد انتهاء الخياطة.', 'Nothing now – it shows here once stitching is finished.') : L('لا يوجد عمل الآن.', 'No work right now.')])); return; }
   list.slice(0, 300).forEach(a => {
     const due = dueOf(a.o), late = due && due < td, info = orderLine(a.o);
     main.appendChild(el('button', { type: 'button', class: 'job' + (late ? ' late' : ''), onclick: () => { found = a; findMsg = ''; draw(); scrollTo(0, 0); } }, [
