@@ -91,13 +91,14 @@ a{color:var(--acc)}
 .dst td.n{text-align:right}.dst .dm{background:#f3ecfa}.dst .dmn{color:#6b2fa3;font-weight:700}.dty-deliver{color:#0a7a2f;font-weight:700}.dty-return{color:#8b0000;font-weight:700}
 .dstot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px}.dstot div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #bbb}
 .dstot .tl{background:#dfe9f5}.dstot .lav{background:#ece4f7}.dstot .peach{background:#fde3d3}
+.embed body{padding-bottom:0}.embed nav{display:none}
 @media print{nav,header,.noprint,.tabs,#back{display:none!important}body{background:#fff}main{padding:0}.dsw{overflow:visible}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script type="module">
-import { db, auth, riyadh } from '../js/fb.js?v=1';
+import { db, auth, riyadh, sha256 } from '../js/fb.js?v=1';
 import { doc, getDoc, getDocs, collection, query, where, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 const OWNER = 'owner@saudithobe.best';
@@ -109,6 +110,9 @@ const money = (v) => N(v).toLocaleString('en-US', { minimumFractionDigits: 0, ma
 const DUE_MIN = 1;
 const d10 = (v) => String(v ?? '').slice(0, 10);
 const state = { tab: 'home', sub: {}, q: {} };
+// inside the admin page (/exec?a=KEY): no own login – the admin page's KEY + PIN are checked instead
+const EMBED = new URLSearchParams(location.search).has('embed') && window.parent !== window;
+if (EMBED) document.documentElement.classList.add('embed');
 
 // ---- data: the shop PC keeps copies of the shop data in Firebase (ds/<name>/c/<piece>); search runs here in the phone
 const DSC = {};
@@ -1086,7 +1090,7 @@ async function openOrderPage() {
 // ---------------------------------------------------------------- more
 async function moreView() {
   const m = shell('More');
-  const [cur, b] = subTabs(m, 'more', [['links', 'Online links'], ['jobs', 'Jobs'], ['settings', 'Settings']]);
+  const [cur, b] = subTabs(m, 'more', [['links', 'Online links'], ['jobs', 'Jobs']].concat(EMBED ? [] : [['settings', 'Settings']]));
   if (cur === 'links') {
     const [l, w] = await Promise.all([links(), rows('j_workers', { limit: 100, asc: true })]);
     const base = 'https://saudithobe.best';
@@ -1125,13 +1129,36 @@ async function moreView() {
 }
 
 function start() {
-  state.tab = (location.hash || '#home').slice(1);
+  const h = (location.hash || '#home').slice(1).split('-')[0];
+  state.tab = h;
   if (!TABS.some(t => t[0] === state.tab)) state.tab = 'home';
   $('#app').innerHTML = '';
   render();
+  if (h.startsWith('neworder')) newInvOrder();
+}
+// same check as the admin page itself: akk/{KEY} gate, then ak/{sha256('ak:'+KEY+':'+pinHash)} must exist
+async function adminOk() {
+  try {
+    const P = window.parent, key = String(P.KEY || '').trim(), pin = String(P.PIN || '').trim();
+    if (!/^[0-9a-f]{32}$/.test(key)) return false;
+    const g = await getDoc(doc(db, 'akk', key));
+    if (!g.exists()) return false;
+    const ph = g.data().pin && pin ? await sha256('tsorder:' + pin) : '';
+    return (await getDoc(doc(db, 'ak', await sha256('ak:' + key + ':' + ph)))).exists();
+  } catch (e) { return false; }
 }
 let started = false;
-onAuthStateChanged(auth, (u) => {
+if (EMBED) {
+  adminOk().then(ok => {
+    if (!ok) { $('#app').innerHTML = '<div class="login"><p class="err">Admin key / PIN check fail – admin page dobara kholiye</p></div>'; return; }
+    started = true; start();
+    addEventListener('hashchange', () => {
+      const h = location.hash.slice(1).split('-')[0];
+      if (h === 'neworder') { document.querySelectorAll('.sheet').forEach(x => x.remove()); return newInvOrder(); }
+      if (TABS.some(t => t[0] === h)) { document.querySelectorAll('.sheet').forEach(x => x.remove()); state.tab = h; render(); }
+    });
+  });
+} else onAuthStateChanged(auth, (u) => {
   if (u && u.email === OWNER) { if (!started) { started = true; start(); } }
   else { started = false; showLogin(); }
 });
