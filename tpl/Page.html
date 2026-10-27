@@ -223,6 +223,7 @@
     KIND = el.getAttribute('data-kind');
     IS_ARRIVE = KIND === 'ARRIVE';
     loadWaiting();
+    google.script.run.withSuccessHandler(showStats).myStats(TOKEN, KIND);
   }
 
   /* ─── TABS ─── */
@@ -454,7 +455,7 @@
   addRow(); addRow(); addRow();
   loadWaiting();
   google.script.run.withSuccessHandler(showToday).myToday(TOKEN);
-  google.script.run.withSuccessHandler(showStats).myStats(TOKEN);
+  google.script.run.withSuccessHandler(showStats).myStats(TOKEN, KIND);
 </script>
 <? } ?>
 </body>

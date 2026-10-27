@@ -114,9 +114,13 @@ async function waiting(token, ak) {
   return out.slice(0, 500);
 }
 
-async function myStats(token) {
+async function myStats(token, ak) {
   const w = await worker(token);
   if (!w) return null;
+  const kind = activeKindOf(w, ak);
+  // try kind-specific stats first (stats_HINGE, stats_EMBROIDERY), fall back to generic stats
+  const ks = J(w['stats_' + kind], null);
+  if (ks) return ks;
   return J(w.stats, null) || { months: [], work: [], alts: [] };
 }
 
