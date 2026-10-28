@@ -60,6 +60,8 @@ service cloud.firestore {
     }
     // work in progress on the worker app (Start pressed, Finish not yet)
     match /jwip/{id} { allow read, write: if true; }
+    // finished work not taken by TailorShop yet (opens the next work while the shop PC is off)
+    match /jdone/{id} { allow read, write: if true; }
 
     // open orders (numbers and pieces left – no names, no prices) + transfers not collected yet
     match /sp/{s} {

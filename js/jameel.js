@@ -31,6 +31,21 @@ export async function pageVars(token) {
 }
 
 // open orders + every worker's transfers the shop has not collected yet (the shop PC keeps them up to date)
+// jdone/{entry id} = {tok, kind, o, q, fit}: a public note of each transfer (written beside wk/{tok}/e/{id}). It counts as
+// pending only while that transfer is still 'new' (not taken by TailorShop); taken / deleted ones are cleared away.
+async function addDone(pend) {
+  let s;
+  try { s = await getDocs(collection(db, 'jdone')); } catch (e) { return; }   // rules not published yet: as before
+  const todo = [];
+  s.forEach(x => { if (!pend[x.id]) todo.push(x); });
+  await Promise.all(todo.slice(0, 300).map(async x => {
+    const d = x.data();
+    if (!/^[0-9a-f]{32}$/.test(String(d.tok || ''))) return deleteDoc(x.ref).catch(() => { });
+    const e = await getDoc(doc(db, 'wk', d.tok, 'e', x.id)).catch(() => null);
+    if (e && e.exists() && e.data().st === 'new') pend[x.id] = { id: x.id, kind: d.kind, o: d.o, q: d.q, fit: d.fit };
+    else if (e) await deleteDoc(x.ref).catch(() => { });
+  }));
+}
 async function space(w) {
   const s = await getDoc(doc(db, 'sp', w.s));
   const d = s.exists() ? s.data() : {};
@@ -48,6 +63,8 @@ async function space(w) {
   for (const p of J(d.pend, [])) pend[p.id] = p;
   const mine = await getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new')));
   mine.forEach(x => { const e = x.data(); pend[x.id] = { id: x.id, kind: e.kind, o: e.o, q: e.q, fit: e.fit }; });
+  // + every worker's finished work the shop has not taken yet (jdone): the next work opens even while the shop PC is off
+  await addDone(pend);
   return { orders, pend: Object.values(pend) };
 }
 function pending(sp, kind) {
@@ -164,17 +181,21 @@ async function submit(token, rows, pin, ak) {
   }
   if (errors.length) return { ok: false, msg: 'لم يتم التحويل – Nothing saved:\n' + errors.join('\n') };
   const ph = w.pin ? await sha256('tspin:' + w.emp + ':' + String(pin || '').trim()) : null;
-  const b = writeBatch(db), d = workDay();
+  const b = writeBatch(db), d = workDay(), notes = [];
   for (const c of clean) {
     const e = { emp: empFor(w, kind), name: w.name, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
     if (ph) e.ph = ph;
-    b.set(doc(collection(db, 'wk', w.token, 'e')), e);
+    const ref = doc(collection(db, 'wk', w.token, 'e'));
+    b.set(ref, e);
+    notes.push([ref.id, { tok: w.token, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, at: serverTimestamp() }]);
   }
   try { await b.commit(); }
   catch (x) {
     if (w.pin && String(x.code || x.message).includes('permission')) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
     throw x;
   }
+  // the public note for the other workers' apps (best effort: the transfer itself is already saved)
+  await Promise.all(notes.map(([id, n]) => setDoc(doc(db, 'jdone', id), n).catch(() => { })));
   return { ok: true, msg: 'تم التحويل ✔ Saved', today: await today(w) };
 }
 
