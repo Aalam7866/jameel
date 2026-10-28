@@ -67,6 +67,8 @@
   .wmonth { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .wmonth input { max-width: 190px; margin: 0; }
   .wk.off { opacity: .7; }
+  .sbar { display: flex; gap: 8px; } .sbar input { margin: 0; } .sbar #sqo { flex: 0 0 34%; } .sbar #sq { flex: 1; }
+  @media (max-width: 520px) { .sbar { flex-direction: column; } .sbar #sqo { flex: none; } }
   .wsearch input { font-size: 17px; margin: 10px 0 0; }
   .wot { width: 100%; border-collapse: collapse; font-size: 14px; }
   .wot th, .wot td { border-bottom: 1px solid #e3efec; padding: 5px 4px; text-align: center; }
@@ -146,7 +148,10 @@
     <!-- Tab 2: Orders -->
     <div id="p2" style="display:none">
       <div class="card big">
-        <input id="sq" type="search" style="border-color:#bf9000" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+        <div class="sbar">
+          <input id="sqo" type="search" inputmode="numeric" style="border-color:#0e6b5c" placeholder="🔢 رقم الطلب فقط – order no only">
+          <input id="sq" type="search" style="border-color:#bf9000" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+        </div>
         <div id="scount" class="muted" style="margin:6px 2px"></div>
         <div class="tw"><table class="st" id="stable"></table></div>
       </div>
@@ -361,7 +366,8 @@
         renderTable();
       }).withFailureHandler(function () { }).aOrders(KEY, PIN);
     }
-    $('sq').addEventListener('input', renderTable);
+    $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
+    $('sqo').addEventListener('input', function () { if ($('sqo').value) $('sq').value = ''; renderTable(); });
     $('stable').addEventListener('click', function (ev) {
       var b = ev.target.closest ? ev.target.closest('button.act') : null;
       if (b) openAct(b.getAttribute('data-o'));
@@ -464,7 +470,9 @@
     function renderTable() {
       var q = $('sq').value.trim(), d = q.replace(/\D/g, ''), only = q && /^[\d\s\-+#]+$/.test(q);
       var tail = d.replace(/^0+/, '').replace(/^966/, ''), lower = q.toLowerCase(), today = new Date().toISOString().slice(0, 10);
-      var list = !q ? ALL : ALL.filter(function (r) {
+      // the order-number box: exactly that order (Enter-free, as you type)
+      var on = String($('sqo').value || '').replace(/\D/g, '').replace(/^0+/, '');
+      var list = on ? ALL.filter(function (r) { return String(r[0]) === on; }) : !q ? ALL : ALL.filter(function (r) {
         if (only) return r[0].indexOf(d) === 0 || (tail.length >= 3 && r[2].replace(/\D/g, '').indexOf(tail) >= 0);
         return r[1].toLowerCase().indexOf(lower) >= 0;
       });
