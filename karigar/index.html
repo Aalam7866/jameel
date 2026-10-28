@@ -122,9 +122,9 @@ function items() {
   sources().forEach(([k, st]) => (st.work || []).forEach(q => out.push({ d: String(q[0]).slice(0, 10), o: q[1], q: +q[2] || 0, kind: k, st: 'saved', time: '' })));
   return out.concat(acct.pending || []);
 }
-function tally(mode, val) {
+function tally(mode, val, only) {   // only = one kind of work (a worker doing two kinds sees each apart)
   let pcs = 0, earn = 0;
-  const add = (k, n) => { pcs += n; earn += n * rate(k); };
+  const add = (k, n) => { if (only && k !== only) return; pcs += n; earn += n * rate(k); };
   if (mode === 'day') items().filter(w => w.d === val).forEach(w => add(w.kind, w.q));
   else {
     sources().forEach(([k, st]) => (st.months || []).forEach(m => { if (mode === 'all' || String(m[0]).slice(0, 7) === val) add(k, +m[1] || 0); }));
@@ -198,6 +198,14 @@ function draw() {
   if (me.kinds.length > 1) main.appendChild(el('div', { class: 'kinds' }, me.kinds.map(k => el('button', { type: 'button', class: k === kind ? 'on' : '', text: kName(k), onclick: () => { kind = k; try { localStorage.setItem('k-kind-' + tok, k); } catch (e) { } found = null; open = null; lastForMe = -1; draw(); refresh(); } }))));
   const m0 = today().slice(0, 7), t0 = tally('month', m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
   const earn = t0.earn, ded = md.reduce((a, d) => a + d.amount, 0);
+  if (me.kinds.length > 1) {
+    // two kinds (e.g. Hinge + Embroidery): one box each, no total of both
+    main.appendChild(el('div', { class: 'sum', style: 'grid-template-columns:repeat(' + me.kinds.length + ',minmax(0,1fr))' }, me.kinds.map(k => {
+      const t = tally('month', m0, k);
+      return el('div', null, [el('b', { text: String(t.pcs) }), el('span', { text: kName(k) + ' · ' + L('هذا الشهر', 'this month') }),
+        rate(k) ? el('div', { class: 'small', style: 'font-weight:700;margin-top:2px', text: sar(t.earn) }) : null]);
+    })));
+  } else
   main.appendChild(el('div', { class: 'sum' }, [el('div', null, [el('b', { text: String(t0.pcs) }), el('span', { text: L('قطع هذا الشهر', 'Pcs this month') })]),
     el('div', null, [el('b', { text: sar(earn) }), el('span', { text: L('الأجر', 'Earned') })]),
     el('div', null, [el('b', { style: 'color:var(--ok)', text: sar(Math.max(0, earn - ded)) }), el('span', { text: L('بعد الخصم', 'After deductions') })])]));
@@ -339,11 +347,13 @@ function drawWork(main) {
   const list = items().filter(w => inPeriod(w.d)).sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(b.time).localeCompare(String(a.time)) || (+b.o - +a.o));
   const t = tally(fmode, fmode === 'day' ? fday : fmonth), earn = t.earn, pcs = t.pcs;
   const dd = deds.filter(d => inPeriod(d.date)), dsum = dd.reduce((a, d) => a + d.amount, 0);
-  main.appendChild(el('div', { class: 'tot' }, [el('span', { text: periodLabel() + ' · ' + pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(earn) })]));
+  if (me.kinds.length > 1) me.kinds.forEach(k => { const tk = tally(fmode, fmode === 'day' ? fday : fmonth, k);
+    main.appendChild(el('div', { class: 'tot' }, [el('span', { text: kName(k) + ' · ' + periodLabel() + ' · ' + tk.pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(tk.earn) })])); });
+  else main.appendChild(el('div', { class: 'tot' }, [el('span', { text: periodLabel() + ' · ' + pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(earn) })]));
   if (dsum) main.appendChild(el('div', { class: 'tot bad', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '⚠ ' + L('الخصومات', 'Deductions') + ' (' + dd.length + ')' }), el('b', { text: '−' + sar(dsum) })]));
   main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: L('المستحق', 'To receive') }), el('b', { style: 'font-size:20px', text: sar(Math.max(0, earn - dsum)) })]));
   const byKind = {}; list.forEach(w => { byKind[w.kind] = (byKind[w.kind] || 0) + w.q; });
-  if (Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
+  if (me.kinds.length < 2 && Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
   if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), pcs ? L('التفاصيل لآخر 3 أشهر فقط.', 'Details only for the last 3 months.') : L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
   list.forEach(w => main.appendChild(el('div', { class: 'job' }, [
     el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
