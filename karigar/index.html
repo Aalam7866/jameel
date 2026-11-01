@@ -81,7 +81,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=13';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=14';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -98,7 +98,7 @@ if (MOVING) location.replace(HOME(tok));
 
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
-let me = null, kind = '', tab = 'add', open = null, mine = [], work = [], deds = [], orders = {}, found = null, findMsg = '', busy = false;
+let me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], orders = {}, found = null, findMsg = '', busy = false;
 let olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
 try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
 
@@ -157,7 +157,7 @@ async function refresh(quiet) {
   try {
     const r = await kOpen(tok, kind);
     if (!r) return screen('🚫', L('هذا الرابط مغلق', 'This link is closed'), L('اطلب رابطاً جديداً من المحل.', 'Ask the shop for a new link.'));
-    kind = r.kind; open = r.list; mine = r.mine;
+    kind = r.kind; open = r.list; mine = r.mine; wait = r.wait || [];
     if (found) found = open.find(x => x.o === found.o) || Object.assign({}, found, { avail: 0, left: 0 });
     const forMe = open.filter(x => x.avail > 0 && recent(x.o)).length;
     if (lastForMe >= 0 && forMe > lastForMe) chime();
@@ -230,6 +230,7 @@ function drawAdd(main) {
   const inp = el('input', { class: 'inp', inputmode: 'numeric', autocomplete: 'off', placeholder: '1234', value: found ? String(found.o) : '' });
   inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') find(inp.value); });
   if (kind !== 'CUT') drawMine(main);
+  drawWait(main);
   main.appendChild(el('div', { class: 'card' }, [el('b', { style: 'font-size:17px', text: L('رقم الطلب', 'Order number') }),
     el('p', { class: 'small muted', style: 'margin:2px 0 8px', text: L('اختر طلباً من القائمة، أو امسح باركود الورقة / اكتب الرقم.', 'Pick an order from the list, or scan the slip barcode / type the number.') }),
     el('div', { class: 'row' }, [inp, el('button', { class: 'btn acc', type: 'button', text: '🔍 ' + L('بحث', 'Find'), onclick: () => find(inp.value) })]),
@@ -293,6 +294,13 @@ function drawFound(main) {
     : el('button', { class: 'btn acc', type: 'button', style: 'width:100%;margin-top:10px', text: '▶ ' + L('ابدأ العمل', 'Start work'), onclick: (e) => go(e.currentTarget) }));
   g.appendChild(msg); c.appendChild(g); upd();
   main.appendChild(c);
+}
+function drawWait(main) {
+  if (!wait.length) return;
+  main.appendChild(el('div', { class: 'card', style: 'border:2px solid var(--ok, #1f7a46)' }, [
+    el('b', { style: 'font-size:17px', text: '✅ ' + L('انتهى – بانتظار المحل', 'Finished – waiting for the shop') + ' (' + wait.length + ')' }),
+    el('p', { class: 'small muted', style: 'margin:2px 0 6px', text: L('أضيف إلى حسابك عندما يفتح المحل البرنامج.', 'Added to your account when the shop opens the program.') }),
+    el('div', { style: 'font-weight:600;line-height:1.9' }, wait.slice().sort((x, y) => x.o - y.o).map(w => el('span', { class: 'num', style: 'display:inline-block;margin-inline-end:12px', text: '#' + w.o + ' × ' + w.q })))]));
 }
 function drawMine(main) {
   if (!mine.length) return;

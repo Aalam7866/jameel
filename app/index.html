@@ -808,15 +808,19 @@ async function jOrderByNo(no) {
 }
 function jOrder(o) {
   openDetail('Order ' + o.order_no, async (m) => {
-    const [lines, pays, meas, inv, work] = await Promise.all([
+    const [lines, pays, meas, inv, work, jdone] = await Promise.all([
       rows('j_lines', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
       rows('j_payments', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
       rows('i_meas', { f: ['OrderId:' + o.order_no], limit: 1 }),
       rows('i_orders', { f: ['OrderId:' + o.order_no], limit: 1 }),
       rows('j_work', { f: ['order_no:' + o.order_no], limit: 20 }).catch(() => ({ rows: [] })),
+      getDocs(query(collection(db, 'jdone'), where('o', '==', Number(o.order_no)))).catch(() => null),
     ]);
     const due = N(o.total) - N(o.paid);
-    const wk = {}; work.rows.forEach(w => wk[String(w.kind).toUpperCase()] = w);
+    const wk = {}; work.rows.forEach(w => wk[String(w.kind).toUpperCase()] = { ...w });
+    // finished on a worker link but not taken into TailorShop yet (shop program closed)
+    if (jdone) jdone.forEach(x => { const d = x.data(), k = String(d.kind || '').toUpperCase(); if (!k) return;
+      const w = wk[k] || (wk[k] = { qty: 0 }); w.qty = N(w.qty) + N(d.q) + (d.fit ? 1 : 0); if (!w.last) w.last = riyadh().slice(0, 10); });
     const emb = lines.rows.filter(l => l.source === 'EMB').reduce((a, l) => a + N(l.qty), 0);
     m.innerHTML = `
     <div class="card"><div class="row" style="justify-content:space-between"><div><div class="ar" style="font-size:18px;font-weight:600">${H(o.customer_name)}</div>

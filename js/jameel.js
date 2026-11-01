@@ -246,7 +246,10 @@ export async function kOpen(token, kind) {
   kind = activeKindOf(w, kind);
   const b = await board(w), list = [];
   for (const o of Object.keys(b.sp.orders)) { const a = availOf(b, kind, o); if (a && a.left > 0) list.push(a); }
-  return { kind, list, mine: b.mine.filter(x => x.kind === kind) };
+  // finished on the link, not yet taken by the shop PC (TailorShop closed): shown as "done – waiting for the shop"
+  const wait = [];
+  try { (await getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new')))).forEach(x => { const e = x.data(); if (e.kind === kind) wait.push({ o: Number(e.o), q: Number(e.q || 0) + (e.fit ? 1 : 0) }); }); } catch (e) { }
+  return { kind, list, mine: b.mine.filter(x => x.kind === kind), wait };
 }
 export async function kStart(token, kind, order, qty, fit) {
   const w = await worker(token);
