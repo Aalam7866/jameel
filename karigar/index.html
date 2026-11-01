@@ -492,6 +492,8 @@ function personalise() {
   draw();
   await Promise.all([loadOrders(), refresh(), refreshWork()]);
   setInterval(() => { if (!document.hidden && !found) refresh(true); }, 30000);
+  // a date change asked for: the page follows until the shop PC has done it
+  setInterval(() => { if (!document.hidden && (acct.fixes || []).length) refreshWork(); }, 20000);
   setInterval(() => { if (!document.hidden) loadOrders(); }, 300000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(true); refreshWork(); } });
 })();
