@@ -288,6 +288,19 @@ export async function kPast(token, kind, order, qty, day, pin) {
   if (q < 1) return { ok: false, msg: 'العدد؟ – qty?' };
   return submit(token, [{ order: orderKey(order), qty: q, fit: false }], pin, kind, day);
 }
+// Hinge / Embroidery: "this work was on another day" – a request the shop PC (ShopSync) applies to TailorShop's work list
+export async function kDateFix(token, kind, order, qty, from, to, id) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  if (!PAST_KINDS.includes(kind) || !String(w.kind || '').split(',').includes(kind)) return { ok: false, msg: 'للزرار والتطريز فقط – Hinge and embroidery only' };
+  const today = workDay(), min = new Date(Date.parse(today + 'T00:00:00Z') - 60 * 864e5).toISOString().slice(0, 10), re = /^\d{4}-\d{2}-\d{2}$/;
+  from = String(from || ''); to = String(to || '');
+  if (!re.test(from) || !re.test(to) || to > today || to < min) return { ok: false, msg: 'التاريخ؟ آخر 60 يوماً فقط – Date? Last 60 days only' };
+  if (from === to) return { ok: false, msg: 'نفس التاريخ – Same date' };
+  const key = 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  await setDoc(doc(db, 'wkx', w.token), { dfn: true, datefix: { [key]: { kind, o: Number(orderKey(order)) || 0, q: Math.floor(Number(qty)) || 0, from, to, id: String(id || ''), at: serverTimestamp() } } }, { merge: true });
+  return { ok: true };
+}
 export async function kFinish(token, id, pin) {
   const w = await worker(token);
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
@@ -343,12 +356,15 @@ const dedOf = (x) => { const d = x.data(); return { id: x.id, amount: Number(d.a
 export async function kWork(token) {
   const w = await worker(token);
   if (!w) return null;
-  const [a, e, d] = await Promise.all([getDoc(doc(db, 'wk', w.token)), getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new'))),
-    getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null)]);
+  const [a, e, d, xx] = await Promise.all([getDoc(doc(db, 'wk', w.token)), getDocs(query(collection(db, 'wk', w.token, 'e'), where('st', '==', 'new'))),
+    getDocs(collection(db, 'wkx', w.token, 'ded')).catch(() => null), getDoc(doc(db, 'wkx', w.token)).catch(() => null)]);
+  // date changes asked for, not applied by the shop PC yet
+  const fx = xx && xx.exists() ? (xx.data().datefix || {}) : {};
+  const fixes = Object.values(fx).map(f => ({ kind: f.kind, o: Number(f.o), from: f.from, to: f.to, id: f.id || '' }));
   const pending = [], ded = [];
   e.forEach(x => pending.push(entryOf(x)));            // sent from the link, not in TailorShop yet
   if (d) d.forEach(x => ded.push(dedOf(x)));
-  return { pending, ded, ...(await statsOf(a.exists() ? a.data() : w, w.token)) };
+  return { pending, ded, fixes, ...(await statsOf(a.exists() ? a.data() : w, w.token)) };
 }
 
 // ================================================================ online new-order page (?o=KEY)

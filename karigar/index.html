@@ -89,13 +89,14 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 :focus-visible{outline:2px solid #b88a3e;outline-offset:2px}
 .card.past{border-inline-start:4px solid #b88a3e}.card.past summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px}.card.past summary::-webkit-details-marker{display:none}
 .pgrid{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}.pgrid label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}.pgrid label.wide{grid-column:1/-1}.pgrid .inp{font-size:18px;min-height:48px;width:100%;flex:none}.pgrid label{min-width:0}
+.job.tap{cursor:pointer}
 </style>
 </head>
 <body>
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, PAST_KINDS } from '/js/jameel.js?v=16';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=17';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -113,7 +114,7 @@ if (MOVING) location.replace(HOME(tok));
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
 let me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], orders = {}, found = null, findMsg = '', busy = false;
-let pastOpen = false, pastMsg = null, olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
+let editKey = '', pastOpen = false, pastMsg = null, olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
 try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
 
 function el(tag, a, kids) {
@@ -414,11 +415,36 @@ function drawWork(main) {
   const byKind = {}; list.forEach(w => { byKind[w.kind] = (byKind[w.kind] || 0) + w.q; });
   if (me.kinds.length < 2 && Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
   if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), pcs ? L('التفاصيل لآخر 3 أشهر فقط.', 'Details only for the last 3 months.') : L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
-  list.forEach(w => main.appendChild(el('div', { class: 'job' }, [
-    el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
-    el('div', { style: 'margin-top:4px', text: kName(w.kind) + ' · ' + w.q + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : '') + (rate(w.kind) ? ' × ' + sar(rate(w.kind)) : ' · ' + L('السعر يحدده المحل', 'rate pending')) }),
-    el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: (dmy(w.d) + ' ' + (w.time || '')).trim() }),
-      el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })])])));
+  const fixes = acct.fixes || [];
+  list.forEach(w => {
+    const key = w.id || (w.kind + '|' + w.o + '|' + w.d), can = PAST_KINDS.includes(w.kind);
+    const fix = fixes.find(f => f.kind === w.kind && +f.o === +w.o && (w.id ? f.id === w.id : f.from === w.d));
+    const card = el('div', { class: 'job' + (can ? ' tap' : '') }, [
+      el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
+      el('div', { style: 'margin-top:4px', text: kName(w.kind) + ' · ' + w.q + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : '') + (rate(w.kind) ? ' × ' + sar(rate(w.kind)) : ' · ' + L('السعر يحدده المحل', 'rate pending')) }),
+      el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: (dmy(w.d) + ' ' + (w.time || '')).trim() + (can && !fix ? '  ✎' : '') }),
+        el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })]),
+      fix ? el('div', { class: 'st blue', style: 'margin-top:8px', text: '🕘 ' + L('تغيير التاريخ إلى ', 'Date change to ') + dmy(fix.to) + ' – ' + L('بانتظار المحل', 'waiting for the shop') }) : null]);
+    if (can && !fix) card.addEventListener('click', (ev) => { if (ev.target.closest('.dfx')) return; editKey = editKey === key ? '' : key; draw(); });
+    if (can && !fix && editKey === key) {
+      const td = today(), min = new Date(Date.parse(td + 'T00:00:00Z') - 60 * 864e5).toISOString().slice(0, 10);
+      const inp = el('input', { class: 'inp', type: 'date', min, max: td, value: w.d });
+      const msg = el('p', { class: 'msg' });
+      const go = el('button', { class: 'btn acc', type: 'button', text: '✓ ' + L('غيّر التاريخ', 'Change date'), onclick: async () => {
+        if (!inp.value || inp.value === w.d) { msg.textContent = L('اختر تاريخاً آخر', 'Pick another date'); msg.className = 'msg err'; return; }
+        go.disabled = true; msg.textContent = '…'; msg.className = 'msg';
+        try {
+          const r = await kDateFix(tok, w.kind, w.o, w.q, w.d, inp.value, w.id || '');
+          if (!r.ok) { go.disabled = false; msg.textContent = r.msg || ''; msg.className = 'msg err'; return; }
+          chime(); editKey = ''; await refreshWork();
+        } catch (e) { go.disabled = false; msg.textContent = L('لم يتم: ', 'Failed: ') + (e.message || e); msg.className = 'msg err'; }
+      } });
+      card.appendChild(el('div', { class: 'g dfx' }, [el('b', { text: L('يوم العمل الصحيح', 'The right day of this work') }),
+        el('div', { class: 'row', style: 'margin-top:8px' }, [inp, go]),
+        el('button', { class: 'btn line sm', type: 'button', style: 'margin-top:8px', text: L('إلغاء', 'Cancel'), onclick: () => { editKey = ''; draw(); } }), msg]));
+    }
+    main.appendChild(card);
+  });
 }
 function drawDed(main) {
   filterBar(main);
