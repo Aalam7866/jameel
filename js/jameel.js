@@ -297,17 +297,24 @@ export async function kGiveBack(token, id) {
 // (ABDUL SATTAR = #6 Hinge + #7 Embroidery) – emps {HINGE: 6, EMBROIDERY: 7}; else his one emp
 function empFor(w, kind) { const m = w && w.emps; const n = m && Number(m[kind]); return n > 0 ? n : w.emp; }
 // a worker made on the admin page has no account of his own from the shop PC: take his employees' (their shop links carry it)
-async function statsOf(v) {
-  if (v.stats || Object.keys(v).some(k => k.startsWith('stats_'))) return shopStats(v);
+// the account of each kind comes from the TailorShop employee it is saved under: a worker made on the admin page keeps
+// only an old copy of it, so his employees' own shop links (updated by the shop PC every sync) win
+async function statsOf(v, token) {
   const kinds = String(v.kind || '').split(',').filter(Boolean);
   const emps = [...new Set(kinds.map(k => empFor(v, k)).filter(n => Number(n) > 0))];
-  if (!emps.length) return shopStats({});
+  const own = v.stats || Object.keys(v).some(k => k.startsWith('stats_'));
+  if (!emps.length) return shopStats(own ? v : {});
   const rows = await dsRows('j_workers').catch(() => []);
   const tokOf = (n) => (rows.find(x => Number(x.emp_no) === Number(n) && /^[0-9a-f]{32}$/.test(String(x.web_token || ''))) || {}).web_token;
+  if (own && emps.every(n => !tokOf(n) || tokOf(n) === token)) return shopStats(v);   // his own shop link: already live
   const docs = {};
-  await Promise.all(emps.map(async n => { const t = tokOf(n); if (t) { const d = await getDoc(doc(db, 'wk', t)).catch(() => null); if (d && d.exists()) docs[n] = d.data(); } }));
+  await Promise.all(emps.map(async n => { const t = tokOf(n); if (t && t !== token) { const d = await getDoc(doc(db, 'wk', t)).catch(() => null); if (d && d.exists()) docs[n] = d.data(); } }));
   const kstats = {};
-  for (const k of kinds) { const d = docs[empFor(v, k)]; if (!d) continue; const x = J(d['stats_' + k], null) || J(d.stats, null); if (x) kstats[k] = { months: x.months || [], work: x.work || [] }; }
+  for (const k of kinds) {
+    const d = docs[empFor(v, k)];
+    const x = (d && (J(d['stats_' + k], null) || J(d.stats, null))) || J(v['stats_' + k], null) || (kinds.length === 1 ? J(v.stats, null) : null);
+    if (x) kstats[k] = { months: x.months || [], work: x.work || [] };
+  }
   const one = kinds.length === 1 && kstats[kinds[0]];
   return { stats: one || { months: [], work: [] }, kstats: kinds.length > 1 ? kstats : {} };
 }
@@ -327,7 +334,7 @@ export async function kWork(token) {
   const pending = [], ded = [];
   e.forEach(x => pending.push(entryOf(x)));            // sent from the link, not in TailorShop yet
   if (d) d.forEach(x => ded.push(dedOf(x)));
-  return { pending, ded, ...(await statsOf(a.exists() ? a.data() : w)) };
+  return { pending, ded, ...(await statsOf(a.exists() ? a.data() : w, w.token)) };
 }
 
 // ================================================================ online new-order page (?o=KEY)
@@ -651,7 +658,7 @@ async function aWorkersAll(key, pin, ym) {
     const emps = {}; kinds.forEach(k => { const n = empFor(v, k); if (typeof n === 'number' && n > 0) emps[k] = n; });
     return { token: w.token, src: w.src, name: v.name || '', kind: v.kind || '', emp: typeof v.emp === 'number' && v.emp > 0 ? v.emp : 0, emps,
              linked: kinds.length > 0 && kinds.every(k => emps[k]) && (kinds.length === 1 || w.src === 'shop' || (v.emps && kinds.every(k => Number(v.emps[k]) > 0))), phone: xx.phone || '', active: xx.active !== false, hidden: xx.hidden === true,
-             work, ded, ...(await statsOf(v)) };
+             work, ded, ...(await statsOf(v, w.token)) };
   }));
   const rd = rt.exists() ? rt.data() : {};
   return { ym, rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rd[k]) || 0])),
