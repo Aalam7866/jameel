@@ -102,6 +102,18 @@ a{color:var(--acc)}
 .dstot .tl{background:#dfe9f5}.dstot .lav{background:#ece4f7}.dstot .peach{background:#fde3d3}
 .embed body{padding-bottom:0}.embed nav{display:none}
 @media print{nav,header,.noprint,.tabs,#back{display:none!important}body{background:#fff}main{padding:0}.dsw{overflow:visible}}
+.trk{display:flex;margin:16px 0 4px;overflow-x:auto;padding:2px 0 4px}
+.tk{flex:1 1 0;min-width:74px;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;padding:0 2px}
+.tk:before{content:"";position:absolute;top:8px;left:-50%;right:50%;height:3px;background:var(--line)}
+.tk:first-child:before{display:none}
+.tk.done:before,.tk.now:before{background:var(--gold)}
+.tk i{width:18px;height:18px;border-radius:50%;background:var(--line);position:relative;z-index:1;margin-bottom:6px;box-sizing:border-box}
+.tk.done i{background:var(--gold)}
+.tk.now i{background:var(--card);border:3px solid var(--gold);width:22px;height:22px;margin:-2px 0 4px}
+.tk b{font-size:12.5px;font-weight:500;color:var(--mute);line-height:1.25}
+.tk.done b{color:var(--ink)}.tk.now b{color:var(--ink);font-weight:700}
+.tk span.ar{font-size:11.5px;color:var(--mute);line-height:1.3}
+.tk small{font-size:11.5px;color:var(--goldink);font-variant-numeric:tabular-nums;min-height:15px}
 </style>
 </head>
 <body>
@@ -509,6 +521,31 @@ function kv(o, skip = []) {
 }
 
 // ---------------------------------------------------------------- JAMEEL
+// ---------------------------------------------------------------- where an order is: cutting → tailoring → (embroidery) → (hinge) → ready → delivered
+// x: pcs, cut, stitch, embQty, emb, hingeQty, hinge, ready, delivered (pieces), dates {cut, stitch, emb, hinge, ready, delivered}
+function orderStages(x) {
+  const P = Math.max(1, x.pcs || 0), D = x.dates || {};
+  // pieces further on were done before: delivered ⊂ ready ⊂ stitched ⊂ cut (older orders have no worker entries)
+  const delivered = Math.min(x.delivered || 0, P), readyN = Math.max(x.ready || 0, delivered), ready = readyN >= P;
+  const stitchN = Math.max(x.stitch || 0, readyN), cutN = Math.max(x.cut || 0, stitchN);
+  const st = [];
+  const add = (k, en, ar, done, of, date) => st.push({ k, en, ar, done: Math.min(done, of), of, date });
+  add('cut', 'Cutting', 'القص', cutN, P, D.cut);
+  add('stitch', 'Tailoring', 'الخياطة', stitchN, P, D.stitch);
+  if (x.embQty > 0) add('emb', 'Embroidery', 'التطريز', ready ? x.embQty : x.emb, x.embQty, D.emb);
+  if (x.hingeQty > 0) add('hinge', 'Hinge', 'الكبسات', ready ? x.hingeQty : x.hinge, x.hingeQty, D.hinge);
+  add('ready', 'Ready for pickup', 'جاهز للاستلام', readyN, P, D.ready);
+  add('delivered', 'Delivered', 'تم التسليم', delivered, P, D.delivered);
+  const cur = st.findIndex(s => s.done < s.of);
+  st.forEach((s, i) => s.state = cur < 0 || i < cur ? 'done' : i === cur ? 'now' : 'next');
+  return st;
+}
+function orderTrack(st) {
+  const d = (v) => { const t = String(v || '').slice(0, 10); return t ? t.slice(8, 10) + '-' + t.slice(5, 7) : ''; };
+  return `<div class="trk" role="list">${st.map(s => `<div class="tk ${s.state}" role="listitem" aria-current="${s.state === 'now' ? 'step' : 'false'}">
+    <i></i><b>${H(s.en)}</b><span class="ar">${H(s.ar)}</span>
+    <small>${s.state === 'done' ? (d(s.date) || '✓') : s.done > 0 ? `${s.done}/${s.of}` : s.of > 1 && s.state === 'now' ? `0/${s.of}` : ''}</small></div>`).join('')}</div>`;
+}
 function jStatus(o) {
   const pcs = N(o.pcs), del = N(o.delivered_qty), ready = N(o.ready);
   if (pcs && del >= pcs) return '<span class="pill ok">Delivered</span>';
@@ -771,16 +808,20 @@ async function jOrderByNo(no) {
 }
 function jOrder(o) {
   openDetail('Order ' + o.order_no, async (m) => {
-    const [lines, pays, meas, inv] = await Promise.all([
+    const [lines, pays, meas, inv, work] = await Promise.all([
       rows('j_lines', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
       rows('j_payments', { f: ['order_no:' + o.order_no], asc: true, limit: 50 }),
       rows('i_meas', { f: ['OrderId:' + o.order_no], limit: 1 }),
       rows('i_orders', { f: ['OrderId:' + o.order_no], limit: 1 }),
+      rows('j_work', { f: ['order_no:' + o.order_no], limit: 20 }).catch(() => ({ rows: [] })),
     ]);
     const due = N(o.total) - N(o.paid);
+    const wk = {}; work.rows.forEach(w => wk[String(w.kind).toUpperCase()] = w);
+    const emb = lines.rows.filter(l => l.source === 'EMB').reduce((a, l) => a + N(l.qty), 0);
     m.innerHTML = `
     <div class="card"><div class="row" style="justify-content:space-between"><div><div class="ar" style="font-size:18px;font-weight:600">${H(o.customer_name)}</div>
     <div class="muted">${H(o.mobile)} · customer ${H(o.customer_no)}</div></div>${jStatus(o)}</div>
+    ${orderTrack(orderStages({ pcs: N(o.pcs), cut: N(wk.CUT && wk.CUT.qty), stitch: N(wk.STITCH && wk.STITCH.qty), embQty: emb, emb: N(wk.EMBROIDERY && wk.EMBROIDERY.qty), hingeQty: N(o.hinge_qty), hinge: N(wk.HINGE && wk.HINGE.qty), ready: N(o.ready), delivered: N(o.delivered_qty), dates: { cut: wk.CUT && wk.CUT.last, stitch: wk.STITCH && wk.STITCH.last, emb: wk.EMBROIDERY && wk.EMBROIDERY.last, hinge: wk.HINGE && wk.HINGE.last, ready: o.ready_at, delivered: o.delivered_date } }))}
     <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(o.total)}</b><span>Total (VAT ${money(o.vat)})</span></div><div class="stat"><b>${money(o.paid)}</b><span>Paid</span></div>
     <div class="stat"><b style="color:${due >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.invoice_no ? `<button class="btn small" id="pdf">Invoice ${H(o.invoice_no)} PDF</button>` : ''}

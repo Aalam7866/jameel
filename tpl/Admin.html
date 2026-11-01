@@ -43,6 +43,17 @@
   #dlg label { display: block; margin: 10px 0 4px; font-weight: bold; font-size: 15px; }
   #dlg input, #dlg select { border-color: #b88a3e; text-align: center; font-size: 19px; }
   .seg { display: flex; gap: 8px; } .seg button { flex: 1; } .seg button.on { background: #1f2a3a; color: #fff; }
+  .trk { display: flex; margin: 10px 0 4px; }
+  .tk { flex: 1; position: relative; text-align: center; font-size: 12px; color: #8a8f99; min-width: 0; }
+  .tk:before { content: ''; position: absolute; top: 9px; left: 50%; width: 100%; height: 3px; background: #e3e2e8; }
+  .tk:first-child:before { display: none; }
+  .tk.done:before, .tk.now:before { background: #b88a3e; }
+  .tk i { position: relative; z-index: 1; display: block; width: 20px; height: 20px; margin: 0 auto 5px; border-radius: 50%; background: #fff; border: 3px solid #e3e2e8; }
+  .tk.done i { background: #b88a3e; border-color: #b88a3e; }
+  .tk.now i { border-color: #b88a3e; box-shadow: 0 0 0 4px #f6efe2; }
+  .tk b { display: block; font-size: 12.5px; color: #1f2a3a; font-weight: 600; line-height: 1.25; }
+  .tk.next b { color: #8a8f99; font-weight: 500; }
+  .tk small { display: block; font-size: 11px; color: #8a6424; margin-top: 2px; }
   .sum { background: #f7f7f9; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
   .sum b { font-size: 17px; } .warn { color: #b3261e; font-weight: bold; white-space: pre-line; margin-top: 8px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
@@ -208,6 +219,7 @@
   <div id="dlg">
     <div class="card">
       <h3 id="dTitle"></h3>
+      <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
       <div class="seg" style="margin-top:10px">
         <button id="kPAY" onclick="setKind('PAY')">💰 سداد / Pay</button>
@@ -392,11 +404,30 @@
       }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
       renderTable();
     }
+    function trackHtml(r) {
+      var n = function (i) { return Number(r[i]) || 0; };
+      var P = Math.max(1, n(5)), del = Math.min(n(12), P), rdy = Math.max(n(13), del), isR = rdy >= P;
+      var sti = Math.max(n(7), rdy), cut = Math.max(n(6), sti), st = [];
+      var add = function (ar, en, d, of) { st.push({ ar: ar, en: en, d: Math.min(d, of), of: of }); };
+      add('القص', 'Cutting', cut, P);
+      add('الخياطة', 'Tailoring', sti, P);
+      if (n(10) > 0) add('التطريز', 'Embroidery', isR ? n(10) : n(11), n(10));
+      if (n(8) > 0) add('الكبسات', 'Hinge', isR ? n(8) : n(9), n(8));
+      add('جاهز للاستلام', 'Ready', rdy, P);
+      add('تم التسليم', 'Delivered', del, P);
+      var cur = -1; for (var i = 0; i < st.length; i++) if (st[i].d < st[i].of) { cur = i; break; }
+      return '<div class="trk">' + st.map(function (s, i) {
+        var cls = cur < 0 || i < cur ? 'done' : i === cur ? 'now' : 'next';
+        var sm = s.d >= s.of ? '✓' : s.d > 0 ? s.d + '/' + s.of : '';
+        return '<div class="tk ' + cls + '"><i></i><b>' + s.ar + '</b><small>' + s.en + (sm ? ' · ' + sm : '') + '</small></div>';
+      }).join('') + '</div>';
+    }
     function openAct(no) {
       var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
       if (!r) return;
       D = { no: r[0], name: r[1], pcs: Number(r[5]) || 0, given: Number(r[12]) || 0, due: Number(r[14]) || 0 };
       $('dTitle').textContent = 'طلب ' + D.no + ' – ' + D.name;
+      $('dTrk').innerHTML = trackHtml(r);
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
