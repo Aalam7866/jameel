@@ -22,18 +22,28 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--b-font,system-ui),system-ui,sans-serif}
 button,input,select{font:inherit}
 .wrap{max-width:720px;margin:0 auto;padding:0 14px}
-header{background:#1f2a3a;color:#fff;border-bottom:3px solid #b88a3e;padding:12px 0 10px;padding-top:max(12px,env(safe-area-inset-top));position:sticky;top:0;z-index:5}
-@media (prefers-color-scheme:dark){header{background:#0b3d35}}
-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.brand{font-weight:700;font-size:18px}.brand small{display:block;font-size:12px;opacity:.85;font-weight:600}
+header{background:#1f2a3a;color:#fff;padding:10px 0 16px;padding-top:max(10px,env(safe-area-inset-top))}
+@media (prefers-color-scheme:dark){header{background:#0f141c}}
+header .bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--b-display);font-weight:600;font-size:16px;color:#e9dcc2}
+.brand img{width:30px;height:30px;object-fit:contain;background:#fff;border-radius:8px;padding:2px}
+.who{display:flex;align-items:center;gap:12px;margin-top:14px}
+.who .av{width:54px;height:54px;border-radius:50%;background:#2c3a50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--b-display);font-size:24px;font-weight:600;flex:none;object-fit:cover;box-shadow:0 0 0 2px #1f2a3a,0 0 0 4px #b88a3e}
+.who b{display:block;font-family:var(--b-display);font-weight:600;font-size:21px;line-height:1.25}.who small{color:#c9ced8;font-size:13px}
+.tape{height:6px;background:repeating-linear-gradient(90deg,#1f2a3a 0 1px,transparent 1px 8px) 0 0/100% 4px no-repeat,linear-gradient(#b88a3e,#9c7431)}
 .hb{display:flex;gap:6px;flex-wrap:wrap}
-.pill{border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-weight:600}
+.pill{border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-weight:600}
 .pill.on{background:#fff;color:var(--acc)}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:4}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:4;padding-top:env(safe-area-inset-top)}
 .tabs button{flex:1;border:0;background:none;padding:12px 6px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--acc);border-bottom-color:var(--acc)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:#b88a3e}
 main{padding:14px 0 80px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.card h3{font-family:var(--b-display);font-weight:600;font-size:17px;margin:0 0 4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h3 .n{font-family:var(--b-font);font-size:13px;background:var(--acc-soft);color:var(--ink);border-radius:999px;padding:1px 10px}
+.card.mine{border-top:3px solid var(--blue)}
+.card.okbox{background:var(--ok-soft);border-color:transparent}.card.okbox h3{color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chip{background:var(--surface);border-radius:999px;padding:3px 12px;font-weight:700;font-variant-numeric:tabular-nums}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .num{font-variant-numeric:tabular-nums;font-weight:700;direction:ltr;unicode-bidi:isolate}
@@ -52,21 +62,22 @@ main{padding:14px 0 80px}
 .center{max-width:440px;margin:40px auto;padding:0 16px;text-align:center}
 .empty{text-align:center;color:var(--muted);padding:36px 10px}.empty b{display:block;font-size:40px}
 .sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.sum div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
-.sum b{display:block;font-size:20px}.sum span{font-size:12px;color:var(--muted)}
+.sum>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 8px 10px;text-align:center;box-shadow:inset 0 3px 0 #b88a3e}
+.sum>div>b{display:block;font-family:var(--b-display);font-weight:600;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums}.sum span{font-size:12px;color:var(--muted)}
 .hello{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .hello .av{width:46px;height:46px;border-radius:50%;background:var(--acc);color:var(--on-acc);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex:none;object-fit:cover}
 .hello b{display:block;font-size:19px}.hello small{color:var(--muted)}
-.kinds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.kinds button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer}
-.kinds button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.kinds{display:flex;gap:0;background:var(--acc-soft);border-radius:12px;padding:3px;margin-bottom:12px}
+.kinds button{flex:1;border:0;background:none;color:var(--muted);border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}
+.kinds button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 .flt{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .flt input{min-height:44px;border-radius:10px;border:1px solid var(--line);padding:6px 10px;background:var(--surface);color:var(--ink);max-width:240px}
-.tot{display:flex;justify-content:space-between;align-items:center;background:var(--acc-soft);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-weight:600}
+.tot{display:flex;justify-content:space-between;align-items:center;background:var(--gold-soft);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-weight:600}
 .tot.bad{background:var(--bad-soft);color:var(--bad);cursor:pointer}.tot.ok{background:var(--ok-soft);color:var(--ok)}
-.job{display:block;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;color:inherit;font:inherit}
-button.job{cursor:pointer}
-.job.late{border:2px solid var(--bad)}.job.new{border:2px solid var(--acc)}.job.ded{border-inline-start:4px solid var(--bad)}
+.job{display:block;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-inline-start:4px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;color:inherit;font:inherit}
+button.job{cursor:pointer}button.job:hover{border-color:#c9c8cf}
+.job .num{font-family:var(--b-display);font-weight:600;font-size:19px}
+.job.late{border-inline-start-color:var(--bad)}.job.new{border-inline-start-color:#b88a3e;box-shadow:0 2px 10px rgba(31,42,58,.08)}.job.ded{border-inline-start-color:var(--bad)}
 .due{font-weight:700}.due.late{color:var(--bad)}
 .prog{font-size:13px;font-weight:700;margin-top:4px}
 .inp{flex:1;min-width:0;min-height:52px;border-radius:10px;border:1px solid var(--line);padding:6px 12px;font-size:20px;background:var(--bg);color:var(--ink);direction:ltr;text-align:center}
@@ -74,7 +85,8 @@ button.job{cursor:pointer}
 .stepper b{font-size:24px;min-width:44px;text-align:center}
 label.chk{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-weight:600}
 label.chk input{width:22px;height:22px;accent-color:var(--acc)}
-.g{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;background:var(--bg)}
+.g{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:var(--bg)}
+:focus-visible{outline:2px solid #b88a3e;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -188,14 +200,16 @@ async function withPin(fn) {   // runs fn(pin); asks the PIN when the shop set o
 function draw() {
   const y = scrollY; app.innerHTML = '';
   const inst = IS_APP ? null : el('button', { class: 'pill', type: 'button', text: '📲 ' + L('تثبيت', 'Install'), onclick: () => { if (instEvt) instEvt.prompt(); else alert(L('في كروم: ⋮ ← "إضافة إلى الشاشة الرئيسية"', 'In Chrome tap ⋮ → "Add to Home screen"')); } });
-  app.appendChild(el('header', null, [el('div', { class: 'wrap' }, [el('div', { class: 'brand' }, [L('جميل الهندام', 'JAMEEL AL HINDAM'), el('small', { text: me.name })]),
-    el('div', { class: 'hb' }, [inst, el('button', { class: 'pill', type: 'button', text: LANG === 'en' ? 'عربي' : 'English', onclick: () => { try { localStorage.setItem('k-lang', LANG === 'en' ? 'ar' : 'en'); } catch (e) { } location.reload(); } })])])]));
+  app.appendChild(el('header', null, [el('div', { class: 'wrap' }, [
+    el('div', { class: 'bar' }, [el('div', { class: 'brand' }, [el('img', { src: '/img/logo-240.png', alt: '' }), L('جميل الهندام', 'Jameel Al Hindam')]),
+      el('div', { class: 'hb' }, [inst, el('button', { class: 'pill', type: 'button', text: LANG === 'en' ? 'عربي' : 'English', onclick: () => { try { localStorage.setItem('k-lang', LANG === 'en' ? 'ar' : 'en'); } catch (e) { } location.reload(); } })])]),
+    el('div', { class: 'who' }, [me.photo ? el('img', { class: 'av', src: me.photo, alt: '' }) : el('div', { class: 'av', text: String(me.name || '?').trim().charAt(0) }),
+      el('div', null, [el('b', { text: L('أهلاً، ', 'Hello, ') + me.name }), el('small', { text: me.kinds.map(kName).join(' · ') })])])])]));
+  app.appendChild(el('div', { class: 'tape' }));
   const wipN = mine.length;
   app.appendChild(el('nav', { class: 'tabs' }, [['add', '➕ ' + L('العمل', 'Work') + (wipN ? ' (' + wipN + ')' : '')], ['work', L('حسابي', 'My work')], ['ded', L('الخصومات', 'Deductions')]].map(t =>
     el('button', { type: 'button', 'aria-selected': String(tab === t[0]), onclick: () => { tab = t[0]; if (t[0] !== 'add') refreshWork(); draw(); scrollTo(0, 0); } }, [t[1]]))));
   const main = el('main', { class: 'wrap' }); app.appendChild(main);
-  main.appendChild(el('div', { class: 'hello' }, [me.photo ? el('img', { class: 'av', src: me.photo, alt: '' }) : el('div', { class: 'av', text: String(me.name || '?').trim().charAt(0) }),
-    el('div', null, [el('b', { text: L('أهلاً ', 'Hello, ') + me.name }), el('small', { text: me.kinds.map(kName).join(' · ') })])]));
   if (me.kinds.length > 1) main.appendChild(el('div', { class: 'kinds' }, me.kinds.map(k => el('button', { type: 'button', class: k === kind ? 'on' : '', text: kName(k), onclick: () => { kind = k; try { localStorage.setItem('k-kind-' + tok, k); } catch (e) { } found = null; open = null; lastForMe = -1; draw(); refresh(); } }))));
   const m0 = today().slice(0, 7), t0 = tally('month', m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
   const earn = t0.earn, ded = md.reduce((a, d) => a + d.amount, 0);
@@ -231,7 +245,7 @@ function drawAdd(main) {
   inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') find(inp.value); });
   if (kind !== 'CUT') drawMine(main);
   drawWait(main);
-  main.appendChild(el('div', { class: 'card' }, [el('b', { style: 'font-size:17px', text: L('رقم الطلب', 'Order number') }),
+  main.appendChild(el('div', { class: 'card' }, [el('h3', { text: L('رقم الطلب', 'Order number') }),
     el('p', { class: 'small muted', style: 'margin:2px 0 8px', text: L('اختر طلباً من القائمة، أو امسح باركود الورقة / اكتب الرقم.', 'Pick an order from the list, or scan the slip barcode / type the number.') }),
     el('div', { class: 'row' }, [inp, el('button', { class: 'btn acc', type: 'button', text: '🔍 ' + L('بحث', 'Find'), onclick: () => find(inp.value) })]),
     el('button', { class: 'btn line', type: 'button', style: 'width:100%;margin-top:8px;min-height:54px;font-size:18px', text: '📷 ' + L('مسح الباركود', 'Scan barcode'), onclick: scan }),
@@ -297,14 +311,14 @@ function drawFound(main) {
 }
 function drawWait(main) {
   if (!wait.length) return;
-  main.appendChild(el('div', { class: 'card', style: 'border:2px solid var(--ok, #1f7a46)' }, [
-    el('b', { style: 'font-size:17px', text: '✅ ' + L('انتهى – بانتظار المحل', 'Finished – waiting for the shop') + ' (' + wait.length + ')' }),
-    el('p', { class: 'small muted', style: 'margin:2px 0 6px', text: L('أضيف إلى حسابك عندما يفتح المحل البرنامج.', 'Added to your account when the shop opens the program.') }),
-    el('div', { style: 'font-weight:600;line-height:1.9' }, wait.slice().sort((x, y) => x.o - y.o).map(w => el('span', { class: 'num', style: 'display:inline-block;margin-inline-end:12px', text: '#' + w.o + ' × ' + w.q })))]));
+  main.appendChild(el('div', { class: 'card okbox' }, [
+    el('h3', null, ['✓ ' + L('انتهى – بانتظار المحل', 'Finished – waiting for the shop'), el('span', { class: 'n', text: String(wait.length) })]),
+    el('div', { class: 'small muted', text: L('يُضاف إلى حسابك عندما يفتح المحل البرنامج.', 'Added to your account when the shop opens the program.') }),
+    el('div', { class: 'chips' }, wait.slice().sort((x, y) => x.o - y.o).map(w => el('span', { class: 'chip', text: '#' + w.o + ' × ' + w.q })))]));
 }
 function drawMine(main) {
   if (!mine.length) return;
-  const box = el('div', { class: 'card', style: 'border:2px solid var(--blue)' }, [el('b', { style: 'font-size:17px', text: '🔄 ' + L('عملي الجاري', 'My work in progress') + ' (' + mine.length + ')' })]);
+  const box = el('div', { class: 'card mine' }, [el('h3', null, [L('عملي الجاري', 'My work in progress'), el('span', { class: 'n', text: String(mine.length) })])]);
   mine.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999')).forEach(w => {
     const due = dueOf(w.o), late = due && due < today(), n = w.q + (w.fit ? 1 : 0), m = el('p', { class: 'msg' });
     box.appendChild(el('div', { class: 'g' }, [el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: dmy(due) }) : null]),
