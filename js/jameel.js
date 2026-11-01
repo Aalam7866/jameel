@@ -352,7 +352,8 @@ function shopStats(v) {
   return { stats: { months: g.months || [], work: g.work || [] }, kstats };
 }
 const entryOf = (x) => { const e = x.data(); return { id: x.id, kind: e.kind, o: e.o, q: Number(e.q) || 0, fit: e.fit === 1, st: e.st, d: e.d || '', time: tsStr(e.ts).slice(11, 16) }; };
-const dedOf = (x) => { const d = x.data(); return { id: x.id, amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '' }; };
+// a deduction, or (type 'paid') money already given to the worker – both lower what he still gets
+const dedOf = (x) => { const d = x.data(); return { id: x.id, type: d.type === 'paid' ? 'paid' : 'ded', amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '' }; };
 export async function kWork(token) {
   const w = await worker(token);
   if (!w) return null;
@@ -746,9 +747,10 @@ async function aDedAdd(key, pin, token, d) {
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   const amount = Math.round((Number(d && d.amount) || 0) * 100) / 100, reason = String((d && d.reason) || '').trim().slice(0, 200);
   if (!(amount > 0)) return { ok: false, msg: 'اكتب المبلغ – enter the amount' };
-  if (!reason) return { ok: false, msg: 'اكتب السبب – enter the reason' };
+  const paid = d && d.type === 'paid';
+  if (!reason && !paid) return { ok: false, msg: 'اكتب السبب – enter the reason' };
   const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d.date || '')) ? d.date : riyadh().slice(0, 10);
-  await addDoc(collection(db, 'wkx', token, 'ded'), { amount, reason, order: orderKey(d.order), date, at: serverTimestamp() });
+  await addDoc(collection(db, 'wkx', token, 'ded'), { amount, reason: reason || 'دفعة – Paid', order: orderKey(d.order), date, type: paid ? 'paid' : 'ded', at: serverTimestamp() });
   return { ok: true };
 }
 async function aDedDel(key, pin, token, id) {

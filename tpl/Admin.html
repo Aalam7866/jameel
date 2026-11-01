@@ -151,8 +151,9 @@
   .wtop .av { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--disp);
               font-size: 20px; font-weight: 600; flex: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--gold); }
   .wtop .winfo { flex: 1; min-width: 0; } .wtop b { font-size: 17px; } .wkind { font-size: 12.5px; color: var(--mute); }
-  .wsum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 14px 0 8px; }
+  .wsum { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 14px 0 8px; }
   .wsum div { background: var(--soft); border-radius: 10px; padding: 9px 4px 7px; text-align: center; font-weight: 600; font-size: 15px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 480px) { .wsum { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .wsum span { display: block; font-size: 11px; color: var(--mute); font-weight: 500; }
   .wk details { margin: 8px 0; border-top: 1px solid #efeef2; padding-top: 8px; } .wk summary { cursor: pointer; font-weight: 600; font-size: 14px; }
   .wrow { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #e6e5ea; padding: 6px 0; font-size: 14px; }
@@ -729,8 +730,8 @@
       if (!list.length) { $('wList').innerHTML = '<div class="card muted">لا يوجد عمال – no workers yet</div>' + goneHtml; return; }
       $('wList').innerHTML = goneHtml + list.map(function (w) {
         var t = esc(w.token), on = w.active, ded = 0, a = wAccount(w, WD.ym, rates), pcs = a.pcs, earn = a.earn;
-        var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; });
-        dm.forEach(function (d) { ded += d.amount; });
+        var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; }), paid = 0;
+        dm.forEach(function (d) { if (d.type === 'paid') paid += d.amount; else ded += d.amount; });
         var work = a.lines;
         var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
           '<div class="wtop"><div class="av">' + esc(String(w.name).trim().charAt(0) || '?') + '</div><div class="winfo"><b>' + esc(w.name) + '</b>' +
@@ -741,22 +742,29 @@
             '<button class="go wide" style="margin-top:6px" onclick="linkEmp(\'' + t + '\')">ربط / Link</button></div>') +
           '<div class="wsum"><div>' + pcs + (a.pend ? '<small style="display:block;font-size:11px;color:#9a5b00">⏳ ' + a.pend + '</small>' : '') + '<span>قطعة · pcs</span></div><div>' + sar(earn) + '<span>الأجر · earned</span></div>' +
           '<div' + (ded ? ' style="color:#b3261e"' : '') + '>' + (ded ? '−' : '') + sar(ded) + '<span>الخصم</span></div>' +
-          '<div style="color:#1a7f37">' + sar(Math.max(0, earn - ded)) + '<span>المستحق</span></div></div>';
+          '<div' + (paid ? ' style="color:#1f4e8c"' : '') + '>' + (paid ? '−' : '') + sar(paid) + '<span>المدفوع · paid</span></div>' +
+          '<div style="color:#1a7f37">' + sar(Math.max(0, earn - ded - paid)) + '<span>المستحق</span></div></div>';
         if (work.length) h += '<details' + (WOPEN['w' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'w' + t + '\']=this.open"><summary>عمل هذا الشهر / this month (' + work.length + ')</summary>' +
           work.slice(0, 200).map(function (e) {
             return '<div class="wrow"><span>' + esc(day(e.d)) + ' · #' + esc(e.o) + ' · ' + (WKINDS[e.kind] || esc(e.kind)) + ' · ' + e.q + (e.fit ? ' (بروفة)' : '') + '</span>' +
               '<span><b>' + (rates[e.kind] ? sar(e.q * rates[e.kind]) : '—') + '</b> ' + (e.pending ? '⏳' : '✔') + '</span></div>';
           }).join('') + '</details>';
-        if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات / deductions (' + w.ded.length + ')</summary>' +
+        if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات والدفعات / deductions &amp; paid (' + w.ded.length + ')</summary>' +
           w.ded.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (d) {
-            return '<div class="wrow"><span>' + esc(day(d.date)) + ' · ' + esc(d.reason) + (d.order ? ' · #' + esc(d.order) : '') + '</span>' +
-              '<span><b style="color:#b3261e">−' + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
+            var pd = d.type === 'paid';
+            return '<div class="wrow"><span>' + esc(day(d.date)) + ' · ' + (pd ? '💵 ' : '') + esc(d.reason) + (d.order ? ' · #' + esc(d.order) : '') + '</span>' +
+              '<span><b style="color:' + (pd ? '#1f4e8c' : '#b3261e') + '">−' + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
           }).join('') + '</details>';
         h += '<div id="wded_' + t + '" class="wadd" style="display:none">' +
           '<input id="da_' + t + '" type="number" inputmode="decimal" min="0" step="0.5" placeholder="المبلغ / Amount (SAR)">' +
           '<input id="dr_' + t + '" placeholder="السبب / Reason (مثل: قص خطأ، تأخير)">' +
           '<div style="display:flex;gap:6px"><input id="do_' + t + '" inputmode="numeric" placeholder="رقم الطلب / Order (اختياري)"><input id="dd_' + t + '" type="date"></div>' +
           '<button class="go wide" onclick="saveDed(\'' + t + '\')">حفظ الخصم / Save deduction</button><div id="dm_' + t + '"></div></div>';
+        h += '<div id="wpay_' + t + '" class="wadd" style="display:none">' +
+          '<input id="pa_' + t + '" type="number" inputmode="decimal" min="0" step="0.5" placeholder="المبلغ المدفوع / Amount given (SAR)">' +
+          '<input id="pr_' + t + '" placeholder="ملاحظة / Note (مثل: سلفة، نقداً) – اختياري">' +
+          '<input id="pd_' + t + '" type="date">' +
+          '<button class="go wide" onclick="savePaid(\'' + t + '\')">حفظ الدفعة / Save payment</button><div id="pm_' + t + '"></div></div>';
         h += '<div id="wrole_' + t + '" class="wadd" style="display:none"><div class="wkinds">' +
           ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY'].map(function (k) {
             return '<label><input type="checkbox" value="' + k + '"' + (String(w.kind).split(',').indexOf(k) >= 0 ? ' checked' : '') + '> ' + WKINDS[k] + '</label>';
@@ -771,6 +779,7 @@
           '<button class="sec" onclick="wToggle(\'wph_' + t + '\')">📞 الجوال / Mobile</button>' +
           '<button class="sec" onclick="wToggle(\'wrole_' + t + '\')">✏️ العمل / Role</button>' +
           '<button class="sec" style="color:#b3261e" onclick="wToggle(\'wded_' + t + '\')">− خصم / Deduct</button>' +
+          '<button class="sec" style="color:#1f4e8c" onclick="wToggle(\'wpay_' + t + '\')">💵 دفعة / Paid</button>' +
           (on ? '<button class="bad" onclick="setActive(\'' + t + '\', false)">🚫 إيقاف / Block</button>'
               : '<button class="go" onclick="setActive(\'' + t + '\', true)">✓ تفعيل / Unblock</button>') +
           '<button class="bad" onclick="delWorker(\'' + t + '\')">🗑 حذف / Delete</button>' +
@@ -860,8 +869,16 @@
         loadWorkers();
       }).withFailureHandler(function (e) { $('dm_' + t).innerHTML = '<div class="rate-err">خطأ – ' + esc(e && e.message || e) + ' (Firestore Rules?)</div>'; }).aDedAdd(KEY, PIN, t, d);
     }
+    function savePaid(t) {
+      var d = { type: 'paid', amount: $('pa_' + t).value, reason: $('pr_' + t).value, date: $('pd_' + t).value };
+      $('pm_' + t).innerHTML = '<div class="muted">…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { $('pm_' + t).innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
+        loadWorkers();
+      }).withFailureHandler(function (e) { $('pm_' + t).innerHTML = '<div class="rate-err">خطأ – ' + esc(e && e.message || e) + '</div>'; }).aDedAdd(KEY, PIN, t, d);
+    }
     function delDed(t, id) {
-      if (!confirm('حذف هذا الخصم؟ – Remove this deduction?')) return;
+      if (!confirm('حذف؟ – Remove?')) return;
       google.script.run.withSuccessHandler(function () { loadWorkers(); }).withFailureHandler(function (e) { alert('خطأ – ' + (e && e.message || e)); }).aDedDel(KEY, PIN, t, id);
     }
     function addWorker() {
