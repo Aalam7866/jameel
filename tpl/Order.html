@@ -5,26 +5,26 @@
 <meta charset="utf-8">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f6f1e3; color: #222; font-size: 16px; }
+  body { font-family: 'IBM Plex Sans Arabic', system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f4f4f6; color: #222; font-size: 16px; }
   .card { max-width: 640px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 10px #0002; }
   h1 { font-size: 21px; margin: 0 0 2px; color: #8a6d00; }
-  h3 { margin: 0 0 10px; font-size: 18px; color: #0b5d4b; }
+  h3 { margin: 0 0 10px; font-size: 18px; color: #1f2a3a; }
   .muted { color: #777; font-size: 14px; }
   input, select, textarea { font: inherit; font-size: 17px; padding: 9px 10px; border: 2px solid #d9c27a; border-radius: 10px; width: 100%; background: #fff; }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: #0b5d4b; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #1f2a3a; }
   label.f { display: block; font-size: 14px; color: #555; margin: 8px 2px 3px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   button { font: inherit; font-size: 17px; padding: 11px 14px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
-  .b1 { background: #0b5d4b; color: #fff; } .b2 { background: #eee; color: #333; } .b3 { background: #bf9000; color: #fff; }
+  .b1 { background: #1f2a3a; color: #fff; } .b2 { background: #eee; color: #333; } .b3 { background: #b88a3e; color: #fff; }
   .wide { width: 100%; margin-top: 8px; }
-  .go { width: 100%; font-size: 21px; padding: 15px; background: #0b5d4b; color: #fff; }
+  .go { width: 100%; font-size: 21px; padding: 15px; background: #1f2a3a; color: #fff; }
   .go:disabled { background: #999; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row > * { flex: 1; }
   .res { border: 1px solid #eee; border-radius: 10px; margin-top: 8px; max-height: 300px; overflow: auto; }
   .res div { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-  .res div:active, .res div:hover { background: #f6f1e3; }
-  .chosen { background: #e8f5ee; border: 2px solid #0b5d4b; border-radius: 10px; padding: 10px; margin-top: 8px; }
+  .res div:active, .res div:hover { background: #f4f4f6; }
+  .chosen { background: #eceef3; border: 2px solid #1f2a3a; border-radius: 10px; padding: 10px; margin-top: 8px; }
   .line { border: 1px solid #eee; border-radius: 10px; padding: 8px; margin-top: 8px; }
   .line .t { font-weight: bold; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; }
   .line .x { background: #fde8e7; color: #b3261e; padding: 4px 10px; font-size: 15px; }
@@ -38,14 +38,14 @@
   table.tot { width: 100%; border-collapse: collapse; margin-top: 6px; }
   table.tot td { padding: 6px 4px; border-bottom: 1px solid #f0f0f0; }
   table.tot td:last-child { text-align: left; font-weight: bold; direction: ltr; }
-  .big { font-size: 22px; color: #0b5d4b; }
+  .big { font-size: 22px; color: #1f2a3a; }
   .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: bold; }
   .chk input { width: 24px; height: 24px; }
   #msg { white-space: pre-line; margin-top: 10px; font-size: 16px; }
   .err { color: #b3261e; font-weight: bold; }
   .mine td { padding: 7px 4px; border-bottom: 1px solid #eee; font-size: 15px; vertical-align: top; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-  .tag.new { background: #fff3cd; } .tag.saved { background: #d7f0df; color: #0b5d4b; } .tag.error { background: #fde8e7; color: #b3261e; }
+  .tag.new { background: #fff3cd; } .tag.saved { background: #d7f0df; color: #1f2a3a; } .tag.error { background: #fde8e7; color: #b3261e; }
   /* measurement sheet */
   #mo { display: none; position: fixed; inset: 0; background: #78909c; z-index: 10; flex-direction: column; }
   #mo .bar { display: flex; gap: 6px; padding: 8px; background: #fff; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 6px #0003; }
@@ -61,7 +61,7 @@
   #sheet .tl .ck { position: absolute; top: 2px; right: 4px; color: #1a7f37; font-weight: bold; display: none; }
   #sheet .tl.on .ck { display: block; }
   #sheet .tl .sq { position: absolute; top: 2px; left: 2px; padding: 1px 6px; border-radius: 5px; background: #eee; border: 1px solid #999; font-size: 12px; line-height: 1.4; }
-  #sheet .tl .sq.on { background: #0b5d4b; color: #fff; border-color: #0b5d4b; }
+  #sheet .tl .sq.on { background: #1f2a3a; color: #fff; border-color: #1f2a3a; }
   #sheet .tk { position: absolute; display: flex; align-items: center; justify-content: flex-start; gap: 6px; background: #fff; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 0 4px; }
   #sheet .tk span { white-space: nowrap; }
   #sheet .tk b { display: inline-flex; align-items: center; justify-content: center; border: 2px solid #333; background: #fff; color: #1a7f37; }
@@ -90,7 +90,7 @@
   .pko { border: 2px solid #ddd; border-radius: 8px; padding: 6px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 15px; }
   .pko img { max-height: 80px; max-width: 100%; }
   .pko span { font-size: 13px; color: #555; font-weight: bold; }
-  .pko.on { border-color: #1a7f37; background: #e8f5ee; }
+  .pko.on { border-color: #1a7f37; background: #eceef3; }
 </style>
 </head>
 <body>

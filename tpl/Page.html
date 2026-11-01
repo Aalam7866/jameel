@@ -6,16 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
-    --gold: #bf9000; --gold-light: #d4a520; --gold-bg: #fdf6e3;
-    --green: #0b5d4b; --green-light: #0d7a62; --red: #b3261e;
-    --bg: #f5f0e1; --card: #fff; --text: #1a1a1a; --muted: #777;
+    --gold: #b88a3e; --gold-light: #c99a4c; --gold-bg: #f6efe2;
+    --green: #1f2a3a; --green-light: #2c3a50; --red: #b3261e;
+    --bg: #f4f4f6; --card: #fff; --text: #1a1a1a; --muted: #777;
     --radius: 14px; --shadow: 0 2px 12px rgba(0,0,0,0.07);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, Tahoma, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'IBM Plex Sans Arabic', 'Segoe UI', system-ui, Tahoma, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* ─── HEADER ─── */
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 16px 16px 0; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .header { background: linear-gradient(135deg, #1f2a3a 0%, #2c3a50 100%); color: #fff; padding: 16px 16px 0; text-align: center; position: sticky; top: 0; z-index: 100; }
   .brand { letter-spacing: 4px; font-size: 13px; font-weight: 600; color: var(--gold-light); text-transform: uppercase; margin-bottom: 2px; }
   .brand-sub { font-size: 10px; color: #aaa; letter-spacing: 2px; }
   .header-profile { display: flex; align-items: center; gap: 12px; padding: 14px 4px 16px; text-align: right; }
@@ -26,7 +26,7 @@
   .header-role b { color: var(--gold-light); }
 
   /* ─── TABS ─── */
-  .tabs { display: flex; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 2px solid rgba(255,255,255,0.1); }
+  .tabs { display: flex; background: linear-gradient(135deg, #1f2a3a 0%, #2c3a50 100%); border-bottom: 2px solid rgba(255,255,255,0.1); }
   .tab { flex: 1; text-align: center; padding: 12px 6px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
   .tab.active { color: var(--gold-light); border-bottom-color: var(--gold-light); }
   .tab:hover { color: #ddd; }
@@ -55,19 +55,19 @@
   .labels span:first-child { flex: 3; text-align: center; } .labels span:last-child { flex: 1; text-align: center; }
   .item { margin-bottom: 10px; }
   .row { display: flex; gap: 8px; }
-  .row input { font-size: 20px; padding: 12px; border: 2px solid #e0d5c0; border-radius: 10px; text-align: center; min-width: 0; background: var(--gold-bg); transition: border-color 0.2s; outline: none; }
+  .row input { font-size: 20px; padding: 12px; border: 2px solid #e3e2e8; border-radius: 10px; text-align: center; min-width: 0; background: var(--gold-bg); transition: border-color 0.2s; outline: none; }
   .row input:focus { border-color: var(--gold); }
   .row .o { flex: 3; } .row .q { flex: 1; }
   .info { min-height: 18px; font-size: 14px; padding: 4px 4px 0; color: #555; }
   .info b { color: var(--green); } .info.bad, .info.bad b { color: var(--red); }
   .fitbox { display: block; margin: 6px 2px 0; padding: 10px 12px; border-radius: 10px; background: #fff8e7; border: 2px solid #e8d38a; font-size: 15px; font-weight: 600; }
   .fitbox input { width: 20px; height: 20px; vertical-align: middle; accent-color: var(--green); }
-  .pin { font-size: 20px; padding: 12px; border: 2px solid var(--green); border-radius: 10px; text-align: center; width: 100%; margin-top: 10px; background: #f0faf6; outline: none; }
+  .pin { font-size: 20px; padding: 12px; border: 2px solid var(--green); border-radius: 10px; text-align: center; width: 100%; margin-top: 10px; background: #f7f7f9; outline: none; }
   .pin:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(11,93,75,0.12); }
 
   /* ─── BUTTONS ─── */
   button { font-size: 16px; width: 100%; padding: 14px; border: 0; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-  .add { background: #f0ebe0; color: #555; margin-top: 6px; }
+  .add { background: #ecebef; color: #555; margin-top: 6px; }
   .add:active { background: #e4dece; }
   .go { background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%); color: #fff; font-size: 19px; margin-top: 10px; letter-spacing: 0.5px; }
   .go:active { transform: scale(0.98); }
@@ -78,19 +78,19 @@
   /* ─── TABLES ─── */
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th { padding: 8px 4px; text-align: center; background: var(--gold-bg); color: var(--gold); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #f0ebe0; }
+  td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #ecebef; }
   tr:last-child td { border-bottom: none; }
-  .total-row td { font-weight: 700; background: #f8f5ec; }
+  .total-row td { font-weight: 700; background: #f7f7f9; }
 
   /* ─── MONTH SELECTOR ─── */
-  select { font-size: 16px; padding: 10px 12px; width: 100%; border: 2px solid #e0d5c0; border-radius: 10px; background: var(--gold-bg); color: var(--text); margin-bottom: 14px; appearance: auto; outline: none; }
+  select { font-size: 16px; padding: 10px 12px; width: 100%; border: 2px solid #e3e2e8; border-radius: 10px; background: var(--gold-bg); color: var(--text); margin-bottom: 14px; appearance: auto; outline: none; }
   select:focus { border-color: var(--gold); }
 
   /* ─── MONTHLY DETAIL ─── */
-  .month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: linear-gradient(90deg, #f8f5ec, #fff); border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
+  .month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: linear-gradient(90deg, #f7f7f9, #fff); border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
   .month-header .amount { color: var(--gold); font-size: 18px; }
   .deduction-bar { padding: 10px 14px; background: #fff0f0; border-radius: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; color: var(--red); font-weight: 600; }
-  .net-bar { padding: 10px 14px; background: #f0faf6; border-radius: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; color: var(--green); font-weight: 700; font-size: 16px; }
+  .net-bar { padding: 10px 14px; background: #f7f7f9; border-radius: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; color: var(--green); font-weight: 700; font-size: 16px; }
   .work-item { padding: 12px 14px; background: #fafafa; border-radius: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border-right: 3px solid var(--gold); }
   .work-item .order { font-weight: 700; font-size: 15px; }
   .work-item .detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -111,7 +111,7 @@
 
   /* ─── FILTER PILLS ─── */
   .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; }
-  .pill { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 2px solid #e0d5c0; background: #fff; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+  .pill { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 2px solid #e3e2e8; background: #fff; color: var(--muted); cursor: pointer; transition: all 0.2s; }
   .pill.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 </style>
 </head>

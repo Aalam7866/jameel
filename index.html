@@ -1,3 +1,256 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Saudi Thobe</title><link rel="icon" href="/favicon.svg"><meta name="theme-color" content="#1f3a34"><link rel="apple-touch-icon" href="/img/icon-192.png">
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f1e3;font-family:system-ui,Tahoma,sans-serif;color:#1f3a34;text-align:center}a{color:#1f3a34}</style></head>
-<body><div><h1>Saudi Thobe</h1><p>جميل الهندام للخياطة الرجالية</p><p><a href="/app/">Owner login</a></p></div></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جميل الهندام للخياطة الرجالية – Jameel Al Hindam, Riyadh</title>
+<meta name="description" content="خياط جميل الهندام للخياطة الرجالية – تفصيل الثياب الصيفية والشتوية بقماش المحل أو بقماشك، حي السليمانية، الرياض. Jameel Al Hindam gents tailoring, Al Sulimaniyah, Riyadh.">
+<link rel="icon" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/img/icon-192.png">
+<meta name="theme-color" content="#1f2a3a">
+<meta property="og:title" content="جميل الهندام للخياطة الرجالية">
+<meta property="og:description" content="تفصيل الثياب الرجالية – الرياض، حي السليمانية">
+<meta property="og:image" content="https://saudithobe.best/img/icon-512.png">
+<link rel="stylesheet" href="/css/brand.css?v=1">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ClothingStore","name":"جميل الهندام للخياطة الرجالية","alternateName":"Jameel Al Hindam Gents Tailoring",
+ "telephone":"+966552178881","url":"https://saudithobe.best/","image":"https://saudithobe.best/img/icon-512.png",
+ "address":{"@type":"PostalAddress","streetAddress":"3540 شارع الأمير سلطان بن عبدالعزيز، حي السليمانية","addressLocality":"الرياض","postalCode":"12223","addressCountry":"SA"},
+ "taxID":"300473424600003","paymentAccepted":"Cash, Mada, Visa, Tabby, Tamara, STC Pay, Bank transfer","currenciesAccepted":"SAR"}
+</script>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--b-bg);color:var(--b-ink);font:400 16px/1.75 var(--b-font)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--b-gold);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.en{direction:ltr;unicode-bidi:isolate;font-family:var(--b-font)}
+p.en,span.en[style],.sub .en,.addr .en{text-align:right}
+
+/* header */
+.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--b-bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--b-line)}
+.top .wrap{display:flex;align-items:center;gap:14px;height:64px}
+.top img{height:38px;width:auto}
+.top .nm{font:600 18px/1.1 var(--b-display);flex:1}
+.top .nm small{display:block;font:500 11.5px/1.3 var(--b-font);color:var(--b-mute);letter-spacing:.02em}
+.top nav{display:flex;gap:4px}
+.top nav a{text-decoration:none;font-size:14.5px;padding:8px 12px;border-radius:8px;color:var(--b-ink)}
+.top nav a:hover{background:var(--b-line)}
+@media (max-width:720px){.top nav{display:none}}
+
+/* hero */
+.hero{background:var(--b-ink);color:#f3f1ec;position:relative;overflow:hidden}
+@media (prefers-color-scheme:dark){.hero{background:#0d1219}}
+.hero .wrap{display:grid;grid-template-columns:1.25fr .75fr;gap:40px;align-items:center;padding-top:72px;padding-bottom:64px}
+.hero h1{font:600 clamp(44px,7.4vw,84px)/1.05 var(--b-display);margin:0;color:#fff}
+.hero .act{font:500 clamp(19px,2.4vw,24px)/1.4 var(--b-display);color:var(--b-gold);margin:10px 0 0}
+.hero .en-name{font:500 14px/1.5 var(--b-font);letter-spacing:.14em;color:#b9bcc6;margin:18px 0 0}
+.hero p.lead{max-width:34em;color:#cfd2da;font-size:17px;margin:22px 0 0}
+.hero .mark{justify-self:center;width:min(300px,70%);filter:drop-shadow(0 18px 40px rgba(0,0,0,.35))}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+.btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font:600 15.5px/1 var(--b-font);padding:14px 20px;border-radius:10px;border:1.5px solid transparent;cursor:pointer}
+.btn svg{width:19px;height:19px;flex:none}
+.btn.gold{background:var(--b-gold);color:#1f2a3a}
+.btn.gold:hover{background:#c99a4c}
+.btn.line{border-color:rgba(255,255,255,.35);color:#fff}
+.btn.line:hover{border-color:#fff}
+@media (max-width:760px){.hero .wrap{grid-template-columns:1fr;padding-top:40px;gap:8px}.hero .mark{grid-row:1;width:150px;justify-self:start}}
+
+/* sections */
+section{padding:72px 0}
+section+section{border-top:1px solid var(--b-line)}
+h2{font:600 clamp(28px,3.6vw,38px)/1.25 var(--b-display);margin:0 0 6px}
+.sub{color:var(--b-mute);margin:0 0 34px;max-width:40em}
+.sub .en{display:block;font-size:14px}
+
+/* services: two lists side by side, read like a price board, not cards */
+.svc{display:grid;grid-template-columns:1fr 1fr;gap:0 56px}
+.svc div{padding:20px 0;border-bottom:1px solid var(--b-line);display:grid;grid-template-columns:1fr auto;gap:2px 16px;align-items:baseline}
+.svc h3{font:600 19px/1.4 var(--b-font);margin:0}
+.svc .tag{font-size:13.5px;color:var(--b-gold-ink);font-weight:600;white-space:nowrap}
+.svc p{grid-column:1/-1;margin:0;color:var(--b-mute);font-size:15px}
+@media (max-width:760px){.svc{grid-template-columns:1fr}}
+
+/* the way an order goes – a real sequence, so it is numbered */
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);counter-reset:s;position:relative}
+.steps:before{content:"";position:absolute;inset-inline:8%;top:27px;height:2px;background:repeating-linear-gradient(90deg,var(--b-silver) 0 6px,transparent 6px 11px)}
+.steps li{counter-increment:s;text-align:center;padding:0 8px;position:relative}
+.steps li:before{content:counter(s);display:grid;place-items:center;width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:var(--b-card);border:2px solid var(--b-gold);font:600 22px/1 var(--b-display);color:var(--b-gold-ink);position:relative}
+.steps b{display:block;font-size:17px;font-weight:600}
+.steps span{display:block;color:var(--b-mute);font-size:14px;line-height:1.6;margin-top:4px}
+@media (max-width:860px){.steps{grid-template-columns:1fr;gap:18px}.steps:before{inset-inline:auto;right:27px;top:20px;bottom:20px;width:2px;height:auto;background:repeating-linear-gradient(180deg,var(--b-silver) 0 6px,transparent 6px 11px)}
+  .steps li{display:grid;grid-template-columns:56px 1fr;gap:4px 16px;text-align:start;padding:0}.steps li:before{margin:0;grid-row:span 2}.steps b{align-self:end}}
+
+/* design choices – the shop's own drawings from the measurement page */
+.design{display:grid;grid-template-columns:repeat(3,1fr);gap:28px 40px}
+.design h3{font:600 17px/1.4 var(--b-font);margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--b-gold)}
+.design ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.design li{display:flex;align-items:center;gap:12px;font-size:15px}
+.design li img{width:84px;height:44px;object-fit:contain;background:#fff;border:1px solid var(--b-line);border-radius:6px;padding:3px}
+@media (max-width:860px){.design{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.design{grid-template-columns:1fr}}
+
+.fab{display:flex;flex-wrap:wrap;gap:10px 12px;margin:0;padding:0;list-style:none}
+.fab li{padding:10px 16px;border:1px solid var(--b-line);background:var(--b-card);border-radius:999px;font-size:15px}
+.pay{margin-top:40px;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline;color:var(--b-mute);font-size:15px}
+.pay b{color:var(--b-ink);font-weight:600}
+
+/* visit */
+.visit{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start}
+.addr{font-style:normal;font-size:18px;line-height:1.9}
+.addr .en{display:block;color:var(--b-mute);font-size:14.5px;line-height:1.7;margin-top:8px}
+dl.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:12px 22px;font-size:16px}
+dl.facts dt{color:var(--b-mute)}
+dl.facts dd{margin:0;font-weight:500}
+.visit .cta .btn.ink{background:var(--b-ink);color:var(--b-card)}
+.visit .cta .btn.ghost{border-color:var(--b-line);color:var(--b-ink);background:var(--b-card)}
+@media (max-width:760px){.visit{grid-template-columns:1fr;gap:28px}}
+
+footer{background:var(--b-ink);color:#b9bcc6;font-size:13.5px}
+@media (prefers-color-scheme:dark){footer{background:#0d1219}}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;padding-top:26px;padding-bottom:26px}
+footer .legal{flex:1;display:flex;flex-wrap:wrap;gap:6px 22px}
+footer a{color:#e6e3dc;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:7px 14px;border-radius:8px}
+footer a:hover{border-color:#fff}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="/img/logo-240.png" alt="" width="33" height="38">
+    <div class="nm">جميل الهندام<small>للخياطة الرجالية – الرياض</small></div>
+    <nav aria-label="الأقسام">
+      <a href="#services">الخدمات</a>
+      <a href="#steps">مراحل الطلب</a>
+      <a href="#design">التصاميم</a>
+      <a href="#visit">زورونا</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1>جميل الهندام</h1>
+      <p class="act">للخياطة الرجالية</p>
+      <p class="en-name en">JAMEEL AL HINDAM GENTS TAILORING</p>
+      <p class="lead">نفصّل الثوب السعودي على مقاسك – صيفي وشتوي، بقماش المحل أو بقماشك، مع اختيار الياقة والكبك والجيب. كل غرزة تحكي قصة.</p>
+      <div class="cta">
+        <a class="btn gold" href="https://wa.me/966552178881"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>واتساب</a>
+        <a class="btn line" href="tel:+966552178881"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span class="en">055 217 8881</span></a>
+        <a class="btn line" href="#visit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>الموقع</a>
+      </div>
+    </div>
+    <img class="mark" src="/img/logo-mark.png" alt="شعار جميل الهندام">
+  </div>
+  <div class="b-tape" aria-hidden="true"></div>
+</div>
+
+<section id="services">
+  <div class="wrap">
+    <h2>ماذا نفصّل</h2>
+    <p class="sub">ثياب رجالية بالمقاس، يُؤخذ مقاسك مرة ويُحفظ لطلباتك القادمة.<span class="en">Made-to-measure thobes. Your measurements are kept for your next order.</span></p>
+    <div class="svc">
+      <div><h3>تفصيل ثوب بقماش المحل</h3><span class="tag">صيفي وشتوي</span><p>تختار القماش من المحل – ياباني، سندس، أبيكس، مشاهير المملكة وغيرها.</p></div>
+      <div><h3>تفصيل ثوب بقماشك</h3><span class="tag">قماش خارجي</span><p>أحضر قماشك ونحن نفصّله على مقاسك بنفس العناية.</p></div>
+      <div><h3>البروفة</h3><span class="tag">عند الطلب</span><p>تجربة الثوب قبل الإنهاء، ونعدّل حتى يكون المقاس كما تريد.</p></div>
+      <div><h3>التطريز</h3><span class="tag">نماذج متعددة</span><p>تطريز الياقة والكبك والجيب بنماذج تختارها عند الطلب.</p></div>
+      <div><h3>التعديلات</h3><span class="tag">لثيابنا</span><p>نعدّل الثوب بعد التجربة حتى يناسب مقاسك تمامًا.</p></div>
+      <div><h3>رسالة عند الجاهزية</h3><span class="tag">واتساب</span><p>نرسل لك على واتساب عند جاهزية طلبك أو البروفة.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="steps">
+  <div class="wrap">
+    <h2>مراحل طلبك</h2>
+    <p class="sub">كل ثوب يمر على أيدٍ متخصصة، من المقاس حتى التسليم.<span class="en">Every thobe passes through specialist hands, from measuring to handover.</span></p>
+    <ol class="steps">
+      <li><b>المقاس</b><span>نأخذ مقاسك ونحفظه</span></li>
+      <li><b>القماش والتصميم</b><span>الياقة، الكبك، الجيب</span></li>
+      <li><b>القص</b><span>على يد معلم القص</span></li>
+      <li><b>الخياطة</b><span>والتطريز إن طلبته</span></li>
+      <li><b>البروفة</b><span>تجربة وتعديل عند الطلب</span></li>
+      <li><b>التسليم</b><span>رسالة واتساب عند الجاهزية</span></li>
+    </ol>
+  </div>
+</section>
+
+<section id="design">
+  <div class="wrap">
+    <h2>اختر تصميم ثوبك</h2>
+    <p class="sub">هذه الخيارات من صفحة المقاسات في المحل نفسها.<span class="en">The same choices our tailors mark on your measurement sheet.</span></p>
+    <div class="design">
+      <div><h3>الياقة</h3><ul>
+        <li><img src="/img/d7/D7_C1.png" alt="" loading="lazy">باين</li>
+        <li><img src="/img/d7/D7_C2.png" alt="" loading="lazy">مخفي</li>
+        <li><img src="/img/d7/D7_C3.png" alt="" loading="lazy">سحاب</li></ul></div>
+      <div><h3>الكبك</h3><ul>
+        <li><img src="/img/d7/D7_S1.png" alt="" loading="lazy">بدون كسر</li>
+        <li><img src="/img/d7/D7_S2.png" alt="" loading="lazy">مربع</li>
+        <li><img src="/img/d7/D7__S3.png" alt="" loading="lazy">مشطوف</li>
+        <li><img src="/img/d7/D7_S4.png" alt="" loading="lazy">مدور</li></ul></div>
+      <div><h3>الجيب</h3><ul>
+        <li><img src="/img/d7/D7_D3.png" alt="" loading="lazy">عادي</li>
+        <li><img src="/img/d7/D7_D2.png" alt="" loading="lazy">مدور</li>
+        <li><img src="/img/d7/D7_D1.png" alt="" loading="lazy">مربع</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="fabrics">
+  <div class="wrap">
+    <h2>أقمشة يطلبها عملاؤنا</h2>
+    <p class="sub">الأكثر طلبًا في المحل – الألوان والأنواع المتوفرة تختلف حسب الموسم.<span class="en">Our customers' most-ordered fabrics. Colours and stock change with the season.</span></p>
+    <ul class="fab">
+      <li>السندس الأبيض – أبيض وكريمي</li>
+      <li>أبيكس جديعي</li>
+      <li>مشاهير المملكة</li>
+      <li>سميراميس</li>
+      <li>الهندام ياباني</li>
+      <li>الجاذبية المطلقة</li>
+      <li>سر الأناقة</li>
+    </ul>
+    <div class="pay"><b>طرق الدفع</b><span>نقدًا</span><span>مدى</span><span>فيزا</span><span>تابي</span><span>تمارا</span><span>STC Pay</span><span>تحويل بنكي</span></div>
+  </div>
+</section>
+
+<section id="visit">
+  <div class="wrap visit">
+    <div>
+      <h2>زورونا</h2>
+      <address class="addr">
+        شارع الأمير سلطان بن عبدالعزيز، مبنى 3540<br>حي السليمانية، الرياض 12223<br>الرقم الإضافي 7666
+        <span class="en">3540 Prince Sultan bin Abdulaziz St, Al Sulimaniyah, Riyadh 12223, Saudi Arabia</span>
+      </address>
+      <div class="cta">
+        <a class="btn ink" href="https://www.google.com/maps/search/?api=1&amp;query=%D8%AC%D9%85%D9%8A%D9%84%20%D8%A7%D9%84%D9%87%D9%86%D8%AF%D8%A7%D9%85%20%D9%84%D9%84%D8%AE%D9%8A%D8%A7%D8%B7%D8%A9%20%D8%A7%D9%84%D8%B1%D8%AC%D8%A7%D9%84%D9%8A%D8%A9%20%D8%B4%D8%A7%D8%B1%D8%B9%20%D8%A7%D9%84%D8%A3%D9%85%D9%8A%D8%B1%20%D8%B3%D9%84%D8%B7%D8%A7%D9%86%20%D8%A7%D9%84%D8%B3%D9%84%D9%8A%D9%85%D8%A7%D9%86%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6" target="_blank" rel="noopener">افتح في خرائط Google</a>
+        <a class="btn ghost" href="https://wa.me/966552178881">راسلنا على واتساب</a>
+      </div>
+    </div>
+    <dl class="facts">
+      <dt>الهاتف</dt><dd><a class="en" href="tel:+966552178881">+966 55 217 8881</a></dd>
+      <dt>واتساب</dt><dd><a class="en" href="https://wa.me/966552178881">+966 55 217 8881</a></dd>
+      <dt>الإجازة</dt><dd>يوم الجمعة</dd>
+      <dt>التسليم</dt><dd>نحدد لك موعد التسليم عند الطلب، ونرسل لك رسالة عند الجاهزية</dd>
+    </dl>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="legal">
+      <span>© جميل الهندام للخياطة الرجالية</span>
+      <span>السجل التجاري <span class="en">7036873441</span></span>
+      <span>الرقم الضريبي <span class="en">300473424600003</span></span>
+    </div>
+    <a href="/app/">دخول الإدارة</a>
+  </div>
+</footer>
+</body>
+</html>

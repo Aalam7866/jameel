@@ -1,0 +1,42 @@
+/* Jameel Al Hindam – brand tokens shared by every page.
+   Colours come from the shop's own logo: the gold calligraphy and the silver tape measure, on thread navy. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap');
+
+:root {
+  --b-ink: #1f2a3a;        /* thread navy – text, primary buttons, headers */
+  --b-ink-2: #2c3a50;
+  --b-gold: #b88a3e;       /* logo gold – highlights, active marks */
+  --b-gold-ink: #8a6424;   /* gold that reads on white */
+  --b-gold-soft: #f6efe2;
+  --b-silver: #c7c5cc;     /* the tape measure */
+  --b-line: #e3e2e8;
+  --b-bg: #f4f4f6;
+  --b-card: #ffffff;
+  --b-mute: #646b78;
+  --b-ok: #1f7a46; --b-ok-soft: #e3f3e9;
+  --b-bad: #b3261e; --b-bad-soft: #fbe9e7;
+  --b-warn: #9a5b00; --b-warn-soft: #fbf0dc;
+  --b-font: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --b-display: 'Reem Kufi', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --b-ink: #e9e7e1; --b-ink-2: #d6d3cb;
+    --b-gold: #d2a65a; --b-gold-ink: #dcb26a; --b-gold-soft: #2c2619;
+    --b-silver: #6d6b74; --b-line: #2b3240; --b-bg: #12171f; --b-card: #1a212c; --b-mute: #a3a9b4;
+    --b-ok: #79c99a; --b-ok-soft: #173325; --b-bad: #ef8a83; --b-bad-soft: #3d1d1b; --b-warn: #e7a35e; --b-warn-soft: #3a2a18;
+  }
+}
+
+/* the tape measure: a silver strip with centimetre ticks – the one ornament the brand uses */
+.b-tape {
+  height: 22px;
+  background:
+    repeating-linear-gradient(90deg, var(--b-ink) 0 1px, transparent 1px 10px) 0 0 / 100% 7px no-repeat,
+    repeating-linear-gradient(90deg, var(--b-ink) 0 1.5px, transparent 1.5px 50px) 0 0 / 100% 12px no-repeat,
+    linear-gradient(180deg, #e2e1e6, var(--b-silver));
+  border-top: 1px solid rgba(0, 0, 0, .12);
+  border-bottom: 1px solid rgba(0, 0, 0, .18);
+  opacity: .9;
+}
+.b-tape.thin { height: 6px; background: repeating-linear-gradient(90deg, var(--b-gold) 0 1px, transparent 1px 8px) 0 0 / 100% 6px no-repeat, var(--b-line); border: 0; opacity: 1; }

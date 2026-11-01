@@ -5,65 +5,65 @@
 <meta charset="utf-8">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #eef5f3; color: #222; font-size: 16px; }
+  body { font-family: 'IBM Plex Sans Arabic', system-ui, Tahoma, sans-serif; margin: 0; padding: 12px; background: #f4f4f6; color: #222; font-size: 16px; }
   .card { max-width: 640px; margin: 0 auto 12px; background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 2px 10px #0002; }
   .card.big { max-width: 1250px; }
-  h1 { font-size: 21px; margin: 0; color: #0e6b5c; }
-  h3 { margin: 0 0 8px; color: #0e6b5c; font-size: 17px; }
+  h1 { font-size: 21px; margin: 0; color: #1f2a3a; }
+  h3 { margin: 0 0 8px; color: #1f2a3a; font-size: 17px; }
   .muted { color: #777; font-size: 13px; }
   button { font: inherit; font-size: 16px; padding: 10px 12px; border: 0; border-radius: 10px; font-weight: bold; cursor: pointer; }
-  .go { background: #0e6b5c; color: #fff; } .sec { background: #e3efec; color: #0e6b5c; } .gold { background: #fff3cd; color: #7a5b00; }
+  .go { background: #1f2a3a; color: #fff; } .sec { background: #eceef3; color: #1f2a3a; } .gold { background: #fff3cd; color: #7a5b00; }
   .wide { width: 100%; margin-top: 8px; }
   input, select { font: inherit; font-size: 17px; padding: 9px; border: 2px solid #9fc9bf; border-radius: 9px; width: 100%; box-sizing: border-box; background: #fff; }
-  input:focus, select:focus { border-color: #0e6b5c; outline: none; }
+  input:focus, select:focus { border-color: #1f2a3a; outline: none; }
   .pin { text-align: center; font-size: 24px; }
   .tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
-  .tabs button { flex: 1; min-width: 60px; font-size: 14px; padding: 9px 6px; background: #e3efec; color: #0e6b5c; }
-  .tabs button.on { background: #0e6b5c; color: #fff; }
+  .tabs button { flex: 1; min-width: 60px; font-size: 14px; padding: 9px 6px; background: #eceef3; color: #1f2a3a; }
+  .tabs button.on { background: #1f2a3a; color: #fff; }
   table { width: 100%; border-collapse: collapse; font-size: 15px; }
   td { padding: 6px 3px; border-bottom: 1px solid #eee; vertical-align: top; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; }
   .badge.w { background: #fff3cd; } .badge.ok { background: #c8e6c9; color: #1a7f37; } .badge.bad { background: #fde8e7; color: #b3261e; }
   .on-t { color: #1a7f37; font-weight: bold; } .off-t { color: #b3261e; font-weight: bold; }
   .new { animation: flash 2s 3; } @keyframes flash { 50% { background: #fff3cd; } }
-  #banner { display: none; position: sticky; top: 0; z-index: 5; max-width: 640px; margin: 0 auto 12px; background: #0e6b5c; color: #fff;
+  #banner { display: none; position: sticky; top: 0; z-index: 5; max-width: 640px; margin: 0 auto 12px; background: #1f2a3a; color: #fff;
             border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 14px #0004; white-space: pre-line; font-weight: bold; }
-  #banner button { margin-top: 8px; background: #fff; color: #0e6b5c; padding: 7px 12px; font-size: 15px; }
+  #banner button { margin-top: 8px; background: #fff; color: #1f2a3a; padding: 7px 12px; font-size: 15px; }
   .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #eee; border-radius: 10px; max-height: 70vh; overflow-y: auto; }
   table.st { border-collapse: collapse; min-width: 980px; font-size: 14px; }
-  table.st th { position: sticky; top: 0; background: #0e6b5c; color: #fff; padding: 8px 6px; white-space: nowrap; font-weight: bold; z-index: 1; }
+  table.st th { position: sticky; top: 0; background: #1f2a3a; color: #fff; padding: 8px 6px; white-space: nowrap; font-weight: bold; z-index: 1; }
   table.st td { padding: 6px; border-bottom: 1px solid #eee; white-space: nowrap; text-align: center; }
   table.st td.l { text-align: right; }
-  table.st tr:nth-child(even) td { background: #f5f9f8; }
-  .c-ok { color: #1a7f37; font-weight: bold; } .c-part { color: #a87400; font-weight: bold; } .c-no { color: #999; } .c-late { color: #b3261e; font-weight: bold; }
-  button.act { font-size: 15px; padding: 6px 10px; background: #bf9000; color: #fff; border-radius: 8px; white-space: nowrap; }
-  button.act.wait { background: #eee; color: #a87400; }
+  table.st tr:nth-child(even) td { background: #f7f7f9; }
+  .c-ok { color: #1a7f37; font-weight: bold; } .c-part { color: #8a6424; font-weight: bold; } .c-no { color: #999; } .c-late { color: #b3261e; font-weight: bold; }
+  button.act { font-size: 15px; padding: 6px 10px; background: #b88a3e; color: #fff; border-radius: 8px; white-space: nowrap; }
+  button.act.wait { background: #eee; color: #8a6424; }
   #dlg { display: none; position: fixed; inset: 0; z-index: 10; background: #0007; overflow-y: auto; padding: 16px 10px; }
   #dlg .card { max-width: 460px; margin: 0 auto; }
   #dlg label { display: block; margin: 10px 0 4px; font-weight: bold; font-size: 15px; }
-  #dlg input, #dlg select { border-color: #bf9000; text-align: center; font-size: 19px; }
-  .seg { display: flex; gap: 8px; } .seg button { flex: 1; } .seg button.on { background: #0e6b5c; color: #fff; }
-  .sum { background: #f5f9f8; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
+  #dlg input, #dlg select { border-color: #b88a3e; text-align: center; font-size: 19px; }
+  .seg { display: flex; gap: 8px; } .seg button { flex: 1; } .seg button.on { background: #1f2a3a; color: #fff; }
+  .sum { background: #f7f7f9; border-radius: 10px; padding: 8px 10px; font-size: 15px; line-height: 1.7; }
   .sum b { font-size: 17px; } .warn { color: #b3261e; font-weight: bold; white-space: pre-line; margin-top: 8px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
-  .tile { background: #f5f9f8; border-radius: 10px; padding: 8px 4px; text-align: center; }
-  .tile b { display: block; font-size: 22px; color: #0e6b5c; } .tile span { font-size: 12px; color: #555; }
-  .rate-row { display: flex; align-items: center; gap: 10px; background: #f5f9f8; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+  .tile { background: #f7f7f9; border-radius: 10px; padding: 8px 4px; text-align: center; }
+  .tile b { display: block; font-size: 22px; color: #1f2a3a; } .tile span { font-size: 12px; color: #555; }
+  .rate-row { display: flex; align-items: center; gap: 10px; background: #f7f7f9; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
   .rate-row label { flex: 1; font-weight: bold; font-size: 15px; white-space: nowrap; }
   .rate-row input { width: 120px; flex: none; font-size: 22px; font-weight: bold; text-align: center; }
   .rate-ok { background: #c8e6c9; color: #1a7f37; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
   .rate-err { background: #fde8e7; color: #b3261e; border-radius: 10px; padding: 10px; margin-top: 8px; font-weight: bold; text-align: center; }
-  .wcard { border: 1px solid #e3efec; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .wcard { border: 1px solid #eceef3; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
   .wcard .winfo { flex: 1; }
-  .wcard b { font-size: 16px; color: #0e6b5c; }
+  .wcard b { font-size: 16px; color: #1f2a3a; }
   .wcard .wkind { font-size: 13px; color: #777; }
   .wlink { display: block; font-size: 12px; color: #999; margin-top: 4px; word-break: break-all; cursor: pointer; }
-  .wlink:active { color: #0e6b5c; }
-  .wadd { background: #f5f9f8; border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .wlink:active { color: #1f2a3a; }
+  .wadd { background: #f7f7f9; border-radius: 10px; padding: 12px; margin-top: 10px; }
   .wadd input, .wadd select { margin-bottom: 8px; }
   .wkinds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   .wkinds label { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #d6e5e1; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 15px; }
-  .wkinds input { width: 18px; height: 18px; accent-color: #0e6b5c; margin: 0; }
+  .wkinds input { width: 18px; height: 18px; accent-color: #1f2a3a; margin: 0; }
   .wmonth { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .wmonth input { max-width: 190px; margin: 0; }
   .wk.off { opacity: .7; }
@@ -71,16 +71,16 @@
   @media (max-width: 520px) { .sbar { flex-direction: column; } .sbar #sqo { flex: none; } }
   .wsearch input { font-size: 17px; margin: 10px 0 0; }
   .wot { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .wot th, .wot td { border-bottom: 1px solid #e3efec; padding: 5px 4px; text-align: center; }
+  .wot th, .wot td { border-bottom: 1px solid #eceef3; padding: 5px 4px; text-align: center; }
   .wot th { font-size: 12px; color: #777; }
   .wtop { display: flex; align-items: center; gap: 10px; }
-  .wtop .av { width: 42px; height: 42px; border-radius: 50%; background: #0e6b5c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex: none; }
-  .wtop .winfo { flex: 1; min-width: 0; } .wtop b { font-size: 17px; color: #0e6b5c; } .wkind { font-size: 13px; color: #777; }
+  .wtop .av { width: 42px; height: 42px; border-radius: 50%; background: #1f2a3a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex: none; }
+  .wtop .winfo { flex: 1; min-width: 0; } .wtop b { font-size: 17px; color: #1f2a3a; } .wkind { font-size: 13px; color: #777; }
   .wsum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 6px; }
-  .wsum div { background: #f5f9f8; border-radius: 10px; padding: 8px 4px; text-align: center; font-weight: bold; font-size: 15px; }
+  .wsum div { background: #f7f7f9; border-radius: 10px; padding: 8px 4px; text-align: center; font-weight: bold; font-size: 15px; }
   .wsum span { display: block; font-size: 11px; color: #777; font-weight: normal; }
-  .wk details { margin: 6px 0; } .wk summary { cursor: pointer; color: #0e6b5c; font-weight: bold; font-size: 14px; }
-  .wrow { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #e3efec; padding: 5px 0; font-size: 14px; }
+  .wk details { margin: 6px 0; } .wk summary { cursor: pointer; color: #1f2a3a; font-weight: bold; font-size: 14px; }
+  .wrow { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #eceef3; padding: 5px 0; font-size: 14px; }
   .wx { padding: 2px 8px; font-size: 12px; }
   .wbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .wbtns button, .wbtns .btnl { font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 0; cursor: pointer; text-decoration: none; display: inline-block; }
@@ -88,7 +88,7 @@
   .wbtns .bad { background: #fde8e7; color: #b3261e; }
 
   /* ---- Shop Online ---- */
-  #shopFrame { display: block; width: 100%; height: calc(100vh - 16px); height: calc(100dvh - 16px); border: 0; border-radius: 14px; background: #f4f1ea; }
+  #shopFrame { display: block; width: 100%; height: calc(100vh - 16px); height: calc(100dvh - 16px); border: 0; border-radius: 14px; background: #f4f4f6; }
 </style>
 </head>
 <body>
@@ -149,8 +149,8 @@
     <div id="p2" style="display:none">
       <div class="card big">
         <div class="sbar">
-          <input id="sqo" type="search" inputmode="numeric" style="border-color:#0e6b5c" placeholder="🔢 رقم الطلب فقط – order no only">
-          <input id="sq" type="search" style="border-color:#bf9000" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
+          <input id="sqo" type="search" inputmode="numeric" style="border-color:#1f2a3a" placeholder="🔢 رقم الطلب فقط – order no only">
+          <input id="sq" type="search" style="border-color:#b88a3e" placeholder="🔎 رقم الطلب أو الجوال أو الاسم – order no / mobile / name">
         </div>
         <div id="scount" class="muted" style="margin:6px 2px"></div>
         <div class="tw"><table class="st" id="stable"></table></div>
@@ -167,7 +167,7 @@
           <div id="wEmpMore"></div>
           <input id="wName" placeholder="اسم العامل / Worker name">
           <input id="wPhone" inputmode="tel" placeholder="الجوال / Mobile 05xxxxxxxx" style="direction:ltr;text-align:right">
-          <div style="margin:4px 0;font-weight:bold;font-size:15px;color:#0e6b5c">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
+          <div style="margin:4px 0;font-weight:bold;font-size:15px;color:#1f2a3a">نوع العمل / Work type <span class="muted" style="font-weight:normal">(يمكن اختيار أكثر من واحد)</span></div>
           <div id="wKinds" class="wkinds"></div>
           <button class="go wide" onclick="addWorker()">إضافة / Add</button>
           <div id="wMsg"></div>
@@ -463,7 +463,7 @@
       done = Number(done) || 0; total = Number(total) || 0;
       if (!total) return '<td class="c-no">–</td>';
       var c = done >= total ? 'c-ok' : done > 0 ? 'c-part' : 'c-no';
-      return '<td class="' + c + '"><span dir="ltr">' + done + ' / ' + total + (pend ? ' <span style="color:#a87400;font-size:12px">+' + pend + '</span>' : '') + '</span></td>';
+      return '<td class="' + c + '"><span dir="ltr">' + done + ' / ' + total + (pend ? ' <span style="color:#8a6424;font-size:12px">+' + pend + '</span>' : '') + '</span></td>';
     }
     var STAT = { 'Delivered': ['c-ok', 'Delivered'], 'Ready': ['c-ok', 'Ready'], 'Stitched': ['c-ok', 'Stitched'], 'Partly delivered': ['c-part', 'Partly delivered'],
                  'In progress': ['c-part', 'In progress'], 'Pending': ['c-no', 'Not started'] };
@@ -704,7 +704,7 @@
         var tot = {}; rows.forEach(function (r) { if (r.st !== 'wip') tot[r.kind] = (tot[r.kind] || 0) + r.q; });
         var ST = { ok: '<span class="badge ok">✔</span>', wait: '<span class="badge w" title="بانتظار المحل – waiting for the shop">⏳</span>', wip: '<span class="badge" style="background:#e3ecf8;color:#1f4e8c" title="قيد العمل – in work">🔄</span>' };
         box.innerHTML = '<div class="card" style="margin:8px 0;padding:10px"><b>طلب / Order #' + esc(no) + '</b>' +
-          '<div style="margin:6px 0">' + Object.keys(tot).sort(function (a, b) { return KORDER.indexOf(a) - KORDER.indexOf(b); }).map(function (k) { return '<span class="badge" style="background:#e3efec;margin:2px">' + (WKINDS[k] || esc(k)) + ' ' + tot[k] + '</span>'; }).join('') + '</div>' +
+          '<div style="margin:6px 0">' + Object.keys(tot).sort(function (a, b) { return KORDER.indexOf(a) - KORDER.indexOf(b); }).map(function (k) { return '<span class="badge" style="background:#eceef3;margin:2px">' + (WKINDS[k] || esc(k)) + ' ' + tot[k] + '</span>'; }).join('') + '</div>' +
           '<table class="wot"><tr><th>العمل<br>Work</th><th>العامل<br>Worker</th><th>القطع<br>Pcs</th><th>التاريخ<br>Date</th><th></th></tr>' +
           rows.map(function (r) { return '<tr><td>' + (WKINDS[r.kind] || esc(r.kind)) + '</td><td>' + esc(r.name) + '</td><td>' + r.q + (r.fit ? ' <small>(بروفة)</small>' : '') + '</td><td>' + esc(day(r.d)) + '</td><td>' + ST[r.st] + '</td></tr>'; }).join('') +
           '</table><div class="muted" style="font-size:12px;margin-top:4px">✔ محفوظ في المحل – saved · ⏳ بانتظار المحل – waiting for the shop · 🔄 قيد العمل – in work</div></div>';
