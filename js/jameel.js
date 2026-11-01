@@ -142,7 +142,7 @@ async function myStats(token, ak) {
   return J(w.stats, null) || { months: [], work: [], alts: [] };
 }
 
-async function submit(token, rows, pin, ak) {
+async function submit(token, rows, pin, ak, day) {
   const w = await worker(String(token || '').trim());
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
   const kind = activeKindOf(w, ak);
@@ -181,7 +181,7 @@ async function submit(token, rows, pin, ak) {
   }
   if (errors.length) return { ok: false, msg: 'لم يتم التحويل – Nothing saved:\n' + errors.join('\n') };
   const ph = w.pin ? await sha256('tspin:' + w.emp + ':' + String(pin || '').trim()) : null;
-  const b = writeBatch(db), d = workDay(), notes = [];
+  const b = writeBatch(db), d = day || workDay(), notes = [];
   for (const c of clean) {
     const e = { emp: empFor(w, kind), name: w.name, kind, o: Number(c.o), q: c.q, fit: c.fit ? 1 : 0, st: 'new', ts: serverTimestamp(), d };
     if (ph) e.ph = ph;
@@ -273,6 +273,20 @@ export async function kDone(token, kind, order, qty, fit, pin) {
   if (!a) return { ok: false, msg: 'طلب ' + o + ': غير موجود – not found' };
   if (q + (fit ? 1 : 0) > a.avail) return { ok: false, msg: 'طلب ' + o + ': المتاح ' + a.avail + ' فقط – only ' + a.avail + ' pcs free' };
   return submit(token, [{ order: o, qty: q, fit: !!fit }], pin, kind);
+}
+// Hinge / Embroidery: work done on an earlier day that the worker forgot to send then – saved under that day
+export const PAST_KINDS = ['HINGE', 'EMBROIDERY'];
+export async function kPast(token, kind, order, qty, day, pin) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  kind = activeKindOf(w, kind);
+  if (!PAST_KINDS.includes(kind)) return { ok: false, msg: 'للزرار والتطريز فقط – Hinge and embroidery only' };
+  const today = workDay(), min = new Date(Date.parse(today + 'T00:00:00Z') - 60 * 864e5).toISOString().slice(0, 10);
+  day = String(day || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > today || day < min) return { ok: false, msg: 'التاريخ؟ آخر 60 يوماً فقط – Date? Last 60 days only' };
+  const q = Math.floor(Number(qty)) || 0;
+  if (q < 1) return { ok: false, msg: 'العدد؟ – qty?' };
+  return submit(token, [{ order: orderKey(order), qty: q, fit: false }], pin, kind, day);
 }
 export async function kFinish(token, id, pin) {
   const w = await worker(token);

@@ -87,13 +87,15 @@ label.chk{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-weight:60
 label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 .g{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:var(--bg)}
 :focus-visible{outline:2px solid #b88a3e;outline-offset:2px}
+.card.past{border-inline-start:4px solid #b88a3e}.card.past summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px}.card.past summary::-webkit-details-marker{display:none}
+.pgrid{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}.pgrid label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}.pgrid label.wide{grid-column:1/-1}.pgrid .inp{font-size:18px;min-height:48px;width:100%;flex:none}.pgrid label{min-width:0}
 </style>
 </head>
 <body>
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork } from '/js/jameel.js?v=15';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, PAST_KINDS } from '/js/jameel.js?v=16';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -111,7 +113,7 @@ if (MOVING) location.replace(HOME(tok));
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
 let me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], orders = {}, found = null, findMsg = '', busy = false;
-let olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
+let pastOpen = false, pastMsg = null, olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
 try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
 
 function el(tag, a, kids) {
@@ -250,6 +252,7 @@ function drawAdd(main) {
     el('div', { class: 'row' }, [inp, el('button', { class: 'btn acc', type: 'button', text: '🔍 ' + L('بحث', 'Find'), onclick: () => find(inp.value) })]),
     el('button', { class: 'btn line', type: 'button', style: 'width:100%;margin-top:8px;min-height:54px;font-size:18px', text: '📷 ' + L('مسح الباركود', 'Scan barcode'), onclick: scan }),
     findMsg ? el('p', { class: 'msg err', text: findMsg }) : null]));
+  if (PAST_KINDS.includes(kind) && !found) drawPast(main);
   if (!open) { main.appendChild(el('p', { class: 'muted', text: L('جاري تحميل الطلبات…', 'Loading orders…') })); return; }
   if (found) return drawFound(main);
   drawOpen(main);
@@ -263,6 +266,39 @@ function dueOf(o) { const x = orders[String(o)] || {}; return d10(x.delivery_dat
 const FROM_BOOKING = '2026-10-01';
 function recent(o) { const b = d10((orders[String(o)] || {}).booking_date); return !b || b >= FROM_BOOKING; }
 function d10(s) { return String(s || '').slice(0, 10); }
+// forgot to send it that day (Hinge / Embroidery only): any order, an earlier day
+function drawPast(main) {
+  const td = today(), min = new Date(Date.parse(td + 'T00:00:00Z') - 60 * 864e5).toISOString().slice(0, 10);
+  const yd = new Date(Date.parse(td + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10);
+  const det = el('details', { class: 'card past' }); if (pastOpen) det.setAttribute('open', '');
+  det.addEventListener('toggle', () => { pastOpen = det.open; });
+  det.appendChild(el('summary', null, [el('b', { text: '🕘 ' + L('نسيت تسجيل عمل سابق؟', 'Forgot to add earlier work?') }),
+    el('span', { class: 'small muted', text: kName(kind) + ' · ' + L('أي طلب، أي يوم في آخر 60 يوماً', 'any order, any day in the last 60 days') })]));
+  const o = el('input', { class: 'inp', inputmode: 'numeric', autocomplete: 'off', placeholder: L('رقم الطلب', 'Order no') });
+  const q = el('input', { class: 'inp', type: 'number', inputmode: 'numeric', min: '1', max: '99', value: '1' });
+  const d = el('input', { class: 'inp', type: 'date', min, max: td, value: yd });
+  const info = el('div', { class: 'small', style: 'min-height:18px;margin-top:6px;font-weight:600' });
+  const showInfo = () => { const k = String(o.value).replace(/\D/g, '').replace(/^0+/, ''); const x = k && orders[k]; info.textContent = x ? '#' + k + ' · ' + orderLine(k) : ''; };
+  o.addEventListener('input', showInfo);
+  const msg = el('p', { class: 'msg' + (pastMsg && pastMsg.ok ? ' ok' : pastMsg ? ' err' : ''), text: pastMsg ? pastMsg.t : '' });
+  const go = el('button', { class: 'btn acc', type: 'button', style: 'width:100%;margin-top:10px', text: '✓ ' + L('أضف إلى حسابي', 'Add to my account'), onclick: async () => {
+    const n = String(o.value).replace(/\D/g, '').replace(/^0+/, ''), pcs = Math.floor(+q.value) || 0;
+    if (!n || pcs < 1 || !d.value) { msg.textContent = L('اكتب رقم الطلب والعدد والتاريخ', 'Enter the order, pieces and date'); msg.className = 'msg err'; return; }
+    if (!confirm(L(kName(kind) + ': الطلب ' + n + ' × ' + pcs + ' – يوم ' + dmy(d.value) + '؟', kName(kind) + ': order ' + n + ' × ' + pcs + ' – on ' + dmy(d.value) + '?'))) return;
+    go.disabled = true; msg.textContent = '…'; msg.className = 'msg';
+    try {
+      const r = await withPin(p => kPast(tok, kind, n, pcs, d.value, p));
+      go.disabled = false;
+      if (!r.ok) { msg.textContent = r.msg || ''; msg.className = 'msg err'; return; }
+      chime(); pastMsg = { ok: 1, t: '✓ ' + L('تم – الطلب ' + n + ' × ' + pcs + ' يوم ' + dmy(d.value) + '. يُضاف عندما يفتح المحل البرنامج.', 'Saved – order ' + n + ' × ' + pcs + ' on ' + dmy(d.value) + '. Added when the shop opens the program.') };
+      await refresh(); refreshWork();
+    } catch (e) { go.disabled = false; msg.textContent = L('لم يتم: ', 'Failed: ') + (e.message || e); msg.className = 'msg err'; }
+  } });
+  det.appendChild(el('div', { style: 'margin-top:10px' }, [
+    el('div', { class: 'pgrid' }, [el('label', null, [el('span', { text: L('رقم الطلب', 'Order no') }), o]), el('label', null, [el('span', { text: L('القطع', 'Pieces') }), q]),
+      el('label', { class: 'wide' }, [el('span', { text: L('يوم العمل', 'Day of the work') }), d])]), info, go, msg]));
+  main.appendChild(det);
+}
 function drawFound(main) {
   const a = found, due = dueOf(a.o), late = due && due < today();
   main.appendChild(el('button', { class: 'btn line sm', type: 'button', style: 'margin-bottom:10px', text: (LANG === 'en' ? '← ' : '→ ') + L('كل الطلبات', 'All orders'), onclick: () => { found = null; findMsg = ''; draw(); } }));
