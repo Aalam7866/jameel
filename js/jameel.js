@@ -753,6 +753,21 @@ async function aDedAdd(key, pin, token, d) {
   await addDoc(collection(db, 'wkx', token, 'ded'), { amount, reason: reason || 'دفعة – Paid', order: orderKey(d.order), date, type: paid ? 'paid' : 'ded', at: serverTimestamp() });
   return { ok: true };
 }
+// "thobe ready" WhatsApp message from the shop PC (ShopSync sends it with the PC's WhatsApp)
+async function aWaReady(key, pin, order, by) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const o = Number(orderKey(order));
+  if (!o) return { ok: false, msg: 'رقم الطلب؟ – order?' };
+  const ref = await addDoc(collection(db, 'jobs'), { kind: 'wa_ready', st: 'new', ts: serverTimestamp(), order: o, by: String(by || '').slice(0, 40) });
+  return { ok: true, id: ref.id };
+}
+async function aJob(key, pin, id) {
+  const s = await getDoc(doc(db, 'jobs', String(id)));
+  if (!s.exists()) return { st: 'gone' };
+  const d = s.data();
+  return { st: d.st, msg: d.msg || '', error: d.error || '' };
+}
 async function aDedDel(key, pin, token, id) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -789,5 +804,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aJob, aOrderWip, aShopEmployees,
 };

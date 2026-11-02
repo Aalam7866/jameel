@@ -132,7 +132,7 @@ service cloud.firestore {
     match /jobs/{id} {
       allow read: if true;
       allow create: if request.resource.data.st == 'new' && request.resource.data.ts == request.time
-        && request.resource.data.kind in ['pdf', 'invoice', 'inv_order', 'inv_meas', 'daily_hide'];
+        && request.resource.data.kind in ['pdf', 'invoice', 'inv_order', 'inv_meas', 'daily_hide', 'wa_ready'];
       allow update: if isPc() || (resource.data.st == 'new' && request.resource.data.st == 'cancelled'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st']));
       allow delete: if isOwner();
