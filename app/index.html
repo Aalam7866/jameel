@@ -672,7 +672,7 @@ function dailyCanvas(r) {
     if (l) {
       text(i + 1, fCell, '#000', ...C(0, ry)); text(l.inv, fCell, '#000', ...C(1, ry)); text(l.order, fCell, '#000', ...C(2, ry));
       text(l.name, fName, '#000', ...C(3, ry));
-      if (l.total) text(n0(l.total), fCell, '#000', ...C(4, ry));
+      if (l.total) text(l.inv ? n0(l.total) : '0', fCell, '#000', ...C(4, ry));   // no Genix invoice: 0
       if (l.down != null) text(n0(l.down), fCell, '#000', ...C(5, ry));
       if (l.due != null) text(n0(l.due), fCell, l.due < 0 ? 'rgb(139,0,0)' : '#000', ...C(6, ry));
       text(l.method, fCell, '#000', ...C(7, ry)); text(l.sell, fCell, '#000', ...C(8, ry));
@@ -790,7 +790,7 @@ async function dailyTableView(b) {
   let t = `<div class="dsheet"><div class="dsh"><b>Daily sheet ${H(dmy)}</b></div><div class="dsw"><table class="dst"><thead><tr><th>S.No</th><th>Invoice.No</th><th>Order NO</th><th>Name</th><th>Total</th><th>Down<br>Payment</th><th>Pay Due<br>Amount</th><th>Mathod</th><th>Sell / deliver</th><th class="dm">Total Mathod</th><th class="dm">Total Paid</th><th class="dm">Paid<br>Customer</th><th>Type</th><th>Source</th></tr></thead><tbody>`;
   for (let i = 0; i < rowsN; i++) {
     const l = r.lines[i], m = r.methods[i];
-    t += `<tr${l ? ` data-o="${H(l.no)}" class="tap"` : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? n0(l.total) : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
+    t += `<tr${l ? ` data-o="${H(l.no)}" class="tap"` : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? (l.inv ? n0(l.total) : '0') : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
       + (m ? `<td class="dm dmn">${H(m[0])}</td><td class="dm n">${m[1] === 0 ? '-' : m[1].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="dm n">${m[2] ? m[2] : '-'}</td>` : '<td class="dm"></td><td class="dm"></td><td class="dm"></td>')
       + (l ? `<td class="dty dty-${H(l.type.toLowerCase())}">${H(l.type)}</td><td>${H(l.src)}</td>` : '<td></td><td></td>') + '</tr>';
   }
