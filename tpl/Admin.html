@@ -91,6 +91,9 @@
   button.act:hover { background: #a57a33; }
   button.act.wait { background: var(--warnbg); color: var(--warn); }
   button.act.wa { background: #1c6e45; padding: 6px 9px; }
+  .toast { position: fixed; top: 16px; inset-inline: 16px; z-index: 40; max-width: 460px; margin: 0 auto; padding: 14px 18px; border-radius: 12px;
+           background: #1f2a3a; color: #fff; font-weight: 600; white-space: pre-line; box-shadow: 0 10px 30px rgba(15,20,30,.35); display: none; cursor: pointer; }
+  .toast.show { display: block; } .toast.ok { background: #1c6e45; } .toast.bad { background: #b3261e; }
   .fitbox { margin-top: 10px; border: 1px solid #e3e2e8; border-inline-start: 4px solid #b88a3e; border-radius: 10px; padding: 10px 12px; }
   .fitb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; } .fitb button { font-size: 14px; padding: 9px 6px; }
   /* dialog */
@@ -174,6 +177,7 @@
 <? if (!ok) { ?>
   <div class="card"><h1>الرابط غير صالح</h1><p>Link not valid – ask the shop for the admin link.</p></div>
 <? } else { ?>
+  <div id="toast" class="toast" onclick="this.className='toast'"></div>
   <div id="banner"><span id="bannerText"></span><br><button onclick="seen()">تم – OK</button></div>
 
   <header class="hdr">
@@ -479,20 +483,27 @@
     });
 
     // ---- "thobe ready" WhatsApp from the shop PC ----
-    var WA_T = { ready: ['الطلب جاهز', 'thobes ready'], sample: ['البروفة جاهزة', 'fitting piece ready'], feedback: ['كيف كانت البروفة', 'how was the fitting'] };
+    var WASENT = {};
+    function toast(msg, kind, stay) {
+      var el = $('toast'); el.textContent = msg; el.className = 'toast show ' + (kind || '');
+      clearTimeout(toast.t); if (!stay) toast.t = setTimeout(function () { el.className = 'toast'; }, kind ? 6000 : 25000);
+    }
+        var WA_T = { ready: ['الطلب جاهز', 'thobes ready'], sample: ['البروفة جاهزة', 'fitting piece ready'], feedback: ['كيف كانت البروفة', 'how was the fitting'] };
     function waReady(no, btn, type) {
       type = type || 'ready';
       var r = ALL.filter(function (x) { return x[0] === String(no); })[0], lbl = btn.textContent;
       if (!confirm('إرسال رسالة "' + WA_T[type][0] + '" واتساب من كمبيوتر المحل؟\nطلب ' + no + (r ? ' – ' + r[1] + ' ' + r[2] : '') + '\nSend the "' + WA_T[type][1] + '" WhatsApp from the shop PC?')) return;
       var by = ''; try { by = localStorage.getItem('ts_aby') || ''; } catch (x) { }
       btn.disabled = true; btn.textContent = '…';
+      toast('⏳ جاري الإرسال من كمبيوتر المحل… – sending from the shop PC (10-20 s)', '');
       google.script.run.withSuccessHandler(function (res) {
         if (!res || !res.ok) { btn.disabled = false; btn.textContent = lbl; alert((res && res.msg) || 'خطأ'); return; }
         var n = 0, t = setInterval(function () {
           google.script.run.withSuccessHandler(function (j) {
-            if (j.st === 'done') { clearInterval(t); btn.textContent = '✔ ' + (lbl.length > 3 ? lbl.replace('📲', '').trim() : ''); btn.title = j.msg; }
-            else if (j.st === 'error' || j.st === 'cancelled') { clearInterval(t); btn.disabled = false; btn.textContent = lbl; alert('لم يتم الإرسال – not sent:\n' + (j.error || j.st)); }
-            else if (++n > 40) { clearInterval(t); btn.textContent = '⏳'; btn.title = 'كمبيوتر المحل لم يرسل بعد – the shop PC has not sent it yet'; }
+            if (j.st === 'done') { clearInterval(t); WASENT[type + no] = 1; btn.textContent = '✔ ' + (lbl.length > 3 ? lbl.replace('📲', '').trim() : ''); btn.title = j.msg;
+              toast('✔ تم إرسال الرسالة – Message sent\nطلب ' + no + (r ? ' · ' + r[1] : '') + ' · ' + WA_T[type][0], 'ok'); }
+            else if (j.st === 'error' || j.st === 'cancelled') { clearInterval(t); btn.disabled = false; btn.textContent = lbl; toast('✖ لم يتم الإرسال – Not sent\nطلب ' + no + '\n' + (j.error || j.st), 'bad', true); }
+            else if (++n > 40) { clearInterval(t); btn.textContent = '⏳'; btn.title = 'كمبيوتر المحل لم يرسل بعد – the shop PC has not sent it yet'; toast('⏳ كمبيوتر المحل لم يرسل بعد – the shop PC has not sent it yet (is it on?)', 'bad', true); }
           }).aJob(KEY, PIN, res.id);
         }, 3000);
       }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = lbl; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aWaReady(KEY, PIN, no, by, type);
@@ -643,7 +654,7 @@
                '<td><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td>' +
                (due > 0.005 || given < pcs ? '<td><button class="act' + (waitingFor(r[0]) ? ' wait' : '') + '" data-o="' + esc(r[0]) + '">' +
                                               (waitingFor(r[0]) ? '⏳ بانتظار' : 'سداد / تسليم') + '</button>' +
-                                              (r[15] === 'Ready' || late && Number(r[13]) === 1 ? ' <button class="act wa" data-wa="' + esc(r[0]) + '" title="WhatsApp: الطلب جاهز">📲</button>' : '') + '</td>' : '<td class="c-no">✔</td>') + '</tr>';
+                                              (r[15] === 'Ready' || late && Number(r[13]) === 1 ? ' <button class="act wa" data-wa="' + esc(r[0]) + '" title="WhatsApp: الطلب جاهز">' + (WASENT['ready' + r[0]] ? '✔' : '📲') + '</button>' : '') + '</td>' : '<td class="c-no">✔</td>') + '</tr>';
       }).join('');
     }
 
