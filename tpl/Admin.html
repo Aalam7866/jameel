@@ -101,6 +101,10 @@
   #dlg { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(15, 20, 30, .55); overflow-y: auto; padding: 24px 12px; }
   #dlg .card { max-width: 500px; margin: 0 auto; padding: 0; overflow: hidden; box-shadow: 0 20px 50px rgba(15, 20, 30, .35); border: 0; }
   #dlg #dTitle { background: var(--ink); color: #fff; margin: 0; padding: 14px 18px; font-size: 17px; border-bottom: 3px solid var(--gold); }
+  #dlg .card { position: relative; }
+  #dlg #dTitle { padding-inline-end: 58px; }
+  #dX { position: absolute; top: 8px; inset-inline-end: 10px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff; font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
+  #dX:hover { background: rgba(255,255,255,.22); }
   #dlg .dbody { padding: 14px 18px 18px; }
   @media (max-width: 560px) { #dlg { padding: 0; display: none; align-items: flex-end; } #dlg .card { border-radius: 16px 16px 0 0; margin-top: 10vh; } }
   #dlg label { display: block; margin: 12px 0 5px; font-weight: 600; font-size: 13.5px; color: var(--mute); }
@@ -311,6 +315,7 @@
   <div id="dlg">
     <div class="card">
       <h3 id="dTitle"></h3>
+      <button id="dX" type="button" aria-label="Close / إغلاق" title="إغلاق / Close" onclick="closeAct()">✕</button>
       <div class="dbody">
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
