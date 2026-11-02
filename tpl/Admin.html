@@ -84,6 +84,7 @@
   table.st td.l { text-align: right; font-weight: 600; }
   table.st tr:nth-child(even) td { background: #fafafb; }
   table.st tr:hover td { background: var(--goldbg); }
+  table.st tr.ro { cursor: pointer; }
   .c-ok { color: var(--ok) !important; font-weight: 600; } .c-part { color: var(--goldink) !important; font-weight: 600; } .c-no { color: #a2a6af !important; } .c-late { color: var(--bad) !important; font-weight: 600; }
   .sp { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: #eceef3; color: var(--mute); }
   .sp.c-ok { background: var(--okbg); } .sp.c-part { background: var(--goldbg); } .sp.c-late { background: var(--badbg); }
@@ -314,6 +315,9 @@
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
       <div id="dFit"></div>
+      <div id="dWa"></div>
+      <div id="dDone" class="rate-ok" style="display:none;margin-top:10px">✔ الطلب مدفوع ومسلّم بالكامل – fully paid and delivered</div>
+      <div id="dForm">
       <div class="seg" style="margin-top:10px">
         <button id="kPAY" onclick="setKind('PAY')">سداد · Pay</button>
         <button id="kDELIVER" onclick="setKind('DELIVER')">تسليم · Deliver</button>
@@ -335,7 +339,8 @@
       <div class="sum" style="margin-top:10px" id="dAfter"></div>
       <div class="warn" id="dWarn"></div>
       <button class="go wide" id="dSave" onclick="saveAct()">حفظ / Save</button>
-      <button class="sec wide" onclick="closeAct()">إلغاء / Cancel</button>
+      </div>
+      <button class="sec wide" onclick="closeAct()">إغلاق / Close</button>
       </div>
     </div>
   </div>
@@ -479,7 +484,10 @@
       var w = ev.target.closest ? ev.target.closest('button[data-wa]') : null;
       if (w) { waReady(w.getAttribute('data-wa'), w); return; }
       var b = ev.target.closest ? ev.target.closest('button.act') : null;
-      if (b) openAct(b.getAttribute('data-o'));
+      if (b) { openAct(b.getAttribute('data-o')); return; }
+      // a tap anywhere on an order's line: its details (any order, also the finished ones)
+      var tr = ev.target.closest ? ev.target.closest('tr[data-row]') : null;
+      if (tr) openAct(tr.getAttribute('data-row'));
     });
 
     // ---- "thobe ready" WhatsApp from the shop PC ----
@@ -565,6 +573,13 @@
       $('dQty').value = Math.max(0, D.pcs - D.given);
       try { $('dBy').value = localStorage.getItem('ts_aby') || ''; } catch (x) { }
       setKind(D.due > 0.005 ? 'PAY' : 'DELIVER');
+      // a finished order (paid and all delivered): only its details, no pay / deliver form
+      var open = D.due > 0.005 || D.given < D.pcs;
+      $('dForm').style.display = open ? '' : 'none'; $('dDone').style.display = open ? 'none' : '';
+      // the "thobes ready" WhatsApp: for an order that is ready and not all delivered
+      var rdy = Number(r[13]) === 1 && D.given < D.pcs;
+      $('dWa').innerHTML = rdy ? '<button class="act wa wide" type="button" style="padding:11px;font-size:15px" onclick="waReady(\'' + esc(D.no) + '\', this, \'ready\')">' +
+        (WASENT['ready' + D.no] ? '✔ الطلب جاهز' : '📲 الطلب جاهز – WhatsApp') + '</button>' : '';
       $('dlg').style.display = 'block';
     }
     function closeAct() { $('dlg').style.display = 'none'; D = null; }
@@ -647,7 +662,7 @@
         var late = given < pcs && r[4] && r[4] < today && r[15] !== 'Delivered';
         var st = late ? ['c-late', 'Late'] : STAT[r[15]] || ['', r[15]];
         var due = Number(r[14]) || 0;
-        return '<tr><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + (FIT[r[0]] ? ' <span class="sp c-part" title="بروفة – fitting">بروفة</span>' : '') + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+        return '<tr class="ro" data-row="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + (FIT[r[0]] ? ' <span class="sp c-part" title="بروفة – fitting">بروفة</span>' : '') + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
                '<td dir="ltr">' + esc(day(r[3])) + '</td><td dir="ltr" class="' + (late ? 'c-late' : '') + '">' + esc(day(r[4])) + '</td><td><b>' + pcs + '</b></td>' +
                cell(r[6], pcs, p.CUT) + cell(r[7], pcs, p.STITCH) + cell(r[9], r[8], p.HINGE) + cell(r[11], r[10], p.EMBROIDERY) + cell(given, pcs, 0) +
                '<td class="' + (due > 0.5 ? 'c-late' : 'c-no') + '">' + (due > 0.5 ? due.toFixed(2) : '–') + '</td>' +
