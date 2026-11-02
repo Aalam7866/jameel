@@ -91,6 +91,8 @@
   button.act:hover { background: #a57a33; }
   button.act.wait { background: var(--warnbg); color: var(--warn); }
   button.act.wa { background: #1c6e45; padding: 6px 9px; }
+  .fitbox { margin-top: 10px; border: 1px solid #e3e2e8; border-inline-start: 4px solid #b88a3e; border-radius: 10px; padding: 10px 12px; }
+  .fitb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; } .fitb button { font-size: 14px; padding: 9px 6px; }
   /* dialog */
   #dlg { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(15, 20, 30, .55); overflow-y: auto; padding: 24px 12px; }
   #dlg .card { max-width: 500px; margin: 0 auto; padding: 0; overflow: hidden; box-shadow: 0 20px 50px rgba(15, 20, 30, .35); border: 0; }
@@ -307,6 +309,7 @@
       <div class="dbody">
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
+      <div id="dFit"></div>
       <div class="seg" style="margin-top:10px">
         <button id="kPAY" onclick="setKind('PAY')">سداد · Pay</button>
         <button id="kDELIVER" onclick="setKind('DELIVER')">تسليم · Deliver</button>
@@ -457,11 +460,11 @@
     }
 
     // ---- order status table ----
-    var ALL = [], PEND = {}, METHODS = ['Cash'], CUR = '';
+    var ALL = [], PEND = {}, FIT = {}, METHODS = ['Cash'], CUR = '';
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
       google.script.run.withSuccessHandler(function (r) {
-        if (!r) return; ALL = r.rows || []; PEND = r.pending || {};
+        if (!r) return; ALL = r.rows || []; PEND = r.pending || {}; FIT = r.fit || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable();
       }).withFailureHandler(function () { }).aOrders(KEY, PIN);
@@ -476,21 +479,23 @@
     });
 
     // ---- "thobe ready" WhatsApp from the shop PC ----
-    function waReady(no, btn) {
-      var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
-      if (!confirm('إرسال رسالة "الطلب جاهز" واتساب من كمبيوتر المحل؟\nطلب ' + no + (r ? ' – ' + r[1] + ' ' + r[2] : '') + '\nSend the "ready" WhatsApp from the shop PC?')) return;
+    var WA_T = { ready: ['الطلب جاهز', 'thobes ready'], sample: ['البروفة جاهزة', 'fitting piece ready'], feedback: ['كيف كانت البروفة', 'how was the fitting'] };
+    function waReady(no, btn, type) {
+      type = type || 'ready';
+      var r = ALL.filter(function (x) { return x[0] === String(no); })[0], lbl = btn.textContent;
+      if (!confirm('إرسال رسالة "' + WA_T[type][0] + '" واتساب من كمبيوتر المحل؟\nطلب ' + no + (r ? ' – ' + r[1] + ' ' + r[2] : '') + '\nSend the "' + WA_T[type][1] + '" WhatsApp from the shop PC?')) return;
       var by = ''; try { by = localStorage.getItem('ts_aby') || ''; } catch (x) { }
       btn.disabled = true; btn.textContent = '…';
       google.script.run.withSuccessHandler(function (res) {
-        if (!res || !res.ok) { btn.disabled = false; btn.textContent = '📲'; alert((res && res.msg) || 'خطأ'); return; }
+        if (!res || !res.ok) { btn.disabled = false; btn.textContent = lbl; alert((res && res.msg) || 'خطأ'); return; }
         var n = 0, t = setInterval(function () {
           google.script.run.withSuccessHandler(function (j) {
-            if (j.st === 'done') { clearInterval(t); btn.textContent = '✔'; btn.title = j.msg; }
-            else if (j.st === 'error' || j.st === 'cancelled') { clearInterval(t); btn.disabled = false; btn.textContent = '📲'; alert('لم يتم الإرسال – not sent:\n' + (j.error || j.st)); }
+            if (j.st === 'done') { clearInterval(t); btn.textContent = '✔ ' + (lbl.length > 3 ? lbl.replace('📲', '').trim() : ''); btn.title = j.msg; }
+            else if (j.st === 'error' || j.st === 'cancelled') { clearInterval(t); btn.disabled = false; btn.textContent = lbl; alert('لم يتم الإرسال – not sent:\n' + (j.error || j.st)); }
             else if (++n > 40) { clearInterval(t); btn.textContent = '⏳'; btn.title = 'كمبيوتر المحل لم يرسل بعد – the shop PC has not sent it yet'; }
           }).aJob(KEY, PIN, res.id);
         }, 3000);
-      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '📲'; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aWaReady(KEY, PIN, no, by);
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = lbl; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aWaReady(KEY, PIN, no, by, type);
     }
 
     // ---- payments / deliveries ----
@@ -536,6 +541,11 @@
       D = { no: r[0], name: r[1], pcs: Number(r[5]) || 0, given: Number(r[12]) || 0, due: Number(r[14]) || 0 };
       $('dTitle').textContent = 'طلب ' + D.no + ' – ' + D.name;
       $('dTrk').innerHTML = trackHtml(r);
+      var f = FIT[String(D.no)];
+      $('dFit').innerHTML = f ? '<div class="fitbox"><b>🧵 بروفة · Fitting</b> <span class="sp">' + esc(f.status) + '</span>' +
+        (f.sent ? '<div class="muted">أُرسلت رسالة البروفة ' + esc(day(f.sent)) + '</div>' : '') +
+        '<div class="fitb"><button class="go" type="button" onclick="waReady(\'' + esc(D.no) + '\', this, \'sample\')">📲 البروفة جاهزة</button>' +
+        '<button class="sec" type="button" onclick="waReady(\'' + esc(D.no) + '\', this, \'feedback\')">📲 كيف كانت البروفة؟</button></div></div>' : '';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
@@ -626,7 +636,7 @@
         var late = given < pcs && r[4] && r[4] < today && r[15] !== 'Delivered';
         var st = late ? ['c-late', 'Late'] : STAT[r[15]] || ['', r[15]];
         var due = Number(r[14]) || 0;
-        return '<tr><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+        return '<tr><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + (FIT[r[0]] ? ' <span class="sp c-part" title="بروفة – fitting">بروفة</span>' : '') + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
                '<td dir="ltr">' + esc(day(r[3])) + '</td><td dir="ltr" class="' + (late ? 'c-late' : '') + '">' + esc(day(r[4])) + '</td><td><b>' + pcs + '</b></td>' +
                cell(r[6], pcs, p.CUT) + cell(r[7], pcs, p.STITCH) + cell(r[9], r[8], p.HINGE) + cell(r[11], r[10], p.EMBROIDERY) + cell(given, pcs, 0) +
                '<td class="' + (due > 0.5 ? 'c-late' : 'c-no') + '">' + (due > 0.5 ? due.toFixed(2) : '–') + '</td>' +

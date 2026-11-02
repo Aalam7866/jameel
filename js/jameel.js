@@ -558,7 +558,10 @@ async function aOrders(key, pin) {
       pend[o][e.kind] = (pend[o][e.kind] || 0) + (Number(e.q) || 0);
     }
   }
-  return { rows, pending: pend, conf: J(r.aconf, null) };
+  // fitting pieces (بروفة): which orders have one, and how far it is (from the shop PC)
+  const fit = {};
+  try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '' }; }); } catch (e) { }
+  return { rows, pending: pend, conf: J(r.aconf, null), fit };
 }
 async function aSearch(key, pin, q) {
   const all = await aOrders(key, pin);
@@ -754,12 +757,13 @@ async function aDedAdd(key, pin, token, d) {
   return { ok: true };
 }
 // "thobe ready" WhatsApp message from the shop PC (ShopSync sends it with the PC's WhatsApp)
-async function aWaReady(key, pin, order, by) {
+async function aWaReady(key, pin, order, by, type) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   const o = Number(orderKey(order));
   if (!o) return { ok: false, msg: 'رقم الطلب؟ – order?' };
-  const ref = await addDoc(collection(db, 'jobs'), { kind: 'wa_ready', st: 'new', ts: serverTimestamp(), order: o, by: String(by || '').slice(0, 40) });
+  const t = ['sample', 'feedback'].includes(type) ? type : 'ready';
+  const ref = await addDoc(collection(db, 'jobs'), { kind: 'wa_ready', t, st: 'new', ts: serverTimestamp(), order: o, by: String(by || '').slice(0, 40) });
   return { ok: true, id: ref.id };
 }
 async function aJob(key, pin, id) {
