@@ -105,6 +105,13 @@
   #dlg #dTitle { padding-inline-end: 58px; }
   #dX { position: absolute; top: 8px; inset-inline-end: 10px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff; font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
   #dX:hover { background: rgba(255,255,255,.22); }
+  #lst { display: none; position: fixed; inset: 0; z-index: 25; background: rgba(15, 20, 30, .55); overflow-y: auto; padding: 24px 12px; }
+  #lst .card { max-width: 560px; margin: 0 auto; padding: 0; overflow: hidden; position: relative; border: 0; box-shadow: 0 20px 50px rgba(15, 20, 30, .35); }
+  #lTitle { background: var(--ink); color: #fff; margin: 0; padding: 14px 58px 14px 18px; padding-inline-end: 58px; font-size: 17px; border-bottom: 3px solid var(--gold); }
+  #lX { position: absolute; top: 8px; inset-inline-end: 10px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff; font-size: 20px; padding: 0; cursor: pointer; }
+  #lst .dbody { padding: 10px 14px 16px; } #lst tr[data-o] { cursor: pointer; } #lst .kv td:first-child { color: var(--mute); white-space: nowrap; }
+  @media (max-width: 560px) { #lst { padding: 0; } #lst .card { border-radius: 16px 16px 0 0; margin-top: 10vh; } }
+  .tile[data-t], #work tr, #orders tr, #acts tr { cursor: pointer; } .tile[data-t]:active { transform: scale(.98); }
   #dlg .dbody { padding: 14px 18px 18px; }
   @media (max-width: 560px) { #dlg { padding: 0; display: none; align-items: flex-end; } #dlg .card { border-radius: 16px 16px 0 0; margin-top: 10vh; } }
   #dlg label { display: block; margin: 12px 0 5px; font-weight: 600; font-size: 13.5px; color: var(--mute); }
@@ -323,6 +330,12 @@
     </main>
   </div>
 
+  <!-- list behind a Today tile -->
+  <div id="lst" onclick="if (event.target === this) closeLst()"><div class="card">
+    <h3 id="lTitle"></h3><button id="lX" type="button" aria-label="Close" onclick="closeLst()">✕</button>
+    <div class="dbody" id="lBody"></div>
+  </div></div>
+
   <!-- Payment / Deliver dialog -->
   <div id="dlg">
     <div class="card">
@@ -432,8 +445,9 @@
 
     // ---- today's feed ----
     function workText(w) { return (KINDS[w.kind] || w.kind) + ': ' + w.name + ' – طلب ' + w.order + ' × ' + w.qty + (w.fit ? ' + بروفة' : ''); }
+    var FEED = { work: [], orders: [] };
     function show(r) {
-      window.LAST = r.now;
+      window.LAST = r.now; FEED = r;
       var lines = [];
       r.work.forEach(function (w) {
         if (!seenWork[w.id]) { if (!first) { lines.push('🧵 ' + workText(w)); newIds[w.id] = 1; } seenWork[w.id] = w.status; }
@@ -463,8 +477,8 @@
       var tot = {};
       r.work.forEach(function (w) { if (w.status !== 'deleted') tot[w.kind] = (tot[w.kind] || 0) + w.qty; });
       $('tiles').innerHTML = Object.keys(KINDS).filter(function (k) { return tot[k]; }).map(function (k) {
-        return '<div class="tile"><b>' + tot[k] + '</b><span>' + esc(KINDS[k]) + '</span></div>';
-      }).join('') + '<div class="tile"><b>' + r.orders.length + '</b><span>طلبات أونلاين</span></div>';
+        return '<div class="tile" data-t="k:' + k + '"><b>' + tot[k] + '</b><span>' + esc(KINDS[k]) + '</span></div>';
+      }).join('') + '<div class="tile" data-t="oo"><b>' + r.orders.length + '</b><span>طلبات أونلاين</span></div>';
 
       // online orders
       $('orders').innerHTML = r.orders.length ? '<table>' + r.orders.map(function (o) {
@@ -472,14 +486,14 @@
                : o.status === 'error' ? '<span class="badge bad">✖ ' + esc(o.note) + '</span>'
                : o.status === 'deleted' ? '<span class="badge bad">🗑 محذوف</span>'
                : o.status === 'delreq' ? '<span class="badge w">⏳ جاري الحذف</span>' : '<span class="badge w">⏳ بانتظار المحل</span>';
-        return '<tr class="' + (newIds[o.id] ? 'new' : '') + '"><td>' + esc(o.time) + '</td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + esc(o.pcs) + ' ثوب · ' +
+        return '<tr data-oo="' + esc(o.id) + '" class="' + (newIds[o.id] ? 'new' : '') + '"><td>' + esc(o.time) + '</td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + esc(o.pcs) + ' ثوب · ' +
                esc(o.total) + (o.by ? ' · ' + esc(o.by) : '') + '</span></td><td>' + st + '</td></tr>';
       }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
 
       // work entries
       $('work').innerHTML = r.work.length ? '<table>' + r.work.map(function (w) {
         var st = w.status === 'imported' ? '<span class="badge ok">✔</span>' : w.status === 'deleted' ? '<span class="badge bad">✖</span>' : '<span class="badge w">⏳</span>';
-        return '<tr class="' + (newIds[w.id] ? 'new' : '') + '"><td>' + esc(w.time) + '</td><td><b>' + esc(w.name) + '</b><br><span class="muted">' + esc(KINDS[w.kind] || w.kind) +
+        return '<tr data-o="' + esc(w.order) + '" class="' + (newIds[w.id] ? 'new' : '') + '"><td>' + esc(w.time) + '</td><td><b>' + esc(w.name) + '</b><br><span class="muted">' + esc(KINDS[w.kind] || w.kind) +
                '</span></td><td>طلب <b>' + esc(w.order) + '</b> × ' + esc(w.qty) + (w.fit ? '<br><span class="muted">+ بروفة</span>' : '') + '</td><td>' + st + '</td></tr>';
       }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
       showState();
@@ -497,6 +511,55 @@
     }
     $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
     $('sqo').addEventListener('input', function () { if ($('sqo').value) $('sq').value = ''; renderTable(); });
+    var WIP = { cut: [], sti: [], rdy: [], open: [] };
+    function closeLst() { $('lst').style.display = 'none'; }
+    function showLst(title, html) { $('lTitle').textContent = title; $('lBody').innerHTML = html; $('lst').style.display = 'block'; }
+    function ordRows(list) {
+      return list.length ? '<table>' + list.map(function (x) {
+        var r = x[0];
+        return '<tr data-o="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td><b>' + esc(r[1]) + '</b><br><span class="muted" dir="ltr">' + esc(r[2]) + '</span></td>' +
+               '<td>' + esc(x[1]) + '<br><span class="muted">التسليم <span dir="ltr">' + esc(day(r[4])) + '</span></span></td></tr>';
+      }).join('') + '</table>' : '<span class="muted">لا يوجد – none</span>';
+    }
+    function openOrder(no) {
+      if (!no) return;
+      if (!ALL.some(function (x) { return x[0] === String(no); })) { toast('طلب ' + no + ' غير موجود في القائمة بعد – order ' + no + ' not in the list yet', 'bad'); return; }
+      openAct(no);
+    }
+    function tileClick(t) {
+      var T = { cut: 'قص متبقي · To cut', sti: 'خياطة متبقية · To stitch', rdy: 'جاهز لم يُسلّم · Ready', open: 'ثياب مفتوحة · Open pcs' };
+      if (t.indexOf('w:') === 0) { var k = t.slice(2); showLst(T[k] + ' (' + WIP[k].length + ')', ordRows(WIP[k])); return; }
+      if (t.indexOf('k:') === 0) {
+        var kd = t.slice(2), ws = (FEED.work || []).filter(function (w) { return w.kind === kd && w.status !== 'deleted'; });
+        showLst((KINDS[kd] || kd) + ' – اليوم / today', '<table>' + ws.map(function (w) {
+          var st = w.status === 'imported' ? '<span class="badge ok">✔</span>' : '<span class="badge w">⏳</span>';
+          return '<tr data-o="' + esc(w.order) + '"><td>' + esc(w.time) + '</td><td><b>' + esc(w.name) + '</b></td><td>طلب <b>' + esc(w.order) + '</b> × ' + esc(w.qty) + (w.fit ? '<br><span class="muted">+ بروفة</span>' : '') + '</td><td>' + st + '</td></tr>';
+        }).join('') + '</table>');
+        return;
+      }
+      if (t === 'oo') { showLst('طلبات أونلاين اليوم – online orders today', $('orders').innerHTML); }
+    }
+    function onlineOrder(id) {
+      var o = (FEED.orders || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      if (!o) return;
+      if (o.status === 'saved' && o.order_no && ALL.some(function (x) { return x[0] === String(o.order_no); })) { openAct(o.order_no); return; }
+      var st = { saved: '✔ محفوظ – saved', error: '✖ ' + o.note, deleted: '🗑 محذوف – deleted', delreq: '⏳ جاري الحذف', 'new': '⏳ بانتظار المحل – waiting for the shop PC' }[o.status] || o.status;
+      var kv = [['الوقت / Time', o.time], ['العميل / Customer', o.name], ['ثياب / Pcs', o.pcs], ['المبلغ / Total', o.total], ['بواسطة / By', o.by],
+                ['رقم الطلب / Order', o.order_no], ['فاتورة / Invoice', o.invoice_no], ['الحالة / Status', st]];
+      showLst('طلب أونلاين – ' + o.name, '<table class="kv">' + kv.filter(function (x) { return x[1]; }).map(function (x) { return '<tr><td>' + esc(x[0]) + '</td><td><b>' + esc(x[1]) + '</b></td></tr>'; }).join('') + '</table>');
+    }
+    $('p1').addEventListener('click', function (ev) {
+      if (!ev.target.closest) return;
+      var t = ev.target.closest('[data-t]'); if (t) { tileClick(t.getAttribute('data-t')); return; }
+      var oo = ev.target.closest('tr[data-oo]'); if (oo) { onlineOrder(oo.getAttribute('data-oo')); return; }
+      var o = ev.target.closest('tr[data-o]'); if (o) openOrder(o.getAttribute('data-o'));
+    });
+    $('lst').addEventListener('click', function (ev) {
+      if (!ev.target.closest) return;
+      var oo = ev.target.closest('tr[data-oo]'); if (oo) { onlineOrder(oo.getAttribute('data-oo')); return; }
+      var o = ev.target.closest('tr[data-o]'); if (o) openOrder(o.getAttribute('data-o'));
+    });
+    $('wip2').addEventListener('click', function (ev) { var t = ev.target.closest && ev.target.closest('[data-t]'); if (t) tileClick(t.getAttribute('data-t')); });
     $('soon').addEventListener('click', function (ev) {
       var tr = ev.target.closest ? ev.target.closest('tr[data-soon]') : null;
       if (tr) openAct(tr.getAttribute('data-soon'));
@@ -552,7 +615,7 @@
         var st = a.status === 'saved' ? '<span class="badge ok">✔ إيصال ' + esc(a.receipt_no) + '</span>'
                : a.status === 'error' ? '<span class="badge bad">✖ ' + esc(a.note) + '</span>'
                : '<span class="badge w">⏳ بانتظار المحل</span>';
-        return '<tr class="' + (newIds[a.id] ? 'new' : '') + '"><td>' + esc(a.time) + '</td><td><b>' + esc(actText(a)) + '</b>' +
+        return '<tr data-o="' + esc(a.order_no) + '" class="' + (newIds[a.id] ? 'new' : '') + '"><td>' + esc(a.time) + '</td><td><b>' + esc(actText(a)) + '</b>' +
                (a.by ? '<br><span class="muted">' + esc(a.by) + '</span>' : '') + '</td><td>' + st + '</td></tr>';
       }).join('') + '</table>' : '<span class="muted">لا يوجد اليوم – none today</span>';
       renderTable();
@@ -666,20 +729,21 @@
     // pieces still to cut / stitch over all orders not yet delivered (with the online work the shop has not taken in yet)
     function renderWip() {
       var c = 0, s = 0, w = 0, rd = 0, open = 0, oc = 0, os = 0;
+      WIP = { cut: [], sti: [], rdy: [], open: [] };
       ALL.forEach(function (r) {
         var n = function (i) { return Number(r[i]) || 0; }, P = n(5), del = Math.min(n(12), P);
         if (!P || del >= P) return;
         var p = PEND[r[0]] || {}, rdy = Math.min(P, Math.max(n(13) ? P : 0, del));
         var sti = Math.min(P, Math.max(n(7) + (Number(p.STITCH) || 0), rdy)), cut = Math.min(P, Math.max(n(6) + (Number(p.CUT) || 0), sti));
-        open += P - del;
-        if (P - cut > 0) { c += P - cut; oc++; }
-        if (P - sti > 0) { s += P - sti; os++; w += cut - sti; }
-        rd += rdy - del;
+        open += P - del; WIP.open.push([r, (P - del) + ' ثوب لم يُسلّم']);
+        if (P - cut > 0) { c += P - cut; oc++; WIP.cut.push([r, 'قص ' + (P - cut) + ' من ' + P]); }
+        if (P - sti > 0) { s += P - sti; os++; w += cut - sti; WIP.sti.push([r, 'خياطة ' + (P - sti) + ' من ' + P + (cut - sti > 0 ? ' · مقصوص ' + (cut - sti) : '')]); }
+        if (rdy - del > 0) { rd += rdy - del; WIP.rdy.push([r, 'جاهز ' + (rdy - del) + ' ثوب']); }
       });
-      var h = '<div class="tile cut"><b>' + c + '</b><span>قص متبقي · To cut</span><em>' + oc + ' طلب · orders</em></div>' +
-              '<div class="tile sti"><b>' + s + '</b><span>خياطة متبقية · To stitch</span><em>' + w + ' مقصوص بانتظار الخياطة · cut, waiting</em></div>' +
-              '<div class="tile rdy"><b>' + rd + '</b><span>جاهز لم يُسلّم · Ready</span><em>بانتظار العميل · not collected</em></div>' +
-              '<div class="tile"><b>' + open + '</b><span>ثياب مفتوحة · Open pcs</span><em>لم تُسلّم بعد · not delivered</em></div>';
+      var h = '<div class="tile cut" data-t="w:cut"><b>' + c + '</b><span>قص متبقي · To cut</span><em>' + oc + ' طلب · orders</em></div>' +
+              '<div class="tile sti" data-t="w:sti"><b>' + s + '</b><span>خياطة متبقية · To stitch</span><em>' + w + ' مقصوص بانتظار الخياطة · cut, waiting</em></div>' +
+              '<div class="tile rdy" data-t="w:rdy"><b>' + rd + '</b><span>جاهز لم يُسلّم · Ready</span><em>بانتظار العميل · not collected</em></div>' +
+              '<div class="tile" data-t="w:open"><b>' + open + '</b><span>ثياب مفتوحة · Open pcs</span><em>لم تُسلّم بعد · not delivered</em></div>';
       $('wip1').innerHTML = h; $('wip2').innerHTML = h;
       // not ready yet and the delivery date is today, in 1-2 days, or already past
       var ry = new Date(Date.now() + 3 * 3600e3), today = ry.toISOString().slice(0, 10), lim = new Date(ry.getTime() + 2 * 864e5).toISOString().slice(0, 10);
