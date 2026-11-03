@@ -560,7 +560,7 @@ async function aOrders(key, pin) {
   }
   // fitting pieces (بروفة): which orders have one, and how far it is (from the shop PC)
   const fit = {};
-  try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '' }; }); } catch (e) { }
+  try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '', delivered: f.delivered || '' }; }); } catch (e) { }
   // when the "order ready" WhatsApp went (JAMEEL's orders.ready_sent – also when sent from JAMEEL itself)
   const sent = {};
   try { (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); }); } catch (e) { }

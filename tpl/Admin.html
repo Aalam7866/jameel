@@ -108,6 +108,7 @@
   #dX:hover { background: rgba(255,255,255,.22); }
   #rask { display: none; position: fixed; z-index: 22; bottom: 16px; inset-inline-start: 16px; max-width: 340px; width: calc(100% - 32px); background: #fff; border-radius: 14px;
           border-inline-start: 5px solid #1e8449; box-shadow: 0 12px 34px rgba(15, 20, 30, .3); padding: 12px 14px; font-size: 14px; animation: raIn .25s ease-out; }
+  #rask.fit { border-inline-start-color: #b88a3e; } #rask.fit .act.wa { background: var(--ink); }
   #rask b { font-size: 15px; } #rask .muted { font-size: 12px; margin-top: 2px; } #rask .rb { display: grid; grid-template-columns: 1.4fr 1fr; gap: 6px; margin-top: 9px; }
   #rask .rb button { padding: 9px 6px; font-size: 14px; } #rask .rx { position: absolute; top: 6px; inset-inline-end: 8px; background: none; border: 0; font-size: 16px; color: var(--mute); cursor: pointer; padding: 4px; }
   @keyframes raIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -523,29 +524,39 @@
     // ---- a small popup for every order that is ready and whose "order ready" WhatsApp has not gone yet ----
     var RSENT = {}, RA_LATER = {}, RA_NO = {};
     try { RA_NO = JSON.parse(localStorage.getItem('ts_rano') || '{}') || {}; } catch (x) { }
+    // thobes: only when ALL the pieces are finished (stitched, and hinge / embroidery done where the order has them);
+    // fitting piece (بروفة): as soon as it is done, before the other pieces
     function readyList() {
-      return ALL.filter(function (r) {
-        var no = r[0];
-        return (Number(r[13]) === 1 || r[15] === 'Ready') && (Number(r[12]) || 0) < (Number(r[5]) || 0) &&
-               !RSENT[no] && !WASENT['ready' + no] && !RA_LATER[no] && !RA_NO[no];
+      var out = [];
+      ALL.forEach(function (r) {
+        var no = r[0], n = function (i) { return Number(r[i]) || 0; }, P = n(5), p = PEND[no] || {};
+        if (!P || n(12) >= P) return;
+        var f = FIT[no];
+        if (f && f.done && !f.sent && !f.checked && !f.delivered && !WASENT['sample' + no]) out.push({ r: r, t: 'sample' });
+        var sti = n(7) + (Number(p.STITCH) || 0), hg = n(9) + (Number(p.HINGE) || 0), em = n(11) + (Number(p.EMBROIDERY) || 0);
+        var all = (n(13) === 1 || r[15] === 'Ready') && sti >= P && (n(8) <= 0 || hg >= n(8)) && (n(10) <= 0 || em >= n(10));
+        if (all && !RSENT[no] && !WASENT['ready' + no]) out.push({ r: r, t: 'ready' });
       });
+      return out.filter(function (x) { var k = x.t + x.r[0]; return !RA_LATER[k] && !RA_NO[k]; });
     }
     function readyAsk() {
       var l = readyList(), el = $('rask');
       if (!l.length) { el.style.display = 'none'; return; }
-      var r = l[0];
-      el.innerHTML = '<button class="rx" type="button" title="لا ترسل لهذا الطلب – never for this order" onclick="readyNo(\'' + esc(r[0]) + '\')">✕</button>' +
-        '<b>✅ طلب ' + esc(r[0]) + ' جاهز – Ready</b><div>' + esc(r[1]) + ' · <span dir="ltr">' + esc(r[2]) + '</span> · ' + esc(r[5]) + ' ثوب</div>' +
-        '<div class="muted">لم تُرسل رسالة واتساب بعد – WhatsApp not sent yet' + (l.length > 1 ? ' · +' + (l.length - 1) + ' طلب آخر' : '') + '</div>' +
-        '<div class="rb"><button class="act wa" type="button" onclick="readySend(\'' + esc(r[0]) + '\', this)">📲 إرسال · Send</button>' +
-        '<button class="sec" type="button" onclick="readyLater(\'' + esc(r[0]) + '\')">لاحقاً · Later</button></div>';
+      var x = l[0], r = x.r, fit = x.t === 'sample', a = '\'' + esc(r[0]) + '\', \'' + x.t + '\'';
+      el.className = fit ? 'fit' : '';
+      el.innerHTML = '<button class="rx" type="button" title="لا تسأل مرة أخرى – don\'t ask again" onclick="readyNo(' + a + ')">✕</button>' +
+        '<b>' + (fit ? '🧵 بروفة طلب ' + esc(r[0]) + ' جاهزة – Fitting ready' : '✅ طلب ' + esc(r[0]) + ' جاهز – all ' + esc(r[5]) + ' ready') + '</b>' +
+        '<div>' + esc(r[1]) + ' · <span dir="ltr">' + esc(r[2]) + '</span>' + (fit ? '' : ' · ' + esc(r[5]) + ' ثوب') + '</div>' +
+        '<div class="muted">لم تُرسل رسالة واتساب بعد – WhatsApp not sent yet' + (l.length > 1 ? ' · +' + (l.length - 1) + ' أخرى' : '') + '</div>' +
+        '<div class="rb"><button class="act wa" type="button" onclick="readySend(' + a + ', this)">📲 ' + (fit ? 'البروفة جاهزة' : 'إرسال · Send') + '</button>' +
+        '<button class="sec" type="button" onclick="readyLater(' + a + ')">لاحقاً · Later</button></div>';
       el.style.display = 'block';
     }
-    function readySend(no, btn) { $('rask').style.display = 'none'; RA_LATER[no] = 1; waReady(no, btn, 'ready', true); setTimeout(readyAsk, 400); }
-    function readyLater(no) { RA_LATER[no] = 1; readyAsk(); }
-    function readyNo(no) {
-      if (!confirm('عدم السؤال عن رسالة الطلب ' + no + ' مرة أخرى؟\nDon\'t ask about order ' + no + ' again?')) return;
-      RA_NO[no] = 1; try { localStorage.setItem('ts_rano', JSON.stringify(RA_NO)); } catch (x) { } readyAsk();
+    function readySend(no, t, btn) { $('rask').style.display = 'none'; RA_LATER[t + no] = 1; waReady(no, btn, t, true); setTimeout(readyAsk, 400); }
+    function readyLater(no, t) { RA_LATER[t + no] = 1; readyAsk(); }
+    function readyNo(no, t) {
+      if (!confirm('عدم السؤال عن هذه الرسالة لطلب ' + no + ' مرة أخرى؟\nDon\'t ask about this message for order ' + no + ' again?')) return;
+      RA_NO[t + no] = 1; try { localStorage.setItem('ts_rano', JSON.stringify(RA_NO)); } catch (x) { } readyAsk();
     }
     function closeLst() { $('lst').style.display = 'none'; }
     function showLst(title, html) { $('lTitle').textContent = title; $('lBody').innerHTML = html; $('lst').style.display = 'block'; }
