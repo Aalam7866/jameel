@@ -528,7 +528,7 @@
       openAct(no);
     }
     function tileClick(t) {
-      var T = { cut: 'قص متبقي · To cut', sti: 'خياطة متبقية · To stitch', rdy: 'جاهز لم يُسلّم · Ready', open: 'ثياب مفتوحة · Open pcs' };
+      var T = { cut: 'قص متبقي · To cut', sti: 'خياطة متبقية · To stitch', rdy: 'جاهز لم يُسلّم · Ready', open: 'قيد العمل · In work (not ready)' };
       if (t.indexOf('w:') === 0) { var k = t.slice(2); showLst(T[k] + ' (' + WIP[k].length + ')', ordRows(WIP[k])); return; }
       if (t.indexOf('k:') === 0) {
         var kd = t.slice(2), ws = (FEED.work || []).filter(function (w) { return w.kind === kd && w.status !== 'deleted'; });
@@ -740,7 +740,7 @@
         if (!P || del >= P) return;
         var p = PEND[r[0]] || {}, rdy = Math.min(P, Math.max(n(13) ? P : 0, del));
         var sti = Math.min(P, Math.max(n(7) + (Number(p.STITCH) || 0), rdy)), cut = Math.min(P, Math.max(n(6) + (Number(p.CUT) || 0), sti));
-        open += P - del; WIP.open.push([r, (P - del) + ' ثوب لم يُسلّم']);
+        if (P - rdy > 0) { open += P - rdy; WIP.open.push([r, (P - rdy) + ' ثوب قيد العمل' + (rdy - del > 0 ? ' · جاهز ' + (rdy - del) : '')]); }
         if (P - cut > 0) { c += P - cut; oc++; WIP.cut.push([r, 'قص ' + (P - cut) + ' من ' + P]); }
         if (P - sti > 0) { s += P - sti; os++; w += cut - sti; WIP.sti.push([r, 'خياطة ' + (P - sti) + ' من ' + P + (cut - sti > 0 ? ' · مقصوص ' + (cut - sti) : '')]); }
         if (rdy - del > 0) { rd += rdy - del; WIP.rdy.push([r, 'جاهز ' + (rdy - del) + ' ثوب']); }
@@ -748,7 +748,7 @@
       var h = '<div class="tile cut" data-t="w:cut"><b>' + c + '</b><span>قص متبقي · To cut</span><em>' + oc + ' طلب · orders</em></div>' +
               '<div class="tile sti" data-t="w:sti"><b>' + s + '</b><span>خياطة متبقية · To stitch</span><em>' + w + ' مقصوص بانتظار الخياطة · cut, waiting</em></div>' +
               '<div class="tile rdy" data-t="w:rdy"><b>' + rd + '</b><span>جاهز لم يُسلّم · Ready</span><em>بانتظار العميل · not collected</em></div>' +
-              '<div class="tile" data-t="w:open"><b>' + open + '</b><span>ثياب مفتوحة · Open pcs</span><em>لم تُسلّم بعد · not delivered</em></div>';
+              '<div class="tile" data-t="w:open"><b>' + open + '</b><span>قيد العمل · In work</span><em>لم يجهز بعد · not ready yet</em></div>';
       $('wip1').innerHTML = h; $('wip2').innerHTML = h;
       // not ready yet and the delivery date is today, in 1-2 days, or already past
       var ry = new Date(Date.now() + 3 * 3600e3), today = ry.toISOString().slice(0, 10), lim = new Date(ry.getTime() + 2 * 864e5).toISOString().slice(0, 10);
