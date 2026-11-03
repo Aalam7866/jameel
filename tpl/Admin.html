@@ -96,6 +96,7 @@
            background: #1f2a3a; color: #fff; font-weight: 600; white-space: pre-line; box-shadow: 0 10px 30px rgba(15,20,30,.35); display: none; cursor: pointer; }
   .toast.show { display: block; } .toast.ok { background: #1c6e45; } .toast.bad { background: #b3261e; }
   .fitbox { margin-top: 10px; border: 1px solid #e3e2e8; border-inline-start: 4px solid #b88a3e; border-radius: 10px; padding: 10px 12px; }
+  .fitb.one { grid-template-columns: 1fr; } .wabox .fitb.one button { font-size: 15px; padding: 11px 6px; }
   .fitb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; } .fitb button { font-size: 14px; padding: 9px 6px; }
   /* dialog */
   #dlg { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(15, 20, 30, .55); overflow-y: auto; padding: 24px 12px; }
@@ -584,6 +585,8 @@
     function waReady(no, btn, type) {
       type = type || 'ready';
       var r = ALL.filter(function (x) { return x[0] === String(no); })[0], lbl = btn.textContent;
+      var notR = type === 'ready' && r && !(Number(r[13]) === 1 || r[15] === 'Ready');
+      if (notR && !confirm('⚠ الطلب ' + no + ' ليس جاهزاً بعد في جميل (' + r[15] + ')\nOrder ' + no + ' is not ready yet in Jameel – send "order ready" anyway?')) return;
       if (!confirm('إرسال رسالة "' + WA_T[type][0] + '" واتساب من كمبيوتر المحل؟\nطلب ' + no + (r ? ' – ' + r[1] + ' ' + r[2] : '') + '\nSend the "' + WA_T[type][1] + '" WhatsApp from the shop PC?')) return;
       var by = ''; try { by = localStorage.getItem('ts_aby') || ''; } catch (x) { }
       btn.disabled = true; btn.textContent = '…';
@@ -644,11 +647,16 @@
       D = { no: r[0], name: r[1], pcs: Number(r[5]) || 0, given: Number(r[12]) || 0, due: Number(r[14]) || 0 };
       $('dTitle').textContent = 'طلب ' + D.no + ' – ' + D.name;
       $('dTrk').innerHTML = trackHtml(r);
-      var f = FIT[String(D.no)];
-      $('dFit').innerHTML = f ? '<div class="fitbox"><b>🧵 بروفة · Fitting</b> <span class="sp">' + esc(f.status) + '</span>' +
-        (f.sent ? '<div class="muted">أُرسلت رسالة البروفة ' + esc(day(f.sent)) + '</div>' : '') +
-        '<div class="fitb"><button class="go" type="button" onclick="waReady(\'' + esc(D.no) + '\', this, \'sample\')">📲 البروفة جاهزة</button>' +
-        '<button class="sec" type="button" onclick="waReady(\'' + esc(D.no) + '\', this, \'feedback\')">📲 كيف كانت البروفة؟</button></div></div>' : '';
+      // WhatsApp from the shop PC, on every order: ready + fitting (بروفة) ready + how was the fitting
+      var f = FIT[String(D.no)], rdy0 = Number(r[13]) === 1 || r[15] === 'Ready', q = '\'' + esc(D.no) + '\'';
+      var wb = function (type, cls, label) {
+        return '<button class="' + cls + '" type="button" onclick="waReady(' + q + ', this, \'' + type + '\')">' + (WASENT[type + D.no] ? '✔ ' : '📲 ') + label + '</button>';
+      };
+      $('dFit').innerHTML = '<div class="fitbox wabox"><b>📲 رسائل واتساب · WhatsApp</b>' +
+        (f ? ' <span class="sp">🧵 بروفة · ' + esc(f.status) + '</span>' : '') +
+        (f && f.sent ? '<div class="muted">أُرسلت رسالة البروفة ' + esc(day(f.sent)) + '</div>' : '') +
+        '<div class="fitb one">' + wb('ready', rdy0 ? 'act wa' : 'sec', 'الطلب جاهز – Order ready') + '</div>' +
+        '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
@@ -660,10 +668,7 @@
       // a finished order (paid and all delivered): only its details, no pay / deliver form
       var open = D.due > 0.005 || D.given < D.pcs;
       $('dForm').style.display = open ? '' : 'none'; $('dDone').style.display = open ? 'none' : '';
-      // the "thobes ready" WhatsApp: for an order that is ready and not all delivered
-      var rdy = Number(r[13]) === 1 && D.given < D.pcs;
-      $('dWa').innerHTML = rdy ? '<button class="act wa wide" type="button" style="padding:11px;font-size:15px" onclick="waReady(\'' + esc(D.no) + '\', this, \'ready\')">' +
-        (WASENT['ready' + D.no] ? '✔ الطلب جاهز' : '📲 الطلب جاهز – WhatsApp') + '</button>' : '';
+      $('dWa').innerHTML = '';
       $('dlg').style.display = 'block';
     }
     function closeAct() { $('dlg').style.display = 'none'; D = null; }
