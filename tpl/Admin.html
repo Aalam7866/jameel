@@ -130,6 +130,7 @@
   .tile b { display: block; font-family: var(--disp); font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1.1; }
   .tile span { font-size: 12px; color: var(--mute); }
   .tiles.wip { margin: 10px 0 4px; } .tile.cut { box-shadow: inset 0 3px 0 #c0392b; } .tile.sti { box-shadow: inset 0 3px 0 #d68910; } .tile.rdy { box-shadow: inset 0 3px 0 #1e8449; }
+  #soon table tr { cursor: pointer; } #soon .dl { font-weight: 700; white-space: nowrap; } #soon .lt { color: #c0392b; } #soon .sn { color: #b9770e; }
   .tile em { display: block; font-style: normal; font-size: 11.5px; color: var(--mute); margin-top: 3px; }
   /* rates */
   .rate-row { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #efeef2; padding: 10px 2px; }
@@ -236,6 +237,10 @@
           <div class="card">
             <h3>العمل المتبقي <small>Work remaining – pieces not yet cut / stitched</small></h3>
             <div class="tiles wip" id="wip1"><span class="muted">…</span></div>
+          </div>
+          <div class="card">
+            <h3>⚠ قريب من موعد التسليم <small>Due soon – not ready, delivery in 2 days or late</small></h3>
+            <div id="soon" class="muted">…</div>
           </div>
         </div>
         <div>
@@ -492,6 +497,10 @@
     }
     $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
     $('sqo').addEventListener('input', function () { if ($('sqo').value) $('sq').value = ''; renderTable(); });
+    $('soon').addEventListener('click', function (ev) {
+      var tr = ev.target.closest ? ev.target.closest('tr[data-soon]') : null;
+      if (tr) openAct(tr.getAttribute('data-soon'));
+    });
     $('stable').addEventListener('click', function (ev) {
       var w = ev.target.closest ? ev.target.closest('button[data-wa]') : null;
       if (w) { waReady(w.getAttribute('data-wa'), w); return; }
@@ -672,6 +681,25 @@
               '<div class="tile rdy"><b>' + rd + '</b><span>جاهز لم يُسلّم · Ready</span><em>بانتظار العميل · not collected</em></div>' +
               '<div class="tile"><b>' + open + '</b><span>ثياب مفتوحة · Open pcs</span><em>لم تُسلّم بعد · not delivered</em></div>';
       $('wip1').innerHTML = h; $('wip2').innerHTML = h;
+      // not ready yet and the delivery date is today, in 1-2 days, or already past
+      var ry = new Date(Date.now() + 3 * 3600e3), today = ry.toISOString().slice(0, 10), lim = new Date(ry.getTime() + 2 * 864e5).toISOString().slice(0, 10);
+      var dd = function (a) { return Math.round((Date.parse(a.slice(0, 10)) - Date.parse(today)) / 864e5); };
+      var soon = ALL.filter(function (r) {
+        var P = Number(r[5]) || 0;
+        return P && r[4] && r[4].length >= 10 && r[4].slice(0, 10) <= lim && Number(r[13]) !== 1 && r[15] !== 'Ready' && r[15] !== 'Delivered' && (Number(r[12]) || 0) < P;
+      }).sort(function (a, b) { return a[4] < b[4] ? -1 : a[4] > b[4] ? 1 : 0; });
+      $('soon').innerHTML = soon.length ? '<table>' + soon.map(function (r) {
+        var P = Number(r[5]) || 0, p = PEND[r[0]] || {}, n = dd(r[4]);
+        var sti = Math.min(P, (Number(r[7]) || 0) + (Number(p.STITCH) || 0)), cut = Math.min(P, Math.max((Number(r[6]) || 0) + (Number(p.CUT) || 0), sti));
+        var left = cut < P ? 'قص ' + (P - cut) + ' · ' : '';
+        left += sti < P ? 'خياطة ' + (P - sti) : 'الخياطة ✓';
+        var hg = (Number(r[8]) || 0) - (Number(r[9]) || 0) - (Number(p.HINGE) || 0), em = (Number(r[10]) || 0) - (Number(r[11]) || 0) - (Number(p.EMBROIDERY) || 0);
+        if (hg > 0) left += ' · زرار ' + hg; if (em > 0) left += ' · تطريز ' + em;
+        var when = n < 0 ? '<span class="dl lt">متأخر ' + (-n) + ' يوم<br>Late ' + (-n) + 'd</span>' : n === 0 ? '<span class="dl lt">اليوم<br>Today</span>'
+                 : '<span class="dl sn">' + (n === 1 ? 'غداً<br>Tomorrow' : 'بعد يومين<br>In 2 days') + '</span>';
+        return '<tr data-soon="' + esc(r[0]) + '"><td>' + when + '</td><td><b>' + esc(r[0]) + '</b> – ' + esc(r[1]) + '<br><span class="muted" dir="ltr">' + esc(day(r[4])) + '</span></td>' +
+               '<td>' + P + ' ثوب<br><span class="muted">' + left + '</span></td></tr>';
+      }).join('') + '</table>' : '<span class="muted">✔ لا يوجد – nothing due soon</span>';
     }
     function renderTable() {
       renderWip();
