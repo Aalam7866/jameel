@@ -80,7 +80,8 @@ function pendingFit(sp, kind) {
 function fitChoice(kind, o, od, fitCutPending, myFitPending) {
   if (!od.fit || myFitPending[o]) return '';
   if (kind === 'CUT') return od.fitCut ? '' : 'cut';
-  if (kind === 'STITCH') return od.fitDone ? '' : (od.fitCut || fitCutPending[o]) ? 'done' : 'waitcut';
+  // the cutter need not tick the fitting piece: once enough pieces are cut (checked by the caller) the tailor may finish it
+  if (kind === 'STITCH') return od.fitDone ? '' : 'done';
   return '';
 }
 function cutAvail(o, od, cutPending, stitchPending) {
@@ -175,8 +176,8 @@ async function submit(token, rows, pin, ak, day) {
     }
     if (fits[o]) {
       const c = fitChoice(kind, o, od, fitCutPend, myFitPend);
-      if (c === 'waitcut') errors.push('طلب ' + o + ': البروفة لم تُقص بعد – fitting piece not cut yet');
-      else if (c !== 'cut' && c !== 'done') errors.push('طلب ' + o + ': لا توجد بروفة أو تمت – no fitting piece / already done');
+      // no fitting piece left to tick (none, already done, or already sent): the piece counts as a normal piece
+      if (c !== 'cut' && c !== 'done') clean.forEach(x => { if (x.o === o) x.fit = false; });
     }
   }
   if (errors.length) return { ok: false, msg: 'لم يتم التحويل – Nothing saved:\n' + errors.join('\n') };
