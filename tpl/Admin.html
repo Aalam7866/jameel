@@ -24,6 +24,10 @@
           border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   @media (max-width: 560px) { .hdr h1 { font-size: 16px; white-space: normal; } .bell span { display: none; } .hdr img { width: 40px; height: 40px; } }
   .bell:hover { background: rgba(255, 255, 255, .15); }
+  .lang { display: inline-flex; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; overflow: hidden; margin-inline-end: 8px; flex: none; }
+  .lang button { background: transparent; color: #c9ced8; border: 0; padding: 7px 10px; font-size: 13px; font-weight: 700; cursor: pointer; width: auto; border-radius: 0; }
+  .lang button.on { background: var(--gold); color: var(--ink); }
+  @media (max-width: 560px) { .lang button { padding: 7px 8px; font-size: 12px; } }
   /* tab bar */
   .nav { background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 6; }
   .nav .wrapx { display: flex; align-items: stretch; gap: 2px; overflow-x: auto; scrollbar-width: none; }
@@ -214,6 +218,7 @@
     <div class="wrapx">
       <img src="/img/logo-240.png" alt="">
       <div class="nm"><h1><?= shop ?></h1><div class="sub">لوحة الإدارة · Admin <span id="state"></span></div></div>
+      <div class="lang" id="langSw" data-nol="1" role="group" aria-label="Language"><button type="button" data-l="ar">ع</button><button type="button" data-l="en">EN</button><button type="button" data-l="both">ع+EN</button></div>
       <button class="bell" id="enable" onclick="enableAlerts()" title="Turn on sound &amp; alerts">🔔 <span>التنبيهات</span></button>
     </div>
   </header>
@@ -1274,5 +1279,134 @@
     } else start();
   </script>
 <? } ?>
+
+  <script>
+  // ---- language: Arabic only / English only / both (the page is written in both; the other one is hidden) ----
+  (function () {
+    var AR = /[؀-ۿ]/, EN = /[A-Za-z]/, SEP = /(\s+[–\/·|]\s+|\s*\n\s*)/;
+    var MODE = 'both';
+    try { MODE = localStorage.getItem('ts_lang') || 'both'; } catch (x) { }
+    // words that are written in one language only (built by the page): their other language
+    var TO_EN = [['⚠ غير مربوط بموظف في برنامج جميل – عمله لا يُحفظ', '⚠ not linked to a JAMEEL employee – his work is not saved'],
+      ['⏳ يوجد طلب سابق لم يُحفظ بعد', '⏳ an earlier order is not saved yet'], ['أُرسل أونلاين ولم يستلمه المحل', 'sent online, not taken by the shop yet'],
+      ['ثياب البروفة أكثر من ثياب الطلب', 'more fitting pieces than the order has'], ['ليس جاهزاً بعد في جميل', 'is not ready yet in JAMEEL'],
+      ['عدم السؤال عن هذه الرسالة لطلب', 'don\'t ask about this message for order'], ['إلغاء البروفة لطلب', 'remove the fitting of order'],
+      ['كيف كانت البروفة؟', 'How was the fitting?'], ['كيف كانت البروفة', 'How was the fitting'], ['البروفة جاهزة', 'Fitting ready'],
+      ['بروفة طلب', 'Fitting of order'], ['الطلب جاهز', 'Order ready'], ['جاهز للاستلام', 'Ready'], ['تم التسليم', 'Delivered'],
+      ['طلبات أونلاين', 'Online orders'], ['طلب أونلاين', 'Online order'], ['ثوب قيد العمل', 'pcs in work'], ['سداد / تسليم', 'Pay / Deliver'],
+      ['أكثر من المتبقي', 'more than the balance'], ['على العميل', 'customer owes'], ['بدون بروفة', 'no fitting'], ['لا بروفة', 'no fitting'],
+      ['آخر تحديث', 'Last update'], ['الإشعارات', 'Notifications'], ['الصوت', 'Sound'], ['غير مدعوم', 'not supported'], ['لم يُطلب', 'not asked'],
+      ['بانتظار المحل', 'waiting for the shop'], ['جاري الحذف', 'deleting'], ['جاري الإضافة…', 'adding…'], ['جاري الحفظ…', 'saving…'],
+      ['أول 300', 'first 300'], ['متأخر', 'Late'], ['اليوم', 'Today'], ['غداً', 'Tomorrow'], ['بعد يومين', 'In 2 days'], ['يوم', 'd'],
+      ['الخياطة ✓', 'Stitching ✓'], ['الخياطة', 'Tailoring'], ['الكبسات', 'Hinge'], ['التطريز', 'Embroidery'], ['القص', 'Cutting'],
+      ['المتبقي', 'Due'], ['المستحق', 'Due'], ['الباقي', 'Left'], ['الخصم', 'Deduction'], ['القطع', 'Pcs'], ['سُلّم', 'Delivered'],
+      ['مقصوص', 'cut'], ['من المحل', 'from the shop'], ['محذوف', 'deleted'], ['بانتظار', 'waiting'], ['وصل', 'received'], ['مقاس', 'Measuring'],
+      ['فاتورة', 'invoice'], ['إيصال', 'receipt'], ['أخرى', 'more'], ['إلغاء', 'Cancel'], ['حذف', 'Delete'], ['خطأ', 'Error'], ['التاريخ', 'Date'],
+      ['التسليم', 'Delivery'], ['الجوال', 'Mobile'], ['الحالة', 'Status'], ['الحجز', 'Booked'], ['العامل', 'Worker'], ['العمل', 'Work'],
+      ['العميل', 'Customer'], ['الطلب', 'Order'], ['بروفة', 'Fitting'], ['تسليم', 'Deliver'], ['سداد', 'Pay'], ['تطريز', 'Embroidery'],
+      ['خياطة', 'Stitch'], ['زرار', 'Hinge'], ['قص', 'Cut'], ['جاهز', 'Ready'], ['ثياب', 'pcs'], ['ثوب', 'pcs'], ['قطعة', 'pcs'], ['طلب', 'Order'],
+      ['ر.س', 'SAR'], ['من', 'of']];
+    var TO_AR = { 'Late': 'متأخر', 'Cutting': 'قص', 'Stitched': 'مخيط', 'Ready': 'جاهز', 'Delivered': 'مُسلّم', 'In progress': 'قيد العمل',
+      'Not started': 'لم يبدأ', 'Partly delivered': 'سُلّم جزئياً', 'Stitching': 'خياطة', 'Hinge': 'زرار', 'Embroidery': 'تطريز', 'Measuring': 'مقاس',
+      'In work': 'قيد العمل', 'Fitting cut': 'مقصوصة', 'Customer checked': 'جرّبها العميل', 'Changes': 'تعديلات', 'Alteration': 'تعديل',
+      'blocked': 'مرفوض', 'on': 'مفعّل', 'Close': 'إغلاق', 'Cancel': 'إلغاء', 'OK': 'تم' };
+    var BND = '(^|[\\s·–:(،\\-+/])', BNE = '(?=$|[\\s·–:)،?!؟\\-+/.…])';
+    var TO_EN_RE = TO_EN.map(function (x) { return [new RegExp(BND + x[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + BNE, 'g'), x[1]]; });
+    function tr(t, m) {
+      if (m === 'en') {
+        var v = t; TO_EN_RE.forEach(function (x) { v = v.replace(x[0], function (a, b) { return b + x[1]; }); });
+        return AR.test(v) ? t : v;
+      }
+      var k = t.trim(); return TO_AR[k] ? t.replace(k, TO_AR[k]) : t;
+    }
+    function kind(t) { var a = AR.test(t), e = EN.test(t); return a && e ? 'mix' : a ? 'ar' : e ? 'en' : ''; }
+    // "عربي – English", "عربي / English", "عربي · English", lines: keeps the chosen language's parts
+    function pick(t, m) {
+      if (m === 'both' || !t) return t;
+      var bad = m === 'ar' ? 'en' : 'ar', p = t.split(SEP), has = false, drop = false, i;
+      for (i = 0; i < p.length; i += 2) { var k = kind(p[i]); if (k === m || k === 'mix') has = true; if (k === bad) drop = true; }
+      if (!has) {   // nothing in the chosen language: each part's own translation, where there is one
+        for (i = 0; i < p.length; i += 2) if (kind(p[i]) === bad) p[i] = tr(p[i], m);
+        return p.join('');
+      }
+      if (!drop) return t;
+      var out = '', carry = '';
+      for (i = 0; i < p.length; i += 2) {
+        var k2 = kind(p[i]);
+        if (k2 === bad) { if (!out && !carry) carry = (p[i].match(/^[^A-Za-z؀-ۿ]*/) || [''])[0]; continue; }
+        if (!p[i].trim() && !k2) { if (!out) carry += p[i]; continue; }
+        out += (out ? (p[i - 1] || ' ') : '') + p[i];
+      }
+      out = (carry + out).replace(/\s+([:])/, '$1');
+      return /^\s/.test(t) ? ' ' + out.replace(/^\s+/, '') : out;
+    }
+    window.LANG_PICK = function (t) { return pick(String(t == null ? '' : t), MODE); };
+    function own(el, k) {   // el's own text (not its children's) of kind k
+      for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && kind(n.__o != null ? n.__o : n.data) === k) return true;
+      return false;
+    }
+    function hasSmall(el, k) {
+      for (var c = el.firstElementChild; c; c = c.nextElementSibling) if (c.tagName === 'SMALL' && kind(c.textContent) === k) return true;
+      return false;
+    }
+    function fix(n) {
+      var o = n.__o != null ? n.__o : n.data, par = n.parentNode;
+      if (n.__o == null) n.__o = o;
+      var v = o;
+      if (MODE !== 'both') {
+        var k = kind(o), bad = MODE === 'ar' ? 'en' : 'ar';
+        if (k === 'mix') v = pick(o, MODE);
+        else if (k === bad && par) {
+          // a subtitle (<small>English</small> under Arabic), or the other language's line (<br>) in the same cell
+          if ((par.tagName === 'SMALL' && par.parentNode && own(par.parentNode, MODE)) || hasSmall(par, MODE) || own(par, MODE)) v = '';
+          else v = pick(o, MODE);
+        }
+      }
+      if (n.data !== v) { n.__w = v; n.data = v; }
+      if (par && par.tagName === 'SMALL') par.style.display = v || MODE === 'both' ? '' : 'none';
+    }
+    function walk(root) {
+      if (!root) return;
+      if (root.nodeType === 3) { if (root.__w !== root.data) { if (root.__w != null) root.__o = null; } fix(root); return; }
+      if (root.nodeType !== 1 || root.closest && root.closest('script,style,textarea,[data-nol]')) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, list = [];
+      while ((n = w.nextNode())) { var p = n.parentNode; if (p && !/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName) && !(p.closest && p.closest('[data-nol]'))) list.push(n); }
+      list.forEach(function (x) { if (x.__w != null && x.__w !== x.data) x.__o = null; fix(x); });
+      var els = root.querySelectorAll ? root.querySelectorAll('[placeholder],[title]') : [];
+      Array.prototype.forEach.call(els, function (e) {
+        ['placeholder', 'title'].forEach(function (a) {
+          if (!e.hasAttribute(a)) return;
+          var key = '__a' + a; if (e[key] == null || e.getAttribute(a) !== e[key + 'w']) e[key] = e.getAttribute(a);
+          var v = pick(e[key], MODE); e[key + 'w'] = v; if (e.getAttribute(a) !== v) e.setAttribute(a, v);
+        });
+      });
+    }
+    var busy = false;
+    var mo = new MutationObserver(function (ms) {
+      if (busy) return; busy = true;
+      try {
+        ms.forEach(function (m) {
+          if (m.type === 'characterData') { var n = m.target; if (n.__w !== n.data) { n.__o = null; fix(n); } }
+          else Array.prototype.forEach.call(m.addedNodes, walk);
+        });
+      } finally { mo.takeRecords(); busy = false; }
+    });
+    function setLang(m) {
+      MODE = m; try { localStorage.setItem('ts_lang', m); } catch (x) { }
+      document.documentElement.setAttribute('dir', m === 'en' ? 'ltr' : 'rtl');
+      document.documentElement.setAttribute('lang', m === 'en' ? 'en' : 'ar');
+      Array.prototype.forEach.call(document.querySelectorAll('#langSw button'), function (b) { b.className = b.getAttribute('data-l') === m ? 'on' : ''; });
+      busy = true; try { walk(document.body); } finally { mo.takeRecords(); busy = false; }
+    }
+    window.setLang = setLang;
+    // alerts and questions in the chosen language too
+    var A = window.alert, C = window.confirm;
+    window.alert = function (t) { return A.call(window, window.LANG_PICK(t)); };
+    window.confirm = function (t) { return C.call(window, window.LANG_PICK(t)); };
+    document.getElementById('langSw').addEventListener('click', function (e) { var b = e.target.closest('button[data-l]'); if (b) setLang(b.getAttribute('data-l')); });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    setLang(MODE);
+  })();
+  </script>
 </body>
 </html>
