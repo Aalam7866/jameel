@@ -16,7 +16,7 @@
 <script type="module">
 // JAMEEL AL HINDAM online pages:  /exec?t=TOKEN (worker)  /exec?o=KEY (new order)  /exec?a=KEY (alerts)
 // The same Page/Order/Admin pages as before; their google.script.run calls now go to Firebase (js/jameel.js).
-import { SERVER, pageVars, orderVars, adminVars } from '/js/jameel.js?v=22';
+import { SERVER, pageVars, orderVars, adminVars } from '/js/jameel.js?v=23';
 
 // google.script.run → Firebase
 const SHIM = `<script>(function () {
@@ -62,7 +62,7 @@ else try {
   if (vars.ok && (KIND === 'a' || KIND === 'o')) try { localStorage.setItem('jameel-home-' + KIND, '/' + KIND + '/' + KEYV + '/'); } catch (e) { }
   const mLink = '<link rel="manifest" href="' + (KIND === 'a' || KIND === 'o' ? '/' + KIND + '/manifest.json'
     : '/t/' + KEYV + '/manifest.json?n=' + encodeURIComponent(wName)) + '">';
-  const src = await (await fetch('/tpl/' + tpl + '.html?v=22', { cache: 'no-cache' })).text();
+  const src = await (await fetch('/tpl/' + tpl + '.html?v=23', { cache: 'no-cache' })).text();
   window.__srv = Promise.resolve(SERVER);
   const html = render(src, vars)
     .replace('<head>', '<head>\n<meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(title) + '</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/css/brand.css?v=1">' + mLink + SHIM);

@@ -96,6 +96,10 @@
            background: #1f2a3a; color: #fff; font-weight: 600; white-space: pre-line; box-shadow: 0 10px 30px rgba(15,20,30,.35); display: none; cursor: pointer; }
   .toast.show { display: block; } .toast.ok { background: #1c6e45; } .toast.bad { background: #b3261e; }
   .fitbox { margin-top: 10px; border: 1px solid #e3e2e8; border-inline-start: 4px solid #b88a3e; border-radius: 10px; padding: 10px 12px; }
+  .duebox { margin-top: 10px; border: 1px solid #e3e2e8; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .duebox .dv { flex: 1; min-width: 160px; } .duebox .dv b { font-size: 16px; } .duebox .late { color: #c0392b; font-weight: 700; font-size: 13px; }
+  .duebox button { width: auto; padding: 8px 14px; font-size: 14px; } .duebox input[type=date] { flex: 1; min-width: 150px; font-size: 16px; padding: 8px; }
+  .duebox .dq { display: flex; gap: 6px; width: 100%; } .duebox .dq button { flex: 1; padding: 7px 4px; font-size: 13px; }
   .fitb.one { grid-template-columns: 1fr; } .wabox .fitb.one button { font-size: 15px; padding: 11px 6px; }
   .fitb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; } .fitb button { font-size: 14px; padding: 9px 6px; }
   /* dialog */
@@ -353,6 +357,7 @@
       <div class="dbody">
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
+      <div class="duebox" id="dDue"></div>
       <div id="dFit"></div>
       <div id="dWa"></div>
       <div id="dDone" class="rate-ok" style="display:none;margin-top:10px">✔ الطلب مدفوع ومسلّم بالكامل – fully paid and delivered</div>
@@ -704,6 +709,7 @@
         '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
+      dueShow(r);
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -715,6 +721,51 @@
       $('dForm').style.display = open ? '' : 'none'; $('dDone').style.display = open ? 'none' : '';
       $('dWa').innerHTML = '';
       $('dlg').style.display = 'block';
+    }
+    // ---- the delivery date: shown on every order, changed from here (the shop PC writes it to JAMEEL + InvProject) ----
+    function dueShow(r) {
+      var d = (r[4] || '').slice(0, 10), today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+      var open = (Number(r[12]) || 0) < (Number(r[5]) || 0), late = open && d && d < today;
+      $('dDue').innerHTML = '<div class="dv">📅 موعد التسليم / Delivery: <b dir="ltr">' + (d ? esc(day(d)) : '–') + '</b>' +
+        (late ? ' <span class="late">متأخر – late</span>' : '') + '</div>' +
+        (open ? '<button class="sec" type="button" onclick="dueEdit()">✏️ تغيير · Change</button>' : '');
+    }
+    function dueEdit() {
+      var r = ALL.filter(function (x) { return D && x[0] === String(D.no); })[0]; if (!r) return;
+      var d = (r[4] || '').slice(0, 10), base = new Date(Date.now() + 3 * 3600e3);
+      var plus = function (n) { return new Date(base.getTime() + n * 864e5).toISOString().slice(0, 10); };
+      $('dDue').innerHTML = '<div class="dv">📅 موعد التسليم الجديد / New delivery date</div>' +
+        '<div class="dq">' + [1, 2, 3, 7].map(function (n) { return '<button class="sec" type="button" onclick="$(\'dNew\').value=\'' + plus(n) + '\'">+' + n + ' يوم</button>'; }).join('') + '</div>' +
+        '<input type="date" id="dNew" value="' + esc(d) + '"><button class="go" type="button" id="dDueSave" onclick="dueSave()">حفظ · Save</button>' +
+        '<button class="sec" type="button" onclick="dueShow(ALL.filter(function (x) { return D && x[0] === String(D.no); })[0])">إلغاء</button>';
+    }
+    function dueSave() {
+      if (!D) return;
+      var no = D.no, d = $('dNew').value, btn = $('dDueSave');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { alert('اختر التاريخ – pick the date'); return; }
+      var by = ''; try { by = localStorage.getItem('ts_aby') || ''; } catch (x) { }
+      btn.disabled = true; btn.textContent = '…';
+      toast('⏳ جاري الحفظ في كمبيوتر المحل… – saving on the shop PC', '');
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || !res.ok) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert((res && res.msg) || 'خطأ'); return; }
+        var n = 0, t = setInterval(function () {
+          google.script.run.withSuccessHandler(function (j) {
+            if (j.st === 'done') {
+              clearInterval(t);
+              ALL.forEach(function (x) { if (x[0] === String(no)) x[4] = d; });
+              toast('✔ تم تغيير موعد التسليم – Delivery date changed\nطلب ' + no + ' → ' + day(d), 'ok');
+              if (D && String(D.no) === String(no)) dueShow(ALL.filter(function (x) { return x[0] === String(no); })[0]);
+              renderTable();
+            } else if (j.st === 'error' || j.st === 'cancelled') {
+              clearInterval(t); btn.disabled = false; btn.textContent = 'حفظ · Save';
+              toast('✖ لم يتم الحفظ – Not saved\nطلب ' + no + '\n' + (j.error || j.st), 'bad', true);
+            } else if (++n > 40) {
+              clearInterval(t); btn.textContent = '⏳';
+              toast('⏳ كمبيوتر المحل لم يحفظ بعد – the shop PC has not saved it yet (is it on?)', 'bad', true);
+            }
+          }).aJob(KEY, PIN, res.id);
+        }, 3000);
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aDueDate(KEY, PIN, no, d, by);
     }
     function closeAct() { $('dlg').style.display = 'none'; D = null; }
     function setKind(k) {

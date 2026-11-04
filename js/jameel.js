@@ -769,6 +769,15 @@ async function aWaReady(key, pin, order, by, type) {
   const ref = await addDoc(collection(db, 'jobs'), { kind: 'wa_ready', t, st: 'new', ts: serverTimestamp(), order: o, by: String(by || '').slice(0, 40) });
   return { ok: true, id: ref.id };
 }
+async function aDueDate(key, pin, order, date, by) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const o = Number(orderKey(order)), d = String(date || '').slice(0, 10);
+  if (!o) return { ok: false, msg: 'رقم الطلب؟ – order?' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return { ok: false, msg: 'التاريخ؟ – date?' };
+  const ref = await addDoc(collection(db, 'jobs'), { kind: 'due_date', st: 'new', ts: serverTimestamp(), order: o, date: d, by: String(by || '').slice(0, 40) });
+  return { ok: true, id: ref.id };
+}
 async function aJob(key, pin, id) {
   const s = await getDoc(doc(db, 'jobs', String(id)));
   if (!s.exists()) return { st: 'gone' };
@@ -811,5 +820,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aJob, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aJob, aOrderWip, aShopEmployees,
 };
