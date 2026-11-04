@@ -100,6 +100,9 @@
   .duebox .dv { flex: 1; min-width: 160px; } .duebox .dv b { font-size: 16px; } .duebox .late { color: #c0392b; font-weight: 700; font-size: 13px; }
   .duebox button { width: auto; padding: 8px 14px; font-size: 14px; } .duebox input[type=date] { flex: 1; min-width: 150px; font-size: 16px; padding: 8px; }
   .duebox .dq { display: flex; gap: 6px; width: 100%; } .duebox .dq button { flex: 1; padding: 7px 4px; font-size: 13px; }
+  .duebox.prova { border-inline-start: 4px solid #b88a3e; } .duebox .qn { display: flex; align-items: center; gap: 6px; }
+  .duebox .qn input { width: 64px; text-align: center; font-size: 18px; font-weight: 700; padding: 6px; } .duebox .qn button { padding: 6px 12px; font-size: 18px; }
+  .duebox .lb { width: 100%; font-size: 13px; color: var(--mute); margin-top: 2px; }
   .fitb.one { grid-template-columns: 1fr; } .wabox .fitb.one button { font-size: 15px; padding: 11px 6px; }
   .fitb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; } .fitb button { font-size: 14px; padding: 9px 6px; }
   /* dialog */
@@ -358,6 +361,7 @@
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
       <div class="duebox" id="dDue"></div>
+      <div class="duebox prova" id="dProva"></div>
       <div id="dFit"></div>
       <div id="dWa"></div>
       <div id="dDone" class="rate-ok" style="display:none;margin-top:10px">✔ الطلب مدفوع ومسلّم بالكامل – fully paid and delivered</div>
@@ -709,7 +713,7 @@
         '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
-      dueShow(r);
+      dueShow(r); provaShow();
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -729,6 +733,66 @@
       $('dDue').innerHTML = '<div class="dv">📅 موعد التسليم / Delivery: <b dir="ltr">' + (d ? esc(day(d)) : '–') + '</b>' +
         (late ? ' <span class="late">متأخر – late</span>' : '') + '</div>' +
         (open ? '<button class="sec" type="button" onclick="dueEdit()">✏️ تغيير · Change</button>' : '');
+    }
+    // ---- the fitting piece (بروفة): how many pieces and its delivery date (the shop PC writes them to JAMEEL) ----
+    var FST = { 'In work': 'قيد العمل · In work', 'Fitting cut': 'مقصوصة · Cut', 'Ready': 'جاهزة · Ready', 'Customer checked': 'جرّبها العميل · Checked',
+                'Changes': 'تعديلات · Changes', 'Alteration': 'تعديل · Alteration', 'Delivered': 'سُلّمت · Delivered' };
+    function provaShow() {
+      if (!D) return;
+      var f = FIT[String(D.no)], today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+      if (!f) { $('dProva').innerHTML = '<div class="dv">🧵 بروفة / Fitting: <b>لا يوجد – none</b></div><button class="sec" type="button" onclick="provaEdit()">+ إضافة · Add</button>'; return; }
+      var d = (f.date || '').slice(0, 10), late = d && d < today && !f.done && !f.delivered;
+      $('dProva').innerHTML = '<div class="dv">🧵 بروفة / Fitting: <b>' + (Number(f.qty) || 1) + ' ثوب</b> · ' + esc(FST[f.status] || f.status) +
+        '<br>📅 موعد البروفة / Fitting date: <b dir="ltr">' + (d ? esc(day(d)) : '–') + '</b>' + (late ? ' <span class="late">متأخر – late</span>' : '') + '</div>' +
+        (!f.delivered ? '<button class="sec" type="button" onclick="provaEdit()">✏️ تغيير · Change</button>' : '');
+    }
+    function provaEdit() {
+      if (!D) return;
+      var f = FIT[String(D.no)] || {}, d = (f.date || '').slice(0, 10), base = new Date(Date.now() + 3 * 3600e3);
+      var plus = function (n) { return new Date(base.getTime() + n * 864e5).toISOString().slice(0, 10); };
+      if (!d) d = plus(7);
+      $('dProva').innerHTML = '<div class="dv">🧵 بروفة / Fitting</div>' +
+        '<div class="lb">عدد ثياب البروفة / Fitting pieces' + (f.status ? '' : ' (0 = لا بروفة)') + '</div>' +
+        '<div class="qn"><button class="sec" type="button" onclick="var i=$(\'fQty\');i.value=Math.max(0,(+i.value||0)-1)">−</button>' +
+        '<input type="number" id="fQty" min="0" max="' + Math.max(1, D.pcs) + '" inputmode="numeric" value="' + (Number(f.qty) || 1) + '">' +
+        '<button class="sec" type="button" onclick="var i=$(\'fQty\');i.value=Math.min(50,(+i.value||0)+1)">+</button>' +
+        '<span class="muted">من ' + D.pcs + ' · 0 = إلغاء البروفة</span></div>' +
+        '<div class="lb">موعد تسليم البروفة / Fitting delivery date</div>' +
+        '<div class="dq">' + [1, 2, 3, 7].map(function (n) { return '<button class="sec" type="button" onclick="$(\'fDate\').value=\'' + plus(n) + '\'">+' + n + ' يوم</button>'; }).join('') + '</div>' +
+        '<input type="date" id="fDate" value="' + esc(d) + '"><button class="go" type="button" id="fSave" onclick="provaSave()">حفظ · Save</button>' +
+        '<button class="sec" type="button" onclick="provaShow()">إلغاء</button>';
+    }
+    function provaSave() {
+      if (!D) return;
+      var no = D.no, q = Math.round(Number($('fQty').value)), d = $('fDate').value, btn = $('fSave');
+      if (!(q >= 0 && q <= 50)) { alert('عدد القطع؟ – pieces?'); return; }
+      if (q > D.pcs) { alert('ثياب البروفة أكثر من ثياب الطلب (' + D.pcs + ') – more fitting pieces than the order has'); return; }
+      if (q > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(d)) { alert('اختر التاريخ – pick the date'); return; }
+      if (q === 0 && !confirm('إلغاء البروفة لطلب ' + no + '؟\nRemove the fitting piece of order ' + no + '?')) return;
+      var by = ''; try { by = localStorage.getItem('ts_aby') || ''; } catch (x) { }
+      btn.disabled = true; btn.textContent = '…';
+      toast('⏳ جاري الحفظ في كمبيوتر المحل… – saving on the shop PC', '');
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || !res.ok) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert((res && res.msg) || 'خطأ'); return; }
+        var n = 0, t = setInterval(function () {
+          google.script.run.withSuccessHandler(function (j) {
+            if (j.st === 'done') {
+              clearInterval(t);
+              if (q === 0) delete FIT[String(no)];
+              else { var f = FIT[String(no)] || { status: 'In work', done: '', sent: '', checked: '', delivered: '' }; f.qty = q; f.date = d; FIT[String(no)] = f; }
+              toast('✔ تم حفظ البروفة – Fitting saved\nطلب ' + no + (q ? ' · ' + q + ' ثوب · ' + day(d) : ' · بدون بروفة'), 'ok');
+              if (D && String(D.no) === String(no)) provaShow();
+              renderTable();
+            } else if (j.st === 'error' || j.st === 'cancelled') {
+              clearInterval(t); btn.disabled = false; btn.textContent = 'حفظ · Save';
+              toast('✖ لم يتم الحفظ – Not saved\nطلب ' + no + '\n' + (j.error || j.st), 'bad', true);
+            } else if (++n > 40) {
+              clearInterval(t); btn.textContent = '⏳';
+              toast('⏳ كمبيوتر المحل لم يحفظ بعد – the shop PC has not saved it yet (is it on?)', 'bad', true);
+            }
+          }).aJob(KEY, PIN, res.id);
+        }, 3000);
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aFitSet(KEY, PIN, no, q, q ? d : '', by);
     }
     function dueEdit() {
       var r = ALL.filter(function (x) { return D && x[0] === String(D.no); })[0]; if (!r) return;

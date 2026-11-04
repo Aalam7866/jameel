@@ -560,7 +560,7 @@ async function aOrders(key, pin) {
   }
   // fitting pieces (بروفة): which orders have one, and how far it is (from the shop PC)
   const fit = {};
-  try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '', delivered: f.delivered || '' }; }); } catch (e) { }
+  try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '', delivered: f.delivered || '', date: f.date || '', qty: f.qty || '' }; }); } catch (e) { }
   // when the "order ready" WhatsApp went (JAMEEL's orders.ready_sent – also when sent from JAMEEL itself)
   const sent = {};
   try { (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); }); } catch (e) { }
@@ -778,6 +778,16 @@ async function aDueDate(key, pin, order, date, by) {
   const ref = await addDoc(collection(db, 'jobs'), { kind: 'due_date', st: 'new', ts: serverTimestamp(), order: o, date: d, by: String(by || '').slice(0, 40) });
   return { ok: true, id: ref.id };
 }
+async function aFitSet(key, pin, order, qty, date, by) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const o = Number(orderKey(order)), q = Math.round(Number(qty)), d = String(date || '').slice(0, 10);
+  if (!o) return { ok: false, msg: 'رقم الطلب؟ – order?' };
+  if (!(q >= 0 && q <= 50)) return { ok: false, msg: 'عدد القطع؟ – pcs?' };
+  if (d && !/^\d{4}-\d{2}-\d{2}$/.test(d)) return { ok: false, msg: 'التاريخ؟ – date?' };
+  const ref = await addDoc(collection(db, 'jobs'), { kind: 'fit_set', st: 'new', ts: serverTimestamp(), order: o, qty: q, date: d, by: String(by || '').slice(0, 40) });
+  return { ok: true, id: ref.id };
+}
 async function aJob(key, pin, id) {
   const s = await getDoc(doc(db, 'jobs', String(id)));
   if (!s.exists()) return { st: 'gone' };
@@ -820,5 +830,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aJob, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aJob, aOrderWip, aShopEmployees,
 };
