@@ -104,6 +104,7 @@
   .duebox .dv { flex: 1; min-width: 160px; } .duebox .dv b { font-size: 16px; } .duebox .late { color: #c0392b; font-weight: 700; font-size: 13px; }
   .duebox button { width: auto; padding: 8px 14px; font-size: 14px; } .duebox input[type=date] { flex: 1; min-width: 150px; font-size: 16px; padding: 8px; }
   .duebox .dq { display: flex; gap: 6px; width: 100%; } .duebox .dq button { flex: 1; padding: 7px 4px; font-size: 13px; }
+  .duebox select { width: 100%; font-size: 15px; padding: 8px; }
   .duebox.prova { border-inline-start: 4px solid #b88a3e; } .duebox .qn { display: flex; align-items: center; gap: 6px; }
   .duebox .qn input { width: 64px; text-align: center; font-size: 18px; font-weight: 700; padding: 6px; } .duebox .qn button { padding: 6px 12px; font-size: 18px; }
   .duebox .lb { width: 100%; font-size: 13px; color: var(--mute); margin-top: 2px; }
@@ -367,6 +368,7 @@
       <div class="sum" id="dSum"></div>
       <div class="duebox" id="dDue"></div>
       <div class="duebox prova" id="dProva"></div>
+      <div class="duebox" id="dShare"></div>
       <div id="dFit"></div>
       <div id="dWa"></div>
       <div id="dDone" class="rate-ok" style="display:none;margin-top:10px">✔ الطلب مدفوع ومسلّم بالكامل – fully paid and delivered</div>
@@ -718,7 +720,7 @@
         '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
-      dueShow(r); provaShow();
+      dueShow(r); provaShow(); shareShow();
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -798,6 +800,56 @@
           }).aJob(KEY, PIN, res.id);
         }, 3000);
       }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aFitSet(KEY, PIN, no, q, q ? d : '', by);
+    }
+    // ---- a piece two tailors made together: half its rate goes from the one whose account has it to the other ----
+    function shareShow() {
+      $('dShare').innerHTML = '<div class="dv">🤝 قطعة مشتركة / Shared piece<div class="muted" style="font-size:12px">خياطان صنعا قطعة معاً – two tailors made a piece together</div></div>' +
+        '<button class="sec" type="button" onclick="shareEdit()">+ إضافة · Add</button>';
+    }
+    function shareEdit() {
+      if (!D) return;
+      if (!WD) {
+        $('dShare').innerHTML = '<div class="dv muted">جاري تحميل العمال… / Loading workers…</div>';
+        google.script.run.withSuccessHandler(function (r) { if (r) { WD = r; shareEdit(); } else shareShow(); })
+          .withFailureHandler(function () { shareShow(); toast('✖ تعذر تحميل العمال – could not load the workers', 'bad'); }).aWorkersAll(KEY, PIN, ymNow());
+        return;
+      }
+      var ks = ['STITCH', 'CUT', 'HINGE', 'EMBROIDERY'].filter(function (k) { return (WD.rates || {})[k] > 0; });
+      if (!ks.length) ks = ['STITCH'];
+      $('dShare').innerHTML = '<div class="dv">🤝 قطعة مشتركة / Shared piece</div>' +
+        '<div class="lb">العمل / Work</div><select id="shK" onchange="shareWho()">' + ks.map(function (k) { return '<option value="' + k + '">' + (WKINDS[k] || k) + ' · ' + sar(WD.rates[k] || 0) + '</option>'; }).join('') + '</select>' +
+        '<div class="lb">عدد القطع / Pieces</div><div class="qn"><button class="sec" type="button" onclick="var i=$(\'shQ\');i.value=Math.max(1,(+i.value||1)-1);shareCalc()">−</button>' +
+        '<input type="number" id="shQ" min="1" max="' + Math.max(1, D.pcs) + '" value="1" inputmode="numeric" oninput="shareCalc()">' +
+        '<button class="sec" type="button" onclick="var i=$(\'shQ\');i.value=Math.min(100,(+i.value||0)+1);shareCalc()">+</button></div>' +
+        '<div class="lb">في حساب / In the account of (أدخلها في جميل – entered it)</div><select id="shA" onchange="shareCalc()"></select>' +
+        '<div class="lb">مع / Made together with</div><select id="shB" onchange="shareCalc()"></select>' +
+        '<div class="lb" id="shM"></div>' +
+        '<button class="go" type="button" id="shSave" onclick="shareSave()">حفظ · Save</button><button class="sec" type="button" onclick="shareShow()">إلغاء</button>';
+      shareWho();
+    }
+    function shareWho() {
+      var k = $('shK').value, ws = (WD.list || []).filter(function (w) { return w.active !== false && String(w.kind || '').split(',').indexOf(k) >= 0; });
+      var o = ws.map(function (w) { return '<option value="' + esc(w.token) + '">' + esc(w.name) + '</option>'; }).join('');
+      $('shA').innerHTML = '<option value="">—</option>' + o; $('shB').innerHTML = '<option value="">—</option>' + o;
+      shareCalc();
+    }
+    function shareCalc() {
+      var k = $('shK').value, q = Math.max(1, Math.round(+$('shQ').value || 1)), half = q * ((WD.rates || {})[k] || 0) / 2;
+      var a = $('shA'), b = $('shB'), an = a.value ? a.options[a.selectedIndex].text : '…', bn = b.value ? b.options[b.selectedIndex].text : '…';
+      $('shM').innerHTML = 'كل واحد ½ – each gets half: <b>' + esc(an) + '</b> −' + sar(half) + ' → <b>' + esc(bn) + '</b> +' + sar(half);
+    }
+    function shareSave() {
+      if (!D) return;
+      var a = $('shA'), b = $('shB'), q = Math.round(+$('shQ').value || 0), btn = $('shSave');
+      if (!a.value || !b.value || a.value === b.value) { alert('اختر خياطين مختلفين – choose two different tailors'); return; }
+      if (!(q >= 1)) { alert('عدد القطع؟ – pieces?'); return; }
+      btn.disabled = true; btn.textContent = '…';
+      var d = { order: D.no, kind: $('shK').value, pcs: q, from: a.value, to: b.value, fromName: a.options[a.selectedIndex].text, toName: b.options[b.selectedIndex].text };
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert((r && r.msg) || 'خطأ'); return; }
+        toast('✔ تم – Saved\n🤝 ' + d.fromName + ' −' + sar(r.amount) + ' → ' + d.toName + ' +' + sar(r.amount), 'ok');
+        shareShow(); WD = null;
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e)); }).aShareAdd(KEY, PIN, d);
     }
     function dueEdit() {
       var r = ALL.filter(function (x) { return D && x[0] === String(D.no); })[0]; if (!r) return;
@@ -1083,7 +1135,8 @@
       $('wList').innerHTML = goneHtml + list.map(function (w) {
         var t = esc(w.token), on = w.active, ded = 0, a = wAccount(w, WD.ym, rates), pcs = a.pcs, earn = a.earn;
         var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; }), paid = 0;
-        dm.forEach(function (d) { if (d.type === 'paid') paid += d.amount; else ded += d.amount; });
+        var bon = 0; dm.forEach(function (d) { if (d.type === 'paid') paid += d.amount; else if (d.type === 'bonus') bon += d.amount; else ded += d.amount; });
+        earn += bon;
         var work = a.lines;
         var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
           '<div class="wtop"><div class="av">' + esc(String(w.name).trim().charAt(0) || '?') + '</div><div class="winfo"><b>' + esc(w.name) + '</b>' +
@@ -1103,9 +1156,9 @@
           }).join('') + '</details>';
         if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات والدفعات / deductions &amp; paid (' + w.ded.length + ')</summary>' +
           w.ded.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (d) {
-            var pd = d.type === 'paid';
+            var pd = d.type === 'paid', bn = d.type === 'bonus';
             return '<div class="wrow"><span>' + esc(day(d.date)) + ' · ' + (pd ? '💵 ' : '') + esc(d.reason) + (d.order ? ' · #' + esc(d.order) : '') + '</span>' +
-              '<span><b style="color:' + (pd ? '#1f4e8c' : '#b3261e') + '">−' + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
+              '<span><b style="color:' + (bn ? '#1a7f37' : pd ? '#1f4e8c' : '#b3261e') + '">' + (bn ? '+' : '−') + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
           }).join('') + '</details>';
         h += '<div id="wded_' + t + '" class="wadd" style="display:none">' +
           '<input id="da_' + t + '" type="number" inputmode="decimal" min="0" step="0.5" placeholder="المبلغ / Amount (SAR)">' +

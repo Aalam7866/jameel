@@ -97,7 +97,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=25';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=26';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -114,7 +114,7 @@ if (MOVING) location.replace(HOME(tok));
 
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
-let me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], pays = [], orders = {}, found = null, findMsg = '', busy = false;
+let bons = [], me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], pays = [], orders = {}, found = null, findMsg = '', busy = false;
 let editKey = '', pastOpen = false, pastMsg = null, olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
 try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
 
@@ -182,7 +182,7 @@ async function refresh(quiet) {
   draw();
 }
 async function refreshWork() {
-  try { const r = await kWork(tok); if (r) { acct = r; deds = r.ded.filter(d => d.type !== 'paid'); pays = r.ded.filter(d => d.type === 'paid'); } } catch (e) { }
+  try { const r = await kWork(tok); if (r) { acct = r; deds = r.ded.filter(d => d.type === 'ded'); pays = r.ded.filter(d => d.type === 'paid'); bons = r.ded.filter(d => d.type === 'bonus'); } } catch (e) { }
   draw();
 }
 function pin() { try { return localStorage.getItem('k-pin-' + tok) || ''; } catch (e) { return ''; } }
@@ -216,7 +216,7 @@ function draw() {
   const main = el('main', { class: 'wrap' }); app.appendChild(main);
   if (me.kinds.length > 1) main.appendChild(el('div', { class: 'kinds' }, me.kinds.map(k => el('button', { type: 'button', class: k === kind ? 'on' : '', text: kName(k), onclick: () => { kind = k; try { localStorage.setItem('k-kind-' + tok, k); } catch (e) { } found = null; open = null; lastForMe = -1; draw(); refresh(); } }))));
   const m0 = today().slice(0, 7), t0 = tally('month', m0), md = deds.filter(d => String(d.date).slice(0, 7) === m0);
-  const earn = t0.earn, ded = md.reduce((a, d) => a + d.amount, 0) + pays.filter(d => String(d.date).slice(0, 7) === m0).reduce((a, d) => a + d.amount, 0);
+  const earn = t0.earn + bons.filter(d => String(d.date).slice(0, 7) === m0).reduce((a, d) => a + d.amount, 0), ded = md.reduce((a, d) => a + d.amount, 0) + pays.filter(d => String(d.date).slice(0, 7) === m0).reduce((a, d) => a + d.amount, 0);
   if (me.kinds.length > 1) {
     // two kinds (e.g. Hinge + Embroidery): one box each, no total of both
     main.appendChild(el('div', { class: 'sum', style: 'grid-template-columns:repeat(' + me.kinds.length + ',minmax(0,1fr))' }, me.kinds.map(k => {
@@ -409,12 +409,14 @@ function drawWork(main) {
   const t = tally(fmode, fmode === 'day' ? fday : fmonth), earn = t.earn, pcs = t.pcs;
   const dd = deds.filter(d => inPeriod(d.date)), dsum = dd.reduce((a, d) => a + d.amount, 0);
   const pp = pays.filter(d => inPeriod(d.date)), psum = pp.reduce((a, d) => a + d.amount, 0);
+  const bb = bons.filter(d => inPeriod(d.date)), bsum = bb.reduce((a, d) => a + d.amount, 0);
   if (me.kinds.length > 1) me.kinds.forEach(k => { const tk = tally(fmode, fmode === 'day' ? fday : fmonth, k);
     main.appendChild(el('div', { class: 'tot' }, [el('span', { text: kName(k) + ' · ' + periodLabel() + ' · ' + tk.pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(tk.earn) })])); });
   else main.appendChild(el('div', { class: 'tot' }, [el('span', { text: periodLabel() + ' · ' + pcs + ' ' + L('قطعة', 'pcs') }), el('b', { text: sar(earn) })]));
+  if (bsum) main.appendChild(el('div', { class: 'tot ok', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '🤝 ' + L('عمل مشترك', 'Shared work') + ' (' + bb.length + ')' }), el('b', { text: '+' + sar(bsum) })]));
   if (dsum) main.appendChild(el('div', { class: 'tot bad', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '⚠ ' + L('الخصومات', 'Deductions') + ' (' + dd.length + ')' }), el('b', { text: '−' + sar(dsum) })]));
   if (psum) main.appendChild(el('div', { class: 'tot paid', onclick: () => { tab = 'ded'; draw(); } }, [el('span', { text: '💵 ' + L('استلمت', 'Already given to you') + ' (' + pp.length + ')' }), el('b', { text: '−' + sar(psum) })]));
-  main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: L('المستحق', 'To receive') }), el('b', { style: 'font-size:20px', text: sar(Math.max(0, earn - dsum - psum)) })]));
+  main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: L('المستحق', 'To receive') }), el('b', { style: 'font-size:20px', text: sar(Math.max(0, earn + bsum - dsum - psum)) })]));
   const byKind = {}; list.forEach(w => { byKind[w.kind] = (byKind[w.kind] || 0) + w.q; });
   if (me.kinds.length < 2 && Object.keys(byKind).length > 1) main.appendChild(el('div', { class: 'row small', style: 'margin-bottom:10px' }, Object.keys(byKind).map(k => el('span', { class: 'st', text: kName(k) + ' ' + byKind[k] }))));
   if (!list.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🧵' }), pcs ? L('التفاصيل لآخر 3 أشهر فقط.', 'Details only for the last 3 months.') : L('لا يوجد عمل في هذه الفترة.', 'No work in this period.')])); return; }
@@ -457,9 +459,15 @@ function drawDed(main) {
     pp.forEach(d => main.appendChild(el('div', { class: 'job pay' }, [el('div', { class: 'top' }, [el('span', { text: dmy(d.date) }), el('b', { style: 'color:var(--blue);font-size:20px', text: sar(d.amount) })]),
       el('div', { style: 'margin-top:6px;font-weight:600', text: d.reason }), d.order ? el('div', { class: 'small muted', text: L('الطلب: ', 'Order: ') + d.order }) : null])));
   }
+  const bl = bons.filter(d => inPeriod(d.date)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (bl.length) {
+    main.appendChild(el('div', { class: 'tot ok' }, [el('span', { text: '🤝 ' + periodLabel() + ' · ' + L('عمل مشترك', 'Shared work') + ' (' + bl.length + ')' }), el('b', { text: '+' + sar(bl.reduce((a, d) => a + d.amount, 0)) })]));
+    bl.forEach(d => main.appendChild(el('div', { class: 'job' }, [el('div', { class: 'top' }, [el('span', { text: dmy(d.date) }), el('b', { style: 'color:var(--ok);font-size:20px', text: '+' + sar(d.amount) })]),
+      el('div', { style: 'margin-top:6px;font-weight:600', text: d.reason }), d.order ? el('div', { class: 'small muted', text: L('الطلب: ', 'Order: ') + d.order }) : null])));
+  }
   const list = deds.filter(d => inPeriod(d.date)).sort((a, b) => String(b.date).localeCompare(String(a.date))), sum = list.reduce((a, d) => a + d.amount, 0);
   main.appendChild(el('div', { class: 'tot bad' }, [el('span', { text: periodLabel() + ' · ' + list.length + ' ' + L('خصم', 'deductions') }), el('b', { text: '−' + sar(sum) })]));
-  if (!list.length) { if (!pp.length) main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '👍' }), L('لا توجد خصومات في هذه الفترة.', 'No deductions in this period.')])); return; }
+  if (!list.length) { if (!pp.length && !bl.length) main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '👍' }), L('لا توجد خصومات في هذه الفترة.', 'No deductions in this period.')])); return; }
   list.forEach(d => main.appendChild(el('div', { class: 'job ded' }, [el('div', { class: 'top' }, [el('span', { text: dmy(d.date) }), el('b', { style: 'color:var(--bad);font-size:20px', text: '−' + sar(d.amount) })]),
     el('div', { style: 'margin-top:6px;font-weight:600', text: d.reason }), d.order ? el('div', { class: 'small muted', text: L('الطلب: ', 'Order: ') + d.order }) : null])));
 }

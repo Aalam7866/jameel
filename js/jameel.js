@@ -354,7 +354,8 @@ function shopStats(v) {
 }
 const entryOf = (x) => { const e = x.data(); return { id: x.id, kind: e.kind, o: e.o, q: Number(e.q) || 0, fit: e.fit === 1, st: e.st, d: e.d || '', time: tsStr(e.ts).slice(11, 16) }; };
 // a deduction, or (type 'paid') money already given to the worker – both lower what he still gets
-const dedOf = (x) => { const d = x.data(); return { id: x.id, type: d.type === 'paid' ? 'paid' : 'ded', amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '' }; };
+// type 'bonus': his half of a piece he made with another tailor (that tailor has the same amount as a deduction)
+const dedOf = (x) => { const d = x.data(); return { id: x.id, type: d.type === 'paid' || d.type === 'bonus' ? d.type : 'ded', amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '', ptok: d.ptok || '', pid: d.pid || '' }; };
 export async function kWork(token) {
   const w = await worker(token);
   if (!w) return null;
@@ -760,6 +761,25 @@ async function aDedAdd(key, pin, token, d) {
   await addDoc(collection(db, 'wkx', token, 'ded'), { amount, reason: reason || 'دفعة – Paid', order: orderKey(d.order), date, type: paid ? 'paid' : 'ded', at: serverTimestamp() });
   return { ok: true };
 }
+// a piece two tailors made together: the one whose account has it (from) gives half its rate to the other (to)
+async function aShareAdd(key, pin, d) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const from = String(d && d.from || ''), to = String(d && d.to || ''), kind = String(d && d.kind || 'STITCH');
+  const pcs = Math.round(Number(d && d.pcs) || 0), o = orderKey(d && d.order);
+  if (!/^[0-9a-f]{32}$/.test(from) || !/^[0-9a-f]{32}$/.test(to) || from === to) return { ok: false, msg: 'اختر خياطين مختلفين – choose two different tailors' };
+  if (!(pcs >= 1 && pcs <= 100)) return { ok: false, msg: 'عدد القطع؟ – pieces?' };
+  if (!RATE_KINDS.includes(kind)) return { ok: false, msg: 'نوع العمل؟ – work?' };
+  const rt = await getDoc(doc(db, 'sys', 'rates')), rate = rt.exists() ? Number(rt.data()[kind]) || 0 : 0;
+  if (!(rate > 0)) return { ok: false, msg: 'لا يوجد سعر لهذا العمل – no rate for this work (Admin → Rates)' };
+  const amount = Math.round(pcs * rate / 2 * 100) / 100, date = /^\d{4}-\d{2}-\d{2}$/.test(String(d.date || '')) ? d.date : riyadh().slice(0, 10);
+  const fn = String(d.fromName || '').slice(0, 40), tn = String(d.toName || '').slice(0, 40), what = pcs + ' × ½';
+  const a = doc(collection(db, 'wkx', from, 'ded')), b = doc(collection(db, 'wkx', to, 'ded')), bt = writeBatch(db);
+  bt.set(a, { amount, type: 'ded', reason: '🤝 ' + what + ' مشترك مع ' + tn + ' – shared with ' + tn, order: o, date, ptok: to, pid: b.id, at: serverTimestamp() });
+  bt.set(b, { amount, type: 'bonus', reason: '🤝 ' + what + ' مشترك مع ' + fn + ' – shared with ' + fn, order: o, date, ptok: from, pid: a.id, at: serverTimestamp() });
+  await bt.commit();
+  return { ok: true, amount };
+}
 // "thobe ready" WhatsApp message from the shop PC (ShopSync sends it with the PC's WhatsApp)
 async function aWaReady(key, pin, order, by, type) {
   const r = await root('ak', key, pin);
@@ -798,6 +818,10 @@ async function aJob(key, pin, id) {
 async function aDedDel(key, pin, token, id) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  // a shared piece: its other half (the other tailor's line) goes too
+  const x = await getDoc(doc(db, 'wkx', String(token), 'ded', String(id))).catch(() => null);
+  const pt = x && x.exists() ? String(x.data().ptok || '') : '', pi = x && x.exists() ? String(x.data().pid || '') : '';
+  if (/^[0-9a-f]{32}$/.test(pt) && pi) await deleteDoc(doc(db, 'wkx', pt, 'ded', pi)).catch(() => { });
   await deleteDoc(doc(db, 'wkx', String(token), 'ded', String(id)));
   return { ok: true };
 }
@@ -831,5 +855,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aJob, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aShareAdd, aJob, aOrderWip, aShopEmployees,
 };
