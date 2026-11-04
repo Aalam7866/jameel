@@ -3,7 +3,7 @@
 // The shop PC (ShopSync) puts the data here and collects what the pages write.
 import { db, sha256, riyadh, workDay } from './fb.js';
 import {
-  doc, getDoc, getDocs, setDoc, deleteDoc, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp,
+  doc, getDoc, getDocs, setDoc, deleteDoc, collection, query, where, orderBy, limit, writeBatch, addDoc, updateDoc, serverTimestamp, runTransaction,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const J = (s, d) => { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } };
@@ -213,22 +213,25 @@ export async function kVars(token) {
            rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rates[k]) || 0])) };
 }
 async function board(w) {
-  const [sp, ws] = await Promise.all([space(w), getDocs(collection(db, 'jwip')).catch(() => null)]);
-  const wip = {}, mine = [];
+  const [sp, ws, hs] = await Promise.all([space(w), getDocs(collection(db, 'jwip')).catch(() => null), getDocs(collection(db, 'half')).catch(() => null)]);
+  const wip = {}, mine = [], half = {};
   if (ws) ws.forEach(x => {
     const d = x.data(), k = d.kind + ':' + d.o;
-    wip[k] = (wip[k] || 0) + Number(d.q || 0) + (d.fit ? 1 : 0);
-    if (d.token === w.token) mine.push({ id: x.id, kind: d.kind, o: d.o, q: Number(d.q || 0), fit: !!d.fit, at: d.at && d.at.toMillis ? d.at.toMillis() : 0 });
+    wip[k] = (wip[k] || 0) + Number(d.q || 0) + (d.fit ? 1 : 0) + (d.half ? 0.5 : 0);
+    if (d.token === w.token) mine.push({ id: x.id, kind: d.kind, o: d.o, q: Number(d.q || 0) + (d.half ? 0.5 : 0), half: !!d.half, fit: !!d.fit, at: d.at && d.at.toMillis ? d.at.toMillis() : 0 });
   });
+  // half pieces finished, waiting for their other half (another tailor's – or his own)
+  if (hs) hs.forEach(x => { const d = x.data(); const k = d.kind + ':' + d.o; half[k] = (half[k] || 0) + 0.5; });
   const pend = {};
   for (const e of sp.pend) { const k = e.kind + ':' + e.o; pend[k] = (pend[k] || 0) + Number(e.q); }
-  return { sp, wip, pend, mine };
+  return { sp, wip, pend, mine, half };
 }
 function availOf(b, kind, o) {
   const od = b.sp.orders[String(o)];
   if (!od || !(od.total[kind] > 0)) return null;
   const done = (k) => od.total[k] - od[k] + (b.pend[k + ':' + o] || 0);
-  const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0));
+  const hf = (b.half || {})[kind + ':' + o] || 0;   // an open half: only its other half is left of that piece
+  const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0) - hf);
   let avail = left;
   const taken = (k) => done(k) + (b.wip[k + ':' + o] || 0);   // finished + started
   if (kind === 'STITCH' && od.total.CUT > 0) avail = Math.min(avail, done('CUT') - done('STITCH'));
@@ -237,7 +240,7 @@ function availOf(b, kind, o) {
   // hinge: once the tailor has finished stitching
   if (kind === 'HINGE' && od.total.STITCH > 0) avail = Math.min(avail, done('STITCH') - done('HINGE'));
   const wip = b.wip[kind + ':' + o] || 0;
-  return { o: Number(o), left, wip, avail: Math.max(0, avail - wip), total: od.total[kind],
+  return { o: Number(o), left, wip, half: hf, avail: Math.max(0, avail - hf - wip), total: od.total[kind],
            cut: done('CUT'), cutT: od.total.CUT, sew: done('STITCH'), sewT: od.total.STITCH,
            fit: od.fit && !od.fitDone ? 1 : 0 };
 }
@@ -256,12 +259,16 @@ export async function kStart(token, kind, order, qty, fit) {
   const w = await worker(token);
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
   kind = activeKindOf(w, kind);
-  const o = orderKey(order), q = Math.floor(Number(qty)) || 0;
+  // qty 0.5: half a piece – he makes it together with another tailor (or the half that is left of it)
+  const half = Number(qty) === 0.5 && kind !== 'CUT';
+  const o = orderKey(order), q = half ? 0 : Math.floor(Number(qty)) || 0;
+  if (half) fit = false;
   const a = availOf(await board(w), kind, o);
   if (!a) return { ok: false, msg: 'طلب ' + o + ': غير موجود – not found' };
-  if (q < 0 || q + (fit ? 1 : 0) < 1) return { ok: false, msg: 'العدد؟ – qty?' };
-  if (q + (fit ? 1 : 0) > a.avail) return { ok: false, msg: 'طلب ' + o + ': المتاح ' + a.avail + ' فقط – only ' + a.avail + ' pcs free' };
-  await addDoc(collection(db, 'jwip'), { token, name: w.name, kind, o: Number(o), q, fit: fit ? 1 : 0, s: w.s || '', at: serverTimestamp() });
+  const need = half ? 0.5 : q + (fit ? 1 : 0);
+  if (q < 0 || need < 0.5) return { ok: false, msg: 'العدد؟ – qty?' };
+  if (need > a.avail) return { ok: false, msg: 'طلب ' + o + ': المتاح ' + a.avail + ' فقط – only ' + a.avail + ' pcs free' };
+  await addDoc(collection(db, 'jwip'), { token, name: w.name, kind, o: Number(o), q, fit: fit ? 1 : 0, half: half ? 1 : 0, s: w.s || '', at: serverTimestamp() });
   return { ok: true };
 }
 // cutting: no start – straight to the shop PC (as before)
@@ -308,10 +315,39 @@ export async function kFinish(token, id, pin) {
   const ref = doc(db, 'jwip', String(id)), s = await getDoc(ref);
   if (!s.exists() || s.data().token !== w.token) return { ok: false, msg: 'غير موجود – not found' };
   const x = s.data();
-  const r = await submit(token, [{ order: x.o, qty: x.q, fit: !!x.fit }], pin, x.kind);
+  const r = x.half ? await halfDone(w, x.kind, x.o, pin) : await submit(token, [{ order: x.o, qty: x.q, fit: !!x.fit }], pin, x.kind);
   if (r.ok) await deleteDoc(ref);
   return r;
 }
+// a half piece finished: the first half waits (½ in his account); the second half – by anyone – sends the whole piece to
+// TailorShop under the second tailor's name, and ½ comes off his account (the first tailor has that half)
+async function halfDone(w, kind, o, pin) {
+  const rt = await getDoc(doc(db, 'sys', 'rates')).catch(() => null), rate = rt && rt.exists() ? Number(rt.data()[kind]) || 0 : 0;
+  const amount = Math.round(rate / 2 * 100) / 100, ref = doc(db, 'half', kind + '_' + Number(o)), day = workDay();
+  let first = null;
+  await runTransaction(db, async (t) => {
+    const s = await t.get(ref);
+    if (s.exists()) { first = s.data(); t.delete(ref); }
+    else t.set(ref, { tok: w.token, name: w.name, kind, o: Number(o), at: serverTimestamp() });
+  });
+  if (!first) {
+    await addDoc(collection(db, 'wkx', w.token, 'ded'), { type: 'half', q: 0.5, kind, amount, order: String(o), date: day, hid: ref.id,
+      reason: '½ ' + L2('قطعة – بانتظار النصف الآخر', 'piece – waiting for the other half'), at: serverTimestamp() });
+    return { ok: true, msg: '½ ✔', today: await today(w) };
+  }
+  const r = await submit(w.token, [{ order: o, qty: 1, fit: false }], pin, kind);
+  if (!r.ok) { await setDoc(ref, first).catch(() => { }); return r; }
+  const who = first.tok === w.token ? L2('النصف الأول لي', 'my own first half') : first.name;
+  await addDoc(collection(db, 'wkx', w.token, 'ded'), { type: 'half', q: -0.5, kind, amount, order: String(o), date: day,
+    reason: '½ ' + L2('القطعة كاملة في حسابي، النصف الأول: ', 'whole piece in my account, first half: ') + who, at: serverTimestamp() });
+  // the first tailor's half: no longer waiting
+  try {
+    const fs = await getDocs(query(collection(db, 'wkx', first.tok, 'ded'), where('hid', '==', ref.id)));
+    await Promise.all(fs.docs.map(d => updateDoc(d.ref, { hid: '', reason: '½ ' + L2('قطعة مشتركة مع ', 'piece shared with ') + w.name })));
+  } catch (e) { }
+  return r;
+}
+const L2 = (a, e) => a + ' – ' + e;
 export async function kGiveBack(token, id) {
   const w = await worker(token);
   if (!w) return { ok: false };
@@ -355,7 +391,9 @@ function shopStats(v) {
 const entryOf = (x) => { const e = x.data(); return { id: x.id, kind: e.kind, o: e.o, q: Number(e.q) || 0, fit: e.fit === 1, st: e.st, d: e.d || '', time: tsStr(e.ts).slice(11, 16) }; };
 // a deduction, or (type 'paid') money already given to the worker – both lower what he still gets
 // type 'bonus': his half of a piece he made with another tailor (that tailor has the same amount as a deduction)
-const dedOf = (x) => { const d = x.data(); return { id: x.id, type: d.type === 'paid' || d.type === 'bonus' ? d.type : 'ded', amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '', ptok: d.ptok || '', pid: d.pid || '' }; };
+// type 'half': half a piece (two tailors made it together) – q +0.5 (his half; the other half still open) or −0.5 (he finished
+// the other half: the whole piece went to TailorShop under his name, the first tailor's half comes off it)
+const dedOf = (x) => { const d = x.data(); return { id: x.id, type: ['paid', 'bonus', 'half'].includes(d.type) ? d.type : 'ded', amount: Number(d.amount) || 0, reason: d.reason || '', order: d.order || '', date: d.date || '', ptok: d.ptok || '', pid: d.pid || '', q: Number(d.q) || 0, kind: d.kind || '' }; };
 export async function kWork(token) {
   const w = await worker(token);
   if (!w) return null;
@@ -822,6 +860,9 @@ async function aDedDel(key, pin, token, id) {
   const x = await getDoc(doc(db, 'wkx', String(token), 'ded', String(id))).catch(() => null);
   const pt = x && x.exists() ? String(x.data().ptok || '') : '', pi = x && x.exists() ? String(x.data().pid || '') : '';
   if (/^[0-9a-f]{32}$/.test(pt) && pi) await deleteDoc(doc(db, 'wkx', pt, 'ded', pi)).catch(() => { });
+  // an open half piece: the piece is free again
+  const hid = x && x.exists() ? String(x.data().hid || '') : '';
+  if (hid) { const h = await getDoc(doc(db, 'half', hid)).catch(() => null); if (h && h.exists() && h.data().tok === String(token)) await deleteDoc(h.ref).catch(() => { }); }
   await deleteDoc(doc(db, 'wkx', String(token), 'ded', String(id)));
   return { ok: true };
 }

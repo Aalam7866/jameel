@@ -368,7 +368,6 @@
       <div class="sum" id="dSum"></div>
       <div class="duebox" id="dDue"></div>
       <div class="duebox prova" id="dProva"></div>
-      <div class="duebox" id="dShare"></div>
       <div id="dFit"></div>
       <div id="dWa"></div>
       <div id="dDone" class="rate-ok" style="display:none;margin-top:10px">✔ الطلب مدفوع ومسلّم بالكامل – fully paid and delivered</div>
@@ -720,7 +719,7 @@
         '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
-      dueShow(r); provaShow(); shareShow();
+      dueShow(r); provaShow();
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -1135,7 +1134,7 @@
       $('wList').innerHTML = goneHtml + list.map(function (w) {
         var t = esc(w.token), on = w.active, ded = 0, a = wAccount(w, WD.ym, rates), pcs = a.pcs, earn = a.earn;
         var dm = w.ded.filter(function (d) { return String(d.date).slice(0, 7) === WD.ym; }), paid = 0;
-        var bon = 0; dm.forEach(function (d) { if (d.type === 'paid') paid += d.amount; else if (d.type === 'bonus') bon += d.amount; else ded += d.amount; });
+        var bon = 0; dm.forEach(function (d) { if (d.type === 'paid') paid += d.amount; else if (d.type === 'bonus') bon += d.amount; else if (d.type === 'half') { pcs += d.q; bon += (d.q < 0 ? -1 : 1) * d.amount; } else ded += d.amount; });
         earn += bon;
         var work = a.lines;
         var h = '<div class="card wk' + (on ? '' : ' off') + '">' +
@@ -1156,9 +1155,9 @@
           }).join('') + '</details>';
         if (w.ded.length) h += '<details' + (WOPEN['d' + w.token] ? ' open' : '') + ' ontoggle="WOPEN[\'d' + t + '\']=this.open"><summary>الخصومات والدفعات / deductions &amp; paid (' + w.ded.length + ')</summary>' +
           w.ded.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (d) {
-            var pd = d.type === 'paid', bn = d.type === 'bonus';
+            var pd = d.type === 'paid', bn = d.type === 'bonus' || (d.type === 'half' && d.q > 0);
             return '<div class="wrow"><span>' + esc(day(d.date)) + ' · ' + (pd ? '💵 ' : '') + esc(d.reason) + (d.order ? ' · #' + esc(d.order) : '') + '</span>' +
-              '<span><b style="color:' + (bn ? '#1a7f37' : pd ? '#1f4e8c' : '#b3261e') + '">' + (bn ? '+' : '−') + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
+              '<span><b style="color:' + (bn ? '#1a7f37' : pd ? '#1f4e8c' : '#b3261e') + '">' + (d.type === 'half' ? (d.q > 0 ? '+½ ' : '−½ ') : '') + (bn ? '+' : '−') + sar(d.amount) + '</b> <button class="sec wx" onclick="delDed(\'' + t + '\',\'' + esc(d.id) + '\')">✕</button></span></div>';
           }).join('') + '</details>';
         h += '<div id="wded_' + t + '" class="wadd" style="display:none">' +
           '<input id="da_' + t + '" type="number" inputmode="decimal" min="0" step="0.5" placeholder="المبلغ / Amount (SAR)">' +

@@ -97,7 +97,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=26';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=27';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -114,7 +114,7 @@ if (MOVING) location.replace(HOME(tok));
 
 const KN = { CUT: ['✂️ قص', '✂️ Cutting'], STITCH: ['🧵 خياطة', '🧵 Stitching'], HINGE: ['🔘 زرار', '🔘 Hinge'], MEASURE: ['📏 مقاس', '📏 Measuring'], EMBROIDERY: ['🪡 تطريز', '🪡 Embroidery'], ARRIVE: ['📦 وصل', '📦 Arrived'] };
 const kName = (k) => (KN[k] || [k, k])[LANG === 'en' ? 1 : 0];
-let bons = [], me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], pays = [], orders = {}, found = null, findMsg = '', busy = false;
+let bons = [], halves = [], me = null, kind = '', tab = 'add', open = null, mine = [], wait = [], work = [], deds = [], pays = [], orders = {}, found = null, findMsg = '', busy = false;
 let editKey = '', pastOpen = false, pastMsg = null, olist = 'todo', fmode = 'month', fday = '', fmonth = '', lastForMe = -1, sw = null, instEvt = null;
 try { kind = localStorage.getItem('k-kind-' + tok) || ''; } catch (e) { }
 
@@ -137,6 +137,8 @@ function sources() { const ks = Object.keys(acct.kstats || {}); return me.kinds.
 function items() {
   const out = [];
   sources().forEach(([k, st]) => (st.work || []).forEach(q => out.push({ d: String(q[0]).slice(0, 10), o: q[1], q: +q[2] || 0, kind: k, st: 'saved', time: '' })));
+  // half pieces (made with another tailor): +½ his half, −½ when he finished the other half (the whole piece is in TailorShop)
+  halves.forEach(h => out.push({ d: String(h.date).slice(0, 10), o: h.order, q: h.q, kind: h.kind, st: 'half', time: '', half: true, why: h.reason }));
   return out.concat(acct.pending || []);
 }
 function tally(mode, val, only) {   // only = one kind of work (a worker doing two kinds sees each apart)
@@ -146,6 +148,7 @@ function tally(mode, val, only) {   // only = one kind of work (a worker doing t
   else {
     sources().forEach(([k, st]) => (st.months || []).forEach(m => { if (mode === 'all' || String(m[0]).slice(0, 7) === val) add(k, +m[1] || 0); }));
     (acct.pending || []).filter(w => mode === 'all' || String(w.d).slice(0, 7) === val).forEach(w => add(w.kind, w.q));
+    halves.filter(h => mode === 'all' || String(h.date).slice(0, 7) === val).forEach(h => add(h.kind, h.q));
   }
   return { pcs, earn };
 }
@@ -182,7 +185,7 @@ async function refresh(quiet) {
   draw();
 }
 async function refreshWork() {
-  try { const r = await kWork(tok); if (r) { acct = r; deds = r.ded.filter(d => d.type === 'ded'); pays = r.ded.filter(d => d.type === 'paid'); bons = r.ded.filter(d => d.type === 'bonus'); } } catch (e) { }
+  try { const r = await kWork(tok); if (r) { acct = r; deds = r.ded.filter(d => d.type === 'ded'); pays = r.ded.filter(d => d.type === 'paid'); bons = r.ded.filter(d => d.type === 'bonus'); halves = r.ded.filter(d => d.type === 'half'); } } catch (e) { }
   draw();
 }
 function pin() { try { return localStorage.getItem('k-pin-' + tok) || ''; } catch (e) { return ''; } }
@@ -319,24 +322,33 @@ function drawFound(main) {
     c.appendChild(el('div', { class: 'g', style: 'font-weight:600', text: why }));
     main.appendChild(c); return;
   }
-  let pcs = a.avail, fit = false;
+  let pcs = Math.floor(a.avail), fit = false;
   const cnt = el('b', { class: 'num', text: String(pcs) }), money = el('div', { class: 'small', style: 'font-weight:600;margin-top:6px' });
-  const upd = () => { cnt.textContent = String(pcs); const n = pcs + (fit ? 1 : 0); money.textContent = rate(kind) ? sar(rate(kind)) + ' × ' + n + ' = ' + sar(rate(kind) * n) : L('السعر لم يحدد بعد – يحدده المحل', 'Rate not set yet – the shop will set it'); };
+  const upd = () => { cnt.textContent = half ? '½' : String(pcs); const n = half ? 0.5 : pcs + (fit ? 1 : 0); money.textContent = rate(kind) ? sar(rate(kind)) + ' × ' + n + ' = ' + sar(rate(kind) * n) : L('السعر لم يحدد بعد – يحدده المحل', 'Rate not set yet – the shop will set it'); };
   const g = el('div', { class: 'g' });
   g.appendChild(el('div', { class: 'stepper' }, [el('span', { text: L('القطع:', 'Pieces:') }),
     el('button', { class: 'btn sm line', type: 'button', text: '−', onclick: () => { if (pcs > 0) { pcs--; upd(); } } }), cnt,
     el('button', { class: 'btn sm line', type: 'button', text: '+', onclick: () => { if (pcs + (fit ? 1 : 0) < a.avail) { pcs++; upd(); } } }), el('span', { class: 'small muted', text: '/ ' + a.avail })]));
+  let fitCb = null, half = false;
   if (a.fit && (kind === 'CUT' || kind === 'STITCH')) {
-    const cb = el('input', { type: 'checkbox' });
-    cb.onchange = () => { fit = cb.checked; if (fit && pcs + 1 > a.avail) pcs = Math.max(0, a.avail - 1); upd(); };
+    const cb = el('input', { type: 'checkbox' }); fitCb = cb;
+    cb.onchange = () => { fit = cb.checked; if (fit) { half = false; if (halfCb) halfCb.checked = false; } if (fit && pcs + 1 > a.avail) pcs = Math.max(0, a.avail - 1); upd(); };
     g.appendChild(el('label', { class: 'chk' }, [cb, L('مع البروفة (قطعة القياس)', 'With the fitting piece')]));
+  }
+  // half a piece: two tailors make one piece together (or only its other half is left)
+  let halfCb = null;
+  if (kind !== 'CUT' && a.avail >= 0.5) {
+    halfCb = el('input', { type: 'checkbox' });
+    halfCb.onchange = () => { half = halfCb.checked; if (half) { fit = false; if (fitCb) fitCb.checked = false; } upd(); };
+    g.appendChild(el('label', { class: 'chk' }, [halfCb, '🤝 ' + (a.half ? L('النصف الآخر من القطعة (½)', 'The other half of the piece (½)') : L('½ قطعة – مشتركة مع خياط آخر', '½ piece – shared with another tailor'))]));
+    if (a.avail < 1) { halfCb.checked = true; halfCb.disabled = true; half = true; }
   }
   g.appendChild(money);
   const go = async (btn) => {
-    if (pcs + (fit ? 1 : 0) < 1) { msg.textContent = L('العدد؟', 'How many?'); msg.className = 'msg err'; return; }
+    if (!half && pcs + (fit ? 1 : 0) < 1) { msg.textContent = L('العدد؟', 'How many?'); msg.className = 'msg err'; return; }
     btn.disabled = true; msg.textContent = '…'; msg.className = 'msg';
     try {
-      const r = kind === 'CUT' ? await withPin(p => kDone(tok, kind, a.o, pcs, fit, p)) : await kStart(tok, kind, a.o, pcs, fit);
+      const r = kind === 'CUT' ? await withPin(p => kDone(tok, kind, a.o, pcs, fit, p)) : await kStart(tok, kind, a.o, half ? 0.5 : pcs, fit);
       if (!r.ok) { btn.disabled = false; msg.textContent = r.msg || ''; msg.className = 'msg err'; return; }
       chime(); found = null; findMsg = ''; await refresh(); if (kind === 'CUT') refreshWork(); scrollTo(0, 0);
     } catch (e) { btn.disabled = false; msg.textContent = L('لم يتم: ', 'Failed: ') + (e.message || e); msg.className = 'msg err'; }
@@ -360,7 +372,7 @@ function drawMine(main) {
   mine.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999')).forEach(w => {
     const due = dueOf(w.o), late = due && due < today(), n = w.q + (w.fit ? 1 : 0), m = el('p', { class: 'msg' });
     box.appendChild(el('div', { class: 'g' }, [el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: dmy(due) }) : null]),
-      el('div', { style: 'font-weight:600;margin-top:4px', text: [orderLine(w.o), n + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : ''), rate(w.kind) ? sar(rate(w.kind) * n) : ''].filter(Boolean).join(' · ') }),
+      el('div', { style: 'font-weight:600;margin-top:4px', text: [orderLine(w.o), (w.half ? '½' : n) + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : ''), rate(w.kind) ? sar(rate(w.kind) * n) : ''].filter(Boolean).join(' · ') }),
       el('div', { class: 'row', style: 'margin-top:8px' }, [
         el('button', { class: 'btn ok grow', type: 'button', text: '✓ ' + L('انتهى العمل – أضف إلى حسابي', 'Finished – add to my account'), onclick: async (e) => {
           if (!confirm(L('انتهى عمل ' + n + ' قطعة في الطلب ' + w.o + '؟', 'Finished ' + n + ' pcs of order ' + w.o + '?'))) return;
@@ -428,7 +440,8 @@ function drawWork(main) {
       el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), el('b', { style: 'font-size:18px', text: rate(w.kind) ? sar(amt(w)) : '—' })]),
       el('div', { style: 'margin-top:4px', text: kName(w.kind) + ' · ' + w.q + ' ' + L('قطعة', 'pcs') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : '') + (rate(w.kind) ? ' × ' + sar(rate(w.kind)) : ' · ' + L('السعر يحدده المحل', 'rate pending')) }),
       el('div', { class: 'row', style: 'justify-content:space-between;margin-top:4px' }, [el('span', { class: 'small muted', text: (dmy(w.d) + ' ' + (w.time || '')).trim() + (can && !fix ? '  ✎' : '') }),
-        el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })]),
+        el('span', { class: 'st ' + (w.st === 'new' ? '' : 'ok'), text: w.half ? '🤝 ½' : w.st === 'new' ? '⏳ ' + L('بانتظار المحل', 'waiting for the shop') : '✔ ' + L('محفوظ', 'saved') })]),
+      w.half && w.why ? el('div', { class: 'small muted', style: 'margin-top:4px', text: w.why }) : null,
       fix ? el('div', { class: 'st blue', style: 'margin-top:8px', text: '🕘 ' + L('تغيير التاريخ إلى ', 'Date change to ') + dmy(fix.to) + ' – ' + L('بانتظار المحل', 'waiting for the shop') }) : null]);
     if (can && !fix) card.addEventListener('click', (ev) => { if (ev.target.closest('.dfx')) return; editKey = editKey === key ? '' : key; draw(); });
     if (can && !fix && editKey === key) {
