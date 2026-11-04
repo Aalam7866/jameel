@@ -46,7 +46,7 @@ service cloud.firestore {
       return d.keys().hasOnly(['emp', 'name', 'kind', 'o', 'q', 'fit', 'st', 'ts', 'd', 'ph'])
         && d.emp == w.get('emps', {}).get(d.kind, w.emp) && d.name == w.name && d.kind in w.kind.split(',')
         && d.st == 'new' && d.o is int && d.o > 0 && d.o < 100000000
-        && d.q is int && d.q >= 1 && d.q <= 1000 && d.fit in [0, 1]
+        && ((d.q is int && d.q >= 1 && d.q <= 1000) || (d.q == 0.5 && d.fit == 0 && d.kind != 'CUT')) && d.fit in [0, 1]
         && d.ts == request.time && d.d is string && d.d.size() == 10
         && (w.get('pin', false) == false || (d.ph is string && exists(/databases/$(database)/documents/wk/$(tok)/pin/$(d.ph))));
     }

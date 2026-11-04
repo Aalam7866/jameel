@@ -155,7 +155,9 @@ async function submit(token, rows, pin, ak, day) {
     const o = orderKey(r.order);
     if (!o) return;
     let fit = r.fit === true || r.fit === 1 || r.fit === 'true';
-    const q = Math.floor(Number(r.qty)) || 0;
+    // 0.5 = half a piece: two tailors made one piece together, each sends his half (TailorShop counts the piece when both are in)
+    const q = Number(r.qty) === 0.5 && kind !== 'CUT' ? 0.5 : Math.floor(Number(r.qty)) || 0;
+    if (q === 0.5) fit = false;
     if (q < 0 || q > 999 || (q === 0 && !fit)) { errors.push('طلب ' + o + ': العدد؟ / qty?'); return; }
     if (fit && fits[o]) fit = false;
     if (fit) fits[o] = true;
@@ -213,15 +215,13 @@ export async function kVars(token) {
            rates: Object.fromEntries(RATE_KINDS.map(k => [k, Number(rates[k]) || 0])) };
 }
 async function board(w) {
-  const [sp, ws, hs] = await Promise.all([space(w), getDocs(collection(db, 'jwip')).catch(() => null), getDocs(collection(db, 'half')).catch(() => null)]);
+  const [sp, ws] = await Promise.all([space(w), getDocs(collection(db, 'jwip')).catch(() => null)]);
   const wip = {}, mine = [], half = {};
   if (ws) ws.forEach(x => {
     const d = x.data(), k = d.kind + ':' + d.o;
     wip[k] = (wip[k] || 0) + Number(d.q || 0) + (d.fit ? 1 : 0) + (d.half ? 0.5 : 0);
     if (d.token === w.token) mine.push({ id: x.id, kind: d.kind, o: d.o, q: Number(d.q || 0) + (d.half ? 0.5 : 0), half: !!d.half, fit: !!d.fit, at: d.at && d.at.toMillis ? d.at.toMillis() : 0 });
   });
-  // half pieces finished, waiting for their other half (another tailor's – or his own)
-  if (hs) hs.forEach(x => { const d = x.data(); const k = d.kind + ':' + d.o; half[k] = (half[k] || 0) + 0.5; });
   const pend = {};
   for (const e of sp.pend) { const k = e.kind + ':' + e.o; pend[k] = (pend[k] || 0) + Number(e.q); }
   return { sp, wip, pend, mine, half };
@@ -230,17 +230,18 @@ function availOf(b, kind, o) {
   const od = b.sp.orders[String(o)];
   if (!od || !(od.total[kind] > 0)) return null;
   const done = (k) => od.total[k] - od[k] + (b.pend[k + ':' + o] || 0);
-  const hf = (b.half || {})[kind + ':' + o] || 0;   // an open half: only its other half is left of that piece
-  const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0) - hf);
+  // a half piece already sent (by another tailor): only its other half is left (left = x.5)
+  const hf = (od[kind] - (b.pend[kind + ':' + o] || 0)) % 1 ? 0.5 : 0;
+  const left = Math.max(0, od[kind] - (b.pend[kind + ':' + o] || 0));
   let avail = left;
   const taken = (k) => done(k) + (b.wip[k + ':' + o] || 0);   // finished + started
   if (kind === 'STITCH' && od.total.CUT > 0) avail = Math.min(avail, done('CUT') - done('STITCH'));
   // embroidery: as soon as the tailor has started the piece (no need to wait for his Finish)
-  if (kind === 'EMBROIDERY' && od.total.STITCH > 0) avail = Math.min(avail, taken('STITCH') - done('EMBROIDERY'));
-  // hinge: once the tailor has finished stitching
-  if (kind === 'HINGE' && od.total.STITCH > 0) avail = Math.min(avail, done('STITCH') - done('HINGE'));
+  if (kind === 'EMBROIDERY' && od.total.STITCH > 0) avail = Math.min(avail, Math.floor(taken('STITCH') + 1e-6) - done('EMBROIDERY'));
+  // hinge: once the tailor has finished stitching (a whole piece: both halves of a shared piece)
+  if (kind === 'HINGE' && od.total.STITCH > 0) avail = Math.min(avail, Math.floor(done('STITCH') + 1e-6) - done('HINGE'));
   const wip = b.wip[kind + ':' + o] || 0;
-  return { o: Number(o), left, wip, half: hf, avail: Math.max(0, avail - hf - wip), total: od.total[kind],
+  return { o: Number(o), left, wip, half: hf, avail: Math.max(0, avail - wip), total: od.total[kind],
            cut: done('CUT'), cutT: od.total.CUT, sew: done('STITCH'), sewT: od.total.STITCH,
            fit: od.fit && !od.fitDone ? 1 : 0 };
 }
@@ -315,39 +316,11 @@ export async function kFinish(token, id, pin) {
   const ref = doc(db, 'jwip', String(id)), s = await getDoc(ref);
   if (!s.exists() || s.data().token !== w.token) return { ok: false, msg: 'غير موجود – not found' };
   const x = s.data();
-  const r = x.half ? await halfDone(w, x.kind, x.o, pin) : await submit(token, [{ order: x.o, qty: x.q, fit: !!x.fit }], pin, x.kind);
+  const r = await submit(token, [{ order: x.o, qty: x.half ? 0.5 : x.q, fit: !x.half && !!x.fit }], pin, x.kind);
   if (r.ok) await deleteDoc(ref);
   return r;
 }
-// a half piece finished: the first half waits (½ in his account); the second half – by anyone – sends the whole piece to
-// TailorShop under the second tailor's name, and ½ comes off his account (the first tailor has that half)
-async function halfDone(w, kind, o, pin) {
-  const rt = await getDoc(doc(db, 'sys', 'rates')).catch(() => null), rate = rt && rt.exists() ? Number(rt.data()[kind]) || 0 : 0;
-  const amount = Math.round(rate / 2 * 100) / 100, ref = doc(db, 'half', kind + '_' + Number(o)), day = workDay();
-  let first = null;
-  await runTransaction(db, async (t) => {
-    const s = await t.get(ref);
-    if (s.exists()) { first = s.data(); t.delete(ref); }
-    else t.set(ref, { tok: w.token, name: w.name, kind, o: Number(o), at: serverTimestamp() });
-  });
-  if (!first) {
-    await addDoc(collection(db, 'wkx', w.token, 'ded'), { type: 'half', q: 0.5, kind, amount, order: String(o), date: day, hid: ref.id,
-      reason: '½ ' + L2('قطعة – بانتظار النصف الآخر', 'piece – waiting for the other half'), at: serverTimestamp() });
-    return { ok: true, msg: '½ ✔', today: await today(w) };
-  }
-  const r = await submit(w.token, [{ order: o, qty: 1, fit: false }], pin, kind);
-  if (!r.ok) { await setDoc(ref, first).catch(() => { }); return r; }
-  const who = first.tok === w.token ? L2('النصف الأول لي', 'my own first half') : first.name;
-  await addDoc(collection(db, 'wkx', w.token, 'ded'), { type: 'half', q: -0.5, kind, amount, order: String(o), date: day,
-    reason: '½ ' + L2('القطعة كاملة في حسابي، النصف الأول: ', 'whole piece in my account, first half: ') + who, at: serverTimestamp() });
-  // the first tailor's half: no longer waiting
-  try {
-    const fs = await getDocs(query(collection(db, 'wkx', first.tok, 'ded'), where('hid', '==', ref.id)));
-    await Promise.all(fs.docs.map(d => updateDoc(d.ref, { hid: '', reason: '½ ' + L2('قطعة مشتركة مع ', 'piece shared with ') + w.name })));
-  } catch (e) { }
-  return r;
-}
-const L2 = (a, e) => a + ' – ' + e;
+
 export async function kGiveBack(token, id) {
   const w = await worker(token);
   if (!w) return { ok: false };
