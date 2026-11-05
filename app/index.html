@@ -130,6 +130,8 @@ const N = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const money = (v) => N(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 // a balance under 1 SAR (rounding) counts as paid everywhere
 const DUE_MIN = 1;
+// a balance only when the order has a Genix invoice (no invoice = free gift / not billed yet → nothing due)
+const oDue = (o) => String(o.invoice_no ?? '').trim() ? N(o.total) - N(o.paid) : 0;
 const d10 = (v) => String(v ?? '').slice(0, 10);
 const state = { tab: 'home', sub: {}, q: {} };
 // inside the admin page (/exec?a=KEY): no own login – the admin page's KEY + PIN are checked instead
@@ -144,6 +146,7 @@ async function loadDs(name) {
   const [parts, meta] = await Promise.all([getDocs(collection(db, 'ds', name, 'c')), getDoc(doc(db, 'ds', name))]);
   let all = [];
   parts.forEach(x => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
+  if (name === 'j_orders') for (const r of all) if (!String(r.invoice_no ?? '').trim()) r.unpaid = 0;
   for (const r of all) Object.defineProperty(r, '_s', { value: Object.values(r).map(v => String(v ?? '')).join(' ').toLowerCase() });
   return (DSC[name] = { at: Date.now(), rows: all, meta: meta.exists() ? meta.data() : {} });
 }
@@ -466,7 +469,7 @@ async function summary() {
   ]);
   const bk = jo.rows.filter(o => o.booking_date === today);
   const pt = jp.rows.filter(p => p.date === today);
-  const un = jo.rows.filter(o => N(o.total) - N(o.paid) >= DUE_MIN);
+  const un = jo.rows.filter(o => oDue(o) >= DUE_MIN);
   const gt = gi.rows.filter(v => String(v.date || '').slice(0, 10) === today);
   const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || '');
   const dl = pt.filter(p => (bd[p.order_no] || today) < today); const dueList = () => dl;
@@ -481,7 +484,7 @@ async function summary() {
     dueRecv: (() => { const d = dueList(); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
     lists: { booked: bk, paid: pt, duerecv: dueList(), advance: pt.filter(p => !dueList().includes(p)), genix: gt },
     dueSoon: jo.rows.filter(o => N(o.open) === 1 && o.delivery_date && o.delivery_date <= soon).length,
-    unpaid: { n: un.length, due: un.reduce((s, o) => s + N(o.total) - N(o.paid), 0) },
+    unpaid: { n: un.length, due: un.reduce((s, o) => s + oDue(o), 0) },
     genixToday: { n: gt.length, amt: gt.reduce((s, v) => s + N(v.tot_net), 0) },
     meta, agent: a ? { at: a.at && a.at.toDate ? riyadh(a.at.toDate()) : '', pc: a.pc, ver: a.ver } : null, pendingJobs: pj.size,
   };
@@ -556,7 +559,7 @@ function jStatus(o) {
   return '<span class="pill warn">In work</span>';
 }
 const jOrderItem = (o) => {
-  const due = N(o.total) - N(o.paid);
+  const due = oDue(o);
   return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)} · ${N(o.pcs)} pcs</div></div>
   <div class="r"><div>${money(o.total)}</div>${due >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
 };
@@ -817,7 +820,7 @@ function jOrder(o) {
       rows('j_work', { f: ['order_no:' + o.order_no], limit: 20 }).catch(() => ({ rows: [] })),
       getDocs(query(collection(db, 'jdone'), where('o', '==', Number(o.order_no)))).catch(() => null),
     ]);
-    const due = N(o.total) - N(o.paid);
+    const due = oDue(o);
     const wk = {}; work.rows.forEach(w => wk[String(w.kind).toUpperCase()] = { ...w });
     // finished on a worker link but not taken into TailorShop yet (shop program closed)
     if (jdone) jdone.forEach(x => { const d = x.data(), k = String(d.kind || '').toUpperCase(); if (!k) return;

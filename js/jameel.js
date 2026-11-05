@@ -576,7 +576,12 @@ async function aOrders(key, pin) {
   try { (await dsRows('j_fit')).forEach(f => { fit[String(f.order_no)] = { status: f.status || '', done: f.done || '', sent: f.sent || '', checked: f.checked || '', delivered: f.delivered || '', date: f.date || '', qty: f.qty || '' }; }); } catch (e) { }
   // when the "order ready" WhatsApp went (JAMEEL's orders.ready_sent – also when sent from JAMEEL itself)
   const sent = {};
-  try { (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); }); } catch (e) { }
+  // a balance only for orders with a Genix invoice – no invoice (free gift, not billed yet) → 0
+  try {
+    const noInv = new Set();
+    (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); if (!String(o.invoice_no ?? '').trim()) noInv.add(String(o.order_no)); });
+    for (const x of rows) if (x.length > 14 && noInv.has(String(x[0]))) x[14] = '0';
+  } catch (e) { }
   return { rows, pending: pend, conf: J(r.aconf, null), fit, sent };
 }
 async function aSearch(key, pin, q) {
