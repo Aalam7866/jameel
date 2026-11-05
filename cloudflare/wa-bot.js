@@ -1,25 +1,15 @@
-// JAMEEL AL HINDAM – WhatsApp menu bot (WhatsApp Cloud API webhook, Firebase project jameel-a70af).
-// The customer writes anything → the main menu; every choice answers from here, order status from the shop's own data
-// (ds/j_orders + ds/j_work that ShopSync already uploads). Only the customer's OWN orders (same mobile) are shown.
-// Secrets (never in this file): WA_TOKEN (Meta permanent token), WA_VERIFY (webhook verify word), WA_APP_SECRET (signature check).
-const { onRequest } = require('firebase-functions/v2/https');
-const { defineSecret, defineString } = require('firebase-functions/params');
-const admin = require('firebase-admin');
-const crypto = require('crypto');
-
-admin.initializeApp();
-const db = admin.firestore();
-const WA_TOKEN = defineSecret('WA_TOKEN');
-const WA_VERIFY = defineSecret('WA_VERIFY');
-const WA_APP_SECRET = defineSecret('WA_APP_SECRET');
-const WA_PHONE_ID = defineString('WA_PHONE_ID');   // the number's "Phone number ID" from Meta (not secret)
+// JAMEEL AL HINDAM – WhatsApp menu bot. A Cloudflare Worker (free plan, no card) = the WhatsApp Cloud API webhook.
+// The customer writes anything → the main menu; order status comes from the shop's own data that ShopSync already
+// uploads (Firestore ds/j_orders + ds/j_work, public read). Only the customer's OWN orders (same mobile) are shown.
+// Worker settings → Variables (Secret): WA_TOKEN, WA_VERIFY, WA_APP_SECRET; (Text): WA_PHONE_ID. Nothing secret in this file.
+let ENV = {};
 
 // ------------------------------------------------------------------ shop texts (edit here)
 const SHOP = 'جميل الهندام للخياطة الرجالية';
 const MAP = 'https://maps.app.goo.gl/8h2nGbwMjAiqC5r96';
 const STAFF = '966544943429';
 const HOURS = [
-  'السبت – الخميس: __ (اكتب الدوام)',
+  'السبت – الخميس: 9:00 ص – 12:00 م ، 4:00 م – 11:00 م',
   'الجمعة: 4:00 م – 10:30 م',
 ];
 const PRICES = {
@@ -31,9 +21,9 @@ const PRICES = {
 
 // ------------------------------------------------------------------ WhatsApp send
 async function send(to, body) {
-  const r = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID.value() + '/messages', {
+  const r = await fetch('https://graph.facebook.com/v21.0/' + ENV.WA_PHONE_ID + '/messages', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + WA_TOKEN.value(), 'Content-Type': 'application/json' },
+    headers: { 'Authorization': 'Bearer ' + ENV.WA_TOKEN, 'Content-Type': 'application/json' },
     body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, body)),
   });
   if (!r.ok) console.error('send', r.status, await r.text());
@@ -62,10 +52,17 @@ const hours = (to) => buttons(to, '🕒 *الدوام*\n' + HOURS.join('\n') + '
 const staff = (to) => buttons(to, '👤 *التحدث مع موظف*\nاضغط على الرابط وسيرد عليك الموظف:\nhttps://wa.me/' + STAFF + '\n\nأو اتصل: +' + STAFF, back);
 
 // ------------------------------------------------------------------ the customer's orders (the shop's data, cached 2 min)
+const FS = 'https://firestore.googleapis.com/v1/projects/jameel-a70af/databases/(default)/documents/ds/';
 let cache = { t: 0, o: [], w: {} };
 async function ds(name) {
-  const s = await db.collection('ds').doc(name).collection('c').get();
-  let all = []; s.forEach((x) => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
+  let all = [], tok = '';
+  for (let i = 0; i < 20; i++) {
+    const r = await fetch(FS + name + '/c?pageSize=300' + (tok ? '&pageToken=' + encodeURIComponent(tok) : ''));
+    if (!r.ok) throw new Error('ds ' + name + ' ' + r.status);
+    const j = await r.json();
+    for (const d of j.documents || []) { try { all = all.concat(JSON.parse(d.fields.v.stringValue)); } catch (e) { } }
+    if (!(tok = j.nextPageToken)) break;
+  }
   return all;
 }
 async function data() {
@@ -109,7 +106,6 @@ async function myOrders(to, only) {
   return buttons(to, 'هل تحتاج شيئاً آخر؟', [['staff', '👤 موظف'], ['menu', '🏠 القائمة الرئيسية']]);
 }
 
-// ------------------------------------------------------------------ one incoming message
 async function handle(m) {
   const to = m.from;
   let id = '';
@@ -130,26 +126,32 @@ async function handle(m) {
   return mainMenu(to, true);
 }
 
-exports.wa = onRequest({ secrets: [WA_TOKEN, WA_VERIFY, WA_APP_SECRET], maxInstances: 3 }, async (req, res) => {
-  if (req.method === 'GET') {           // Meta checks the webhook once
-    if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === WA_VERIFY.value()) return res.status(200).send(req.query['hub.challenge']);
-    return res.sendStatus(403);
-  }
-  if (req.method !== 'POST') return res.sendStatus(405);
-  // only Meta: the body is signed with the app secret
-  const sig = String(req.get('x-hub-signature-256') || '');
-  const want = 'sha256=' + crypto.createHmac('sha256', WA_APP_SECRET.value()).update(req.rawBody).digest('hex');
-  if (sig.length !== want.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return res.sendStatus(401);
-  const jobs = [];
-  for (const e of req.body.entry || []) for (const c of e.changes || []) {
-    const v = c.value || {};
-    for (const m of v.messages || []) {
-      // every message once (Meta may resend)
-      const ref = db.collection('wa_seen').doc(String(m.id).replace(/[^\w.=-]/g, '_').slice(0, 300));
-      jobs.push(ref.create({ at: admin.firestore.FieldValue.serverTimestamp() })
-        .then(() => handle(m), () => null).catch((x) => console.error('handle', x)));
+// ------------------------------------------------------------------ the webhook
+const seen = new Map();   // Meta may send a message twice
+async function hmac(secret, body) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return 'sha256=' + [...new Uint8Array(await crypto.subtle.sign('HMAC', k, body))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+export default {
+  async fetch(req, env, ctx) {
+    ENV = env;
+    const u = new URL(req.url);
+    if (req.method === 'GET') {           // Meta checks the webhook once
+      if (u.searchParams.get('hub.mode') === 'subscribe' && u.searchParams.get('hub.verify_token') === env.WA_VERIFY) return new Response(u.searchParams.get('hub.challenge'));
+      return new Response('JAMEEL bot', { status: 403 });
     }
-  }
-  await Promise.all(jobs);
-  res.sendStatus(200);
-});
+    if (req.method !== 'POST') return new Response('', { status: 405 });
+    const raw = await req.arrayBuffer();
+    // only Meta: the body is signed with the app secret
+    if ((req.headers.get('x-hub-signature-256') || '') !== await hmac(env.WA_APP_SECRET, raw)) return new Response('', { status: 401 });
+    const body = JSON.parse(new TextDecoder().decode(raw));
+    const jobs = [];
+    for (const e of body.entry || []) for (const c of e.changes || []) for (const m of (c.value || {}).messages || []) {
+      if (seen.has(m.id)) continue;
+      seen.set(m.id, 1); if (seen.size > 500) seen.delete(seen.keys().next().value);
+      jobs.push(handle(m).catch((x) => console.error('handle', x)));
+    }
+    ctx.waitUntil(Promise.all(jobs));
+    return new Response('ok');
+  },
+};
