@@ -262,3 +262,19 @@ button.go, .go, button.act, .shop .btn:not(.ghost):not(.line):not(.ok):not(.blue
 .kar .sum > div > b { font-size: 26px !important; }
 .kar nav.tabs button { font-size: 15px; }
 .tile.cut, .tile.sti, .tile.rdy { border-inline-start-color: var(--p-line) !important; }
+
+/* ================================================================ v3 – tiles like "Workshop right now", progress bars */
+.tile { text-align: center; align-items: stretch; padding: 16px 14px 14px !important; }
+.tile::before { display: none !important; }
+.tile span { order: 0 !important; padding: 0 !important; margin-top: 4px; font-weight: 500 !important; }
+.tile b { margin: 0 !important; font-size: 30px !important; }
+.tile em { border-top: 0 !important; padding-top: 0 !important; margin-top: 2px !important; }
+.pb { display: block; height: 6px; border-radius: 99px; background: #eceae4; overflow: hidden; margin-top: 12px; }
+.pb u { display: block; height: 100%; border-radius: 99px; background: var(--p-gold); text-decoration: none; transition: width .4s; }
+.tile.cut .pb u { background: #c2410c; } .tile.sti .pb u { background: #b7791f; } .tile.rdy .pb u { background: var(--p-ok); }
+/* orders table: done/total + a bar */
+table.st .pv { display: inline-flex; align-items: center; gap: 10px; direction: ltr; }
+table.st .pv .pn { min-width: 34px; text-align: start; font-variant-numeric: tabular-nums; }
+table.st .pv .pb { width: 46px; height: 5px; margin: 0; flex: none; }
+table.st .c-ok .pb u { background: #2e7d5b; } table.st .c-part .pb u { background: var(--p-gold); } table.st .c-no .pb u { background: transparent; }
+table.st .c-ok .pn, table.st .c-part .pn { color: var(--p-ink); font-weight: 600; } table.st .c-no .pn { color: #9aa3b0; font-weight: 400; }
