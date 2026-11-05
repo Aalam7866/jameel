@@ -200,3 +200,65 @@ button.job:hover { box-shadow: var(--p-sh2); }
   :root.dk .kinds button.on { color: var(--p-gold) !important; }
   :root.dk .btn.acc { background: var(--p-gold) !important; border-color: var(--p-gold) !important; color: var(--p-navy) !important; }
 }
+
+/* ================================================================ v2 – executive polish */
+:root { --p-bg: #f2f4f7; }
+.ni { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+/* header */
+.hdr { background: var(--p-navy) !important; background-image: radial-gradient(1200px 120px at 85% -40px, rgba(184, 150, 79, .16), transparent 70%), linear-gradient(180deg, #0f2036, #0d1b2e) !important; }
+.hdr img { width: 40px !important; height: 40px !important; padding: 3px !important; }
+.hdr h1 { font-size: 17px !important; font-weight: 600 !important; }
+.hdr .sub { text-transform: none; font-size: 12px !important; }
+.bell { display: inline-flex !important; align-items: center; gap: 7px; padding: 8px 12px !important; }
+.bell .ni { width: 16px; height: 16px; }
+/* tab bar: icon + label, English caption under */
+.nav { box-shadow: 0 1px 0 var(--p-line), 0 8px 16px -14px rgba(16, 24, 40, .25) !important; border-bottom: 0 !important; }
+.nav .wrapx { gap: 2px !important; padding-top: 6px; padding-bottom: 0; align-items: center !important; }
+.nav button { display: grid !important; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; justify-content: center;
+              text-align: start !important; padding: 8px 14px 10px !important; margin-bottom: -1px; border-radius: 8px 8px 0 0 !important; font-size: 13.5px !important; line-height: 1.2 !important; }
+.nav button .ni { grid-row: 1 / span 2; width: 19px; height: 19px; color: var(--p-faint); transition: color .15s; }
+.nav button small { grid-column: 2; margin: 2px 0 0 !important; font-size: 10px !important; }
+.nav button:hover .ni, .nav button.on .ni { color: var(--p-navy); }
+.nav button.on { background: linear-gradient(180deg, transparent, rgba(22, 48, 79, .045)) !important; }
+.nav button.on .ni { color: var(--p-gold); }
+.nav .sep { height: 26px; margin: 0 8px !important; align-self: center; }
+.nav #t10 { background: var(--p-navy) !important; color: #fff !important; border-radius: 8px !important; margin: 0 6px 6px; padding: 8px 14px !important; border-bottom: 0 !important; }
+.nav #t10 small { color: #b9c3d1 !important; } .nav #t10 .ni { color: var(--p-gold) !important; }
+.nav #t10:hover { background: var(--p-navy2) !important; }
+.nav #t10.on { box-shadow: 0 0 0 2px var(--p-gold) inset; }
+/* section cards: titled header with a hairline */
+main .card > h3:first-child, .grid2 .card > h3:first-child { margin: -2px -18px 14px !important; padding: 0 18px 12px; border-bottom: 1px solid var(--p-line2); font-size: 15px !important; }
+.card { padding: 18px 18px 16px !important; }
+#dlg .card, #lst .card { padding: 0 !important; }
+/* KPI tiles: label first, then the figure, then the note */
+.tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; gap: 12px !important; }
+.tile { display: flex; flex-direction: column; position: relative; border-inline-start: 1px solid var(--p-line) !important; padding: 14px 16px 13px !important; background: var(--p-card) !important; }
+.tile::before { content: ''; position: absolute; top: 14px; inset-inline-end: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--p-gold); box-shadow: 0 0 0 4px var(--p-goldbg); }
+.tile.cut::before { background: #c2410c; box-shadow: 0 0 0 4px #fdeee6; } .tile.sti::before { background: #b7791f; box-shadow: 0 0 0 4px #fbf1df; }
+.tile.rdy::before { background: var(--p-ok); box-shadow: 0 0 0 4px var(--p-okbg); }
+.tile span { order: -1; font-size: 12px !important; font-weight: 600 !important; color: var(--p-mute) !important; padding-inline-end: 20px; line-height: 1.35; }
+.tile b { font-size: 30px !important; margin: 8px 0 2px; line-height: 1 !important; }
+.tile em { font-size: 11.5px !important; color: var(--p-faint) !important; margin-top: 4px !important; padding-top: 8px; border-top: 1px dashed var(--p-line2); }
+.tile[data-t]:hover { border-color: #cdd5df !important; transform: translateY(-1px); }
+/* tables */
+table.st th { text-transform: uppercase; }
+table.st tr:nth-child(even) td { background: transparent !important; }
+table.st td.l { font-weight: 600 !important; color: var(--p-navy) !important; }
+/* buttons */
+button.go, .go, button.act, .shop .btn:not(.ghost):not(.line):not(.ok):not(.blue):not(.acc), .btn.acc { box-shadow: 0 1px 2px rgba(13, 27, 46, .18), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.sec, .btn.line, .kar .btn:not(.acc):not(.ok):not(.blue) { box-shadow: var(--p-sh1); }
+/* Shop Online: same navy bar as the admin */
+.shop #app > header { background: var(--p-navy) !important; background-image: linear-gradient(180deg, #0f2036, #0d1b2e) !important; border-bottom: 0 !important; color: #fff; }
+.shop #app > header h1 { color: #fff !important; }
+.shop #app > header .lg { background: #fff; border-radius: 8px; padding: 3px; height: 34px !important; }
+.shop #app > header .btn.ghost { background: rgba(255, 255, 255, .1) !important; color: #fff !important; }
+.shop .stat { display: flex; flex-direction: column; border-inline-start: 1px solid var(--p-line) !important; position: relative; padding: 14px 16px 13px !important; }
+.shop .stat::before { content: ''; position: absolute; top: 14px; inset-inline-end: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--p-gold); box-shadow: 0 0 0 4px var(--p-goldbg); }
+.shop .stat span { order: -1; font-weight: 600 !important; font-size: 12px !important; padding-inline-end: 20px; }
+.shop .stat b { margin-top: 8px; font-size: 28px !important; line-height: 1.05 !important; }
+/* worker app */
+.kar #app > header { background-image: radial-gradient(900px 140px at 85% -40px, rgba(184, 150, 79, .18), transparent 70%), linear-gradient(180deg, #0f2036, #0d1b2e) !important; }
+.kar .sum > div { border-inline-start: 1px solid var(--p-line) !important; padding: 14px 10px 12px !important; }
+.kar .sum > div > b { font-size: 26px !important; }
+.kar nav.tabs button { font-size: 15px; }
+.tile.cut, .tile.sti, .tile.rdy { border-inline-start-color: var(--p-line) !important; }

@@ -224,7 +224,7 @@
       <img src="/img/logo-240.png" alt="">
       <div class="nm"><h1><?= shop ?></h1><div class="sub">لوحة الإدارة · Admin <span id="state"></span></div></div>
       <div class="lang" id="langSw" data-nol="1" role="group" aria-label="Language"><button type="button" data-l="ar">ع</button><button type="button" data-l="en">EN</button><button type="button" data-l="both">ع+EN</button></div>
-      <button class="bell" id="enable" onclick="enableAlerts()" title="Turn on sound &amp; alerts">🔔 <span>التنبيهات</span></button>
+      <button class="bell" id="enable" onclick="enableAlerts()" title="Turn on sound &amp; alerts"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> <span>التنبيهات</span></button>
     </div>
   </header>
   <div class="tape"></div>
@@ -241,17 +241,17 @@
   <div id="app" style="display:none">
     <nav class="nav">
       <div class="wrapx">
-        <button id="t5" onclick="tab(5)">لوحة المحل<small>Dashboard</small></button>
-        <button id="t1" class="on" onclick="tab(1)">اليوم<small>Today</small></button>
-        <button id="t2" onclick="tab(2)">الطلبات<small>Orders</small></button>
-        <button id="t3" onclick="tab(3)">العمال<small>Workers</small></button>
-        <button id="t4" onclick="tab(4)">الأسعار<small>Rates</small></button>
+        <button id="t5" onclick="tab(5)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>لوحة المحل<small>Dashboard</small></button>
+        <button id="t1" class="on" onclick="tab(1)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 15.5l2 2 4-4"/></svg>اليوم<small>Today</small></button>
+        <button id="t2" onclick="tab(2)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg>الطلبات<small>Orders</small></button>
+        <button id="t3" onclick="tab(3)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>العمال<small>Workers</small></button>
+        <button id="t4" onclick="tab(4)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></svg>الأسعار<small>Rates</small></button>
         <span class="sep"></span>
-        <button id="t6" onclick="tab(6)">جميل<small>Jameel</small></button>
-        <button id="t7" onclick="tab(7)">InvProject<small>الطلبات</small></button>
-        <button id="t8" onclick="tab(8)">Genix<small>الفواتير</small></button>
-        <button id="t9" onclick="tab(9)">المزيد<small>More</small></button>
-        <button id="t10" onclick="tab(10)">+ طلب جديد<small>New order</small></button>
+        <button id="t6" onclick="tab(6)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>جميل<small>Jameel</small></button>
+        <button id="t7" onclick="tab(7)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>InvProject<small>الطلبات</small></button>
+        <button id="t8" onclick="tab(8)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Genix<small>الفواتير</small></button>
+        <button id="t9" onclick="tab(9)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/><circle cx="5" cy="12" r="1.2"/></svg>المزيد<small>More</small></button>
+        <button id="t10" onclick="tab(10)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>+ طلب جديد<small>New order</small></button>
       </div>
     </nav>
     <main class="wrapx">
