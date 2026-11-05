@@ -506,7 +506,9 @@
       r.work.forEach(function (w) { if (w.status !== 'deleted') tot[w.kind] = (tot[w.kind] || 0) + w.qty; });
       $('tiles').innerHTML = Object.keys(KINDS).filter(function (k) { return tot[k]; }).map(function (k) {
         return '<div class="tile" data-t="k:' + k + '"><b>' + tot[k] + '</b><span>' + esc(KINDS[k]) + '</span></div>';
-      }).join('') + '<div class="tile" data-t="oo"><b>' + r.orders.length + '</b><span>طلبات أونلاين</span></div>';
+      }).join('') + '<div class="tile" data-t="oo"><b>' + r.orders.length + '</b><span>طلبات أونلاين · Online orders</span></div>' +
+        '<div class="tile" data-t="so" id="soT"><b>…</b><span>طلبات المحل · Shop orders</span></div>';
+      shopToday();
 
       // online orders
       $('orders').innerHTML = r.orders.length ? '<table>' + r.orders.map(function (o) {
@@ -529,10 +531,18 @@
 
     // ---- order status table ----
     var ALL = [], PEND = {}, FIT = {}, METHODS = ['Cash'], CUR = '';
+    // orders booked today at the shop (from JAMEEL's order list)
+    function riyToday() { return new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10); }
+    function shopTodayList() { var t = riyToday(); return ALL.filter(function (r) { return String(r[3] || '').slice(0, 10) === t; }); }
+    function shopToday() {
+      var el = $('soT'); if (!el) return;
+      var l = shopTodayList(), pcs = l.reduce(function (a, r) { return a + (Number(r[5]) || 0); }, 0);
+      el.innerHTML = '<b>' + l.length + '</b><span>طلبات المحل · Shop orders</span>' + (pcs ? '<em>' + pcs + ' ثوب · pcs</em>' : '');
+    }
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
       google.script.run.withSuccessHandler(function (r) {
-        if (!r) return; ALL = r.rows || []; PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
+        if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk();
       }).withFailureHandler(function () { }).aOrders(KEY, PIN);
@@ -605,6 +615,7 @@
         }).join('') + '</table>');
         return;
       }
+      if (t === 'so') { var sl = shopTodayList(); showLst('طلبات المحل اليوم – shop orders today (' + sl.length + ')', ordRows(sl.map(function (r) { return [r, (Number(r[5]) || 0) + ' ثوب · pcs']; }))); return; }
       if (t === 'oo') { showLst('طلبات أونلاين اليوم – online orders today', $('orders').innerHTML); }
     }
     function onlineOrder(id) {
