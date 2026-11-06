@@ -3,12 +3,13 @@
 // The language rides in every button id ("ar|order"), so nothing has to be stored.
 // Order status comes from the shop's own data that ShopSync already uploads (Firestore ds/j_orders + ds/j_work, public read).
 // Only the customer's OWN orders (same mobile) are shown.
-// Worker settings → Variables (Secret): WA_TOKEN, WA_VERIFY, WA_APP_SECRET; (Text): WA_PHONE_ID. Nothing secret in this file.
+// Worker settings → Variables. Meta directly: WA_TOKEN, WA_VERIFY, WA_APP_SECRET (Secret), WA_PHONE_ID (Text).
+// Through YCloud (number stays on the phone too): YC_API_KEY, YC_SECRET (Secret), YC_FROM (Text, the shop number 9665…). Nothing secret in this file.
 let ENV = {};
 
 // ------------------------------------------------------------------ shop texts (edit here)
 const MAP = 'https://maps.app.goo.gl/8h2nGbwMjAiqC5r96';
-const STAFF = '966544943429';
+const STAFF = '966552178881';
 const T = {
   ar: {
     shop: 'جميل الهندام للخياطة الرجالية',
@@ -67,10 +68,13 @@ const f = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 
 // ------------------------------------------------------------------ WhatsApp send
 async function send(to, body) {
-  const r = await fetch('https://graph.facebook.com/v25.0/' + ENV.WA_PHONE_ID + '/messages', {
+  const yc = !!ENV.YC_API_KEY;   // YCloud (same number also stays on the phone app) or Meta Cloud API directly
+  const msg = Object.assign(yc ? { from: '+' + String(ENV.YC_FROM || '').replace(/\D/g, ''), to: '+' + String(to).replace(/\D/g, '') }
+                                : { messaging_product: 'whatsapp', recipient_type: 'individual', to }, body);
+  const r = await fetch(yc ? 'https://api.ycloud.com/v2/whatsapp/messages/sendDirectly' : 'https://graph.facebook.com/v25.0/' + ENV.WA_PHONE_ID + '/messages', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + ENV.WA_TOKEN, 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, body)),
+    headers: Object.assign({ 'Content-Type': 'application/json' }, yc ? { 'X-API-Key': ENV.YC_API_KEY } : { 'Authorization': 'Bearer ' + ENV.WA_TOKEN }),
+    body: JSON.stringify(msg),
   });
   if (!r.ok) console.error('send', r.status, await r.text());
 }
@@ -171,7 +175,13 @@ async function handle(m) {
 const seen = new Map();   // Meta may send a message twice
 async function hmac(secret, body) {
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  return 'sha256=' + [...new Uint8Array(await crypto.subtle.sign('HMAC', k, body))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, body))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+const cat = (a, b) => { const x = new Uint8Array(a.byteLength + b.byteLength); x.set(new Uint8Array(a)); x.set(new Uint8Array(b), a.byteLength); return x; };
+function take(m) {
+  if (!m || seen.has(m.id)) return null;
+  seen.set(m.id, 1); if (seen.size > 500) seen.delete(seen.keys().next().value);
+  return handle(m).catch((x) => console.error('handle', x));
 }
 export default {
   async fetch(req, env, ctx) {
@@ -183,14 +193,19 @@ export default {
     }
     if (req.method !== 'POST') return new Response('', { status: 405 });
     const raw = await req.arrayBuffer();
-    // only Meta: the body is signed with the app secret
-    if ((req.headers.get('x-hub-signature-256') || '') !== await hmac(env.WA_APP_SECRET, raw)) return new Response('', { status: 401 });
-    const body = JSON.parse(new TextDecoder().decode(raw));
     const jobs = [];
-    for (const e of body.entry || []) for (const c of e.changes || []) for (const m of (c.value || {}).messages || []) {
-      if (seen.has(m.id)) continue;
-      seen.set(m.id, 1); if (seen.size > 500) seen.delete(seen.keys().next().value);
-      jobs.push(handle(m).catch((x) => console.error('handle', x)));
+    const ycs = req.headers.get('ycloud-signature');
+    if (ycs) {
+      // YCloud: "t=TIMESTAMP,s=SIGNATURE", signed over "TIMESTAMP." + body with the endpoint's secret
+      const p = Object.fromEntries(ycs.split(',').map((x) => x.trim().split('=')));
+      if (!ENV.YC_SECRET || !p.t || p.s !== await hmac(ENV.YC_SECRET, cat(new TextEncoder().encode(p.t + '.').buffer, raw))) return new Response('', { status: 401 });
+      const ev = JSON.parse(new TextDecoder().decode(raw));
+      if (ev.type === 'whatsapp.inbound_message.received') jobs.push(take(ev.whatsappInboundMessage));
+    } else {
+      // Meta: the body is signed with the app secret
+      if (!env.WA_APP_SECRET || (req.headers.get('x-hub-signature-256') || '') !== 'sha256=' + await hmac(env.WA_APP_SECRET, raw)) return new Response('', { status: 401 });
+      const body = JSON.parse(new TextDecoder().decode(raw));
+      for (const e of body.entry || []) for (const c of e.changes || []) for (const m of (c.value || {}).messages || []) jobs.push(take(m));
     }
     ctx.waitUntil(Promise.all(jobs));
     return new Response('ok');
