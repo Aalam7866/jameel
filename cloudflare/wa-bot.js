@@ -1,27 +1,73 @@
-// JAMEEL AL HINDAM – WhatsApp menu bot. A Cloudflare Worker (free plan, no card) = the WhatsApp Cloud API webhook.
-// The customer writes anything → the main menu; order status comes from the shop's own data that ShopSync already
-// uploads (Firestore ds/j_orders + ds/j_work, public read). Only the customer's OWN orders (same mobile) are shown.
+// JAMEEL AL HINDAM – WhatsApp menu bot (Arabic + English). A Cloudflare Worker (free plan, no card) = the WhatsApp Cloud API webhook.
+// The customer writes anything → the main menu in his language (Arabic letters → Arabic, else English; a 🌐 row switches).
+// The language rides in every button id ("ar|order"), so nothing has to be stored.
+// Order status comes from the shop's own data that ShopSync already uploads (Firestore ds/j_orders + ds/j_work, public read).
+// Only the customer's OWN orders (same mobile) are shown.
 // Worker settings → Variables (Secret): WA_TOKEN, WA_VERIFY, WA_APP_SECRET; (Text): WA_PHONE_ID. Nothing secret in this file.
 let ENV = {};
 
 // ------------------------------------------------------------------ shop texts (edit here)
-const SHOP = 'جميل الهندام للخياطة الرجالية';
 const MAP = 'https://maps.app.goo.gl/8h2nGbwMjAiqC5r96';
 const STAFF = '966544943429';
-const HOURS = [
-  'السبت – الخميس: 9:00 ص – 12:00 م ، 4:00 م – 11:00 م',
-  'الجمعة: 4:00 م – 10:30 م',
-];
-const PRICES = {
-  's_shop': '☀️ *ثوب صيفي – قماش المحل*\nمن *350* إلى *700* ريال حسب نوع القماش.',
-  's_out': '☀️ *ثوب صيفي – قماش خارجي*\nخياطة الثوب بقماشك: *180* ريال.',
-  'w_shop': '❄️ *ثوب شتوي – قماش المحل*\nيبدأ من *380* ريال، والسعر حسب نوع القماش.',
-  'w_out': '❄️ *ثوب شتوي – قماش خارجي*\nخياطة الثوب بقماشك: *220* ريال.',
+const T = {
+  ar: {
+    shop: 'جميل الهندام للخياطة الرجالية',
+    hello: 'أهلاً وسهلاً بك في *{shop}* 👋', pick: 'اختر من القائمة 👇', menuBtn: 'القائمة', section: 'القائمة',
+    rows: [['order', '📦 طلبي', 'حالة طلبك وموعد الاستلام'], ['hours', '🕒 الدوام والموقع', 'أوقات العمل وموقع المحل'],
+           ['fabric', '🧵 الأقمشة والأسعار', 'صيفي وشتوي – قماش المحل أو خارجي'], ['staff', '👤 التحدث مع موظف', 'للطلب الجديد أو أي استفسار'],
+           ['lang', '🌐 English', 'Switch to English']],
+    home: '🏠 القائمة الرئيسية', back: '🔙 رجوع', staffBtn: '👤 موظف', book: '📅 احجز / اطلب',
+    fabric: '🧵 *الأقمشة والأسعار*\nاختر الموسم:', summer: '☀️ صيفي', winter: '❄️ شتوي', summerT: '☀️ *صيفي*', winterT: '❄️ *شتوي*',
+    from: 'القماش من:', shopF: '🏪 قماش المحل', outF: '🧵 قماش خارجي',
+    prices: {
+      s_shop: '☀️ *ثوب صيفي – قماش المحل*\nمن *350* إلى *700* ريال حسب نوع القماش.',
+      s_out: '☀️ *ثوب صيفي – قماش خارجي*\nخياطة الثوب بقماشك: *180* ريال.',
+      w_shop: '❄️ *ثوب شتوي – قماش المحل*\nيبدأ من *380* ريال، والسعر حسب نوع القماش.',
+      w_out: '❄️ *ثوب شتوي – قماش خارجي*\nخياطة الثوب بقماشك: *220* ريال.',
+    },
+    priceTail: 'للحجز أو السؤال عن الأقمشة تواصل مع الموظف.',
+    hours: '🕒 *الدوام*\nالسبت – الخميس: 9:00 ص – 12:00 م ، 4:00 م – 11:00 م\nالجمعة: 4:00 م – 10:30 م\n\n📍 *الموقع*\n',
+    staff: '👤 *التحدث مع موظف*\nاضغط على الرابط وسيرد عليك الموظف:\n',
+    call: 'أو اتصل: +',
+    noOrder: 'لم نجد طلبات مسجلة برقم جوالك هذا.\nإذا سجلت الطلب برقم آخر، تواصل مع الموظف.',
+    noThis: 'لم نجد الطلب رقم {n} مسجلاً برقم جوالك هذا.\nتواصل مع الموظف للمساعدة.',
+    more: 'هل تحتاج شيئاً آخر؟',
+    order: '📦 *طلب رقم {n}*', pcs: 'عدد الثياب: ', due: 'موعد التسليم: ', left: 'المبلغ المتبقي: *{v}* ريال',
+    st: { done: '✔️ تم التسليم', ready: '✅ *جاهز للاستلام*', part: ' – تم تسليم {d} من {p}', sti: '🪡 قيد الخياطة – تم خياطة {d} من {p}',
+          cut: '✂️ قيد التفصيل – تم قص {d} من {p}', wait: '🕒 في الانتظار – لم يبدأ التفصيل بعد' },
+  },
+  en: {
+    shop: 'Jameel Al Hindam Men\'s Tailoring',
+    hello: 'Welcome to *{shop}* 👋', pick: 'Choose from the menu 👇', menuBtn: 'Menu', section: 'Menu',
+    rows: [['order', '📦 My order', 'Order status and pickup date'], ['hours', '🕒 Hours & location', 'Opening times and shop location'],
+           ['fabric', '🧵 Fabrics & prices', 'Summer / winter – shop or own fabric'], ['staff', '👤 Talk to staff', 'New order or any question'],
+           ['lang', '🌐 العربية', 'التحويل إلى العربية']],
+    home: '🏠 Main menu', back: '🔙 Back', staffBtn: '👤 Staff', book: '📅 Book / order',
+    fabric: '🧵 *Fabrics & prices*\nChoose the season:', summer: '☀️ Summer', winter: '❄️ Winter', summerT: '☀️ *Summer*', winterT: '❄️ *Winter*',
+    from: 'Fabric from:', shopF: '🏪 Shop fabric', outF: '🧵 Own fabric',
+    prices: {
+      s_shop: '☀️ *Summer thobe – shop fabric*\nFrom *350* to *700* SAR, depending on the fabric.',
+      s_out: '☀️ *Summer thobe – your own fabric*\nTailoring: *180* SAR.',
+      w_shop: '❄️ *Winter thobe – shop fabric*\nFrom *380* SAR, depending on the fabric.',
+      w_out: '❄️ *Winter thobe – your own fabric*\nTailoring: *220* SAR.',
+    },
+    priceTail: 'To book or ask about fabrics, talk to our staff.',
+    hours: '🕒 *Opening hours*\nSaturday – Thursday: 9:00 am – 12:00 pm, 4:00 pm – 11:00 pm\nFriday: 4:00 pm – 10:30 pm\n\n📍 *Location*\n',
+    staff: '👤 *Talk to staff*\nTap the link and our staff will reply:\n',
+    call: 'Or call: +',
+    noOrder: 'We found no orders under this mobile number.\nIf you booked with another number, please talk to our staff.',
+    noThis: 'We found no order {n} under this mobile number.\nPlease talk to our staff.',
+    more: 'Anything else?',
+    order: '📦 *Order {n}*', pcs: 'Thobes: ', due: 'Delivery date: ', left: 'Balance due: *{v}* SAR',
+    st: { done: '✔️ Delivered', ready: '✅ *Ready for pickup*', part: ' – {d} of {p} collected', sti: '🪡 Stitching – {d} of {p} stitched',
+          cut: '✂️ Cutting – {d} of {p} cut', wait: '🕒 Waiting – cutting not started yet' },
+  },
 };
+const f = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 
 // ------------------------------------------------------------------ WhatsApp send
 async function send(to, body) {
-  const r = await fetch('https://graph.facebook.com/v21.0/' + ENV.WA_PHONE_ID + '/messages', {
+  const r = await fetch('https://graph.facebook.com/v25.0/' + ENV.WA_PHONE_ID + '/messages', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + ENV.WA_TOKEN, 'Content-Type': 'application/json' },
     body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, body)),
@@ -29,27 +75,21 @@ async function send(to, body) {
   if (!r.ok) console.error('send', r.status, await r.text());
 }
 const text = (to, t) => send(to, { type: 'text', text: { body: t, preview_url: true } });
-const buttons = (to, t, list) => send(to, { type: 'interactive', interactive: { type: 'button', body: { text: t },
-  action: { buttons: list.map(([id, title]) => ({ type: 'reply', reply: { id, title } })) } } });
-const menuList = (to, t, btn, rows) => send(to, { type: 'interactive', interactive: { type: 'list', body: { text: t },
-  action: { button: btn, sections: [{ title: 'القائمة', rows: rows.map(([id, title, description]) => ({ id, title, description })) }] } } });
-const back = [['menu', '🏠 القائمة الرئيسية']];
+// ids carry the language: "ar|order"
+const buttons = (to, L, t, list) => send(to, { type: 'interactive', interactive: { type: 'button', body: { text: t },
+  action: { buttons: list.map(([id, title]) => ({ type: 'reply', reply: { id: L + '|' + id, title } })) } } });
+const menuList = (to, L, t, rows) => send(to, { type: 'interactive', interactive: { type: 'list', body: { text: t },
+  action: { button: T[L].menuBtn, sections: [{ title: T[L].section, rows: rows.map(([id, title, description]) => ({ id: L + '|' + id, title, description })) }] } } });
 
 // ------------------------------------------------------------------ menus
-function mainMenu(to, hello) {
-  return menuList(to, (hello ? 'أهلاً وسهلاً بك في *' + SHOP + '* 👋\n\n' : '') + 'اختر من القائمة 👇', 'القائمة', [
-    ['order', '📦 طلبي', 'حالة طلبك وموعد الاستلام'],
-    ['hours', '🕒 الدوام والموقع', 'أوقات العمل وموقع المحل'],
-    ['fabric', '🧵 الأقمشة والأسعار', 'صيفي وشتوي – قماش المحل أو خارجي'],
-    ['staff', '👤 التحدث مع موظف', 'للطلب الجديد أو أي استفسار'],
-  ]);
-}
-const fabricMenu = (to) => buttons(to, '🧵 *الأقمشة والأسعار*\nاختر الموسم:', [['summer', '☀️ صيفي'], ['winter', '❄️ شتوي'], ['menu', '🏠 القائمة الرئيسية']]);
-const seasonMenu = (to, s) => buttons(to, (s === 's' ? '☀️ *صيفي*' : '❄️ *شتوي*') + '\nالقماش من:', [[s + '_shop', '🏪 قماش المحل'], [s + '_out', '🧵 قماش خارجي'], ['fabric', '🔙 رجوع']]);
-const priceAnswer = (to, id) => buttons(to, PRICES[id] + '\n\nللحجز أو السؤال عن الأقمشة تواصل مع الموظف.',
-  [['staff', '📅 احجز / اطلب'], [id[0] === 's' ? 'summer' : 'winter', '🔙 رجوع'], ['menu', '🏠 القائمة الرئيسية']]);
-const hours = (to) => buttons(to, '🕒 *الدوام*\n' + HOURS.join('\n') + '\n\n📍 *الموقع*\n' + MAP, back);
-const staff = (to) => buttons(to, '👤 *التحدث مع موظف*\nاضغط على الرابط وسيرد عليك الموظف:\nhttps://wa.me/' + STAFF + '\n\nأو اتصل: +' + STAFF, back);
+const mainMenu = (to, L, hello) => menuList(to, L, (hello ? f(T[L].hello, { shop: T[L].shop }) + '\n\n' : '') + T[L].pick, T[L].rows);
+const fabricMenu = (to, L) => buttons(to, L, T[L].fabric, [['summer', T[L].summer], ['winter', T[L].winter], ['menu', T[L].home]]);
+const seasonMenu = (to, L, s) => buttons(to, L, (s === 's' ? T[L].summerT : T[L].winterT) + '\n' + T[L].from,
+  [[s + '_shop', T[L].shopF], [s + '_out', T[L].outF], ['fabric', T[L].back]]);
+const priceAnswer = (to, L, id) => buttons(to, L, T[L].prices[id] + '\n\n' + T[L].priceTail,
+  [['staff', T[L].book], [id[0] === 's' ? 'summer' : 'winter', T[L].back], ['menu', T[L].home]]);
+const hours = (to, L) => buttons(to, L, T[L].hours + MAP, [['menu', T[L].home]]);
+const staff = (to, L) => buttons(to, L, T[L].staff + 'https://wa.me/' + STAFF + '\n\n' + T[L].call + STAFF, [['menu', T[L].home]]);
 
 // ------------------------------------------------------------------ the customer's orders (the shop's data, cached 2 min)
 const FS = 'https://firestore.googleapis.com/v1/projects/jameel-a70af/databases/(default)/documents/ds/';
@@ -75,55 +115,56 @@ async function data() {
 }
 const last9 = (m) => String(m || '').replace(/\D/g, '').slice(-9);
 const N = (v) => Number(v) || 0;
-function status(o, w) {
-  const pcs = N(o.pcs), cut = Math.min(pcs, N(w.CUT)), sti = Math.min(pcs, N(w.STITCH));
-  if (pcs > 0 && N(o.delivered_qty) >= pcs) return '✔️ تم التسليم' + (o.delivered_date ? ' (' + String(o.delivered_date).slice(0, 10) + ')' : '');
-  if (N(o.ready) === 1) return '✅ *جاهز للاستلام*' + (N(o.delivered_qty) ? ' – تم تسليم ' + N(o.delivered_qty) + ' من ' + pcs : '');
-  if (sti > 0) return '🪡 قيد الخياطة – تم خياطة ' + sti + ' من ' + pcs;
-  if (cut > 0) return '✂️ قيد التفصيل – تم قص ' + cut + ' من ' + pcs;
-  return '🕒 في الانتظار – لم يبدأ التفصيل بعد';
+function status(L, o, w) {
+  const S = T[L].st, pcs = N(o.pcs), cut = Math.min(pcs, N(w.CUT)), sti = Math.min(pcs, N(w.STITCH)), dq = N(o.delivered_qty);
+  if (pcs > 0 && dq >= pcs) return S.done + (o.delivered_date ? ' (' + String(o.delivered_date).slice(0, 10) + ')' : '');
+  if (N(o.ready) === 1) return S.ready + (dq ? f(S.part, { d: dq, p: pcs }) : '');
+  if (sti > 0) return f(S.sti, { d: sti, p: pcs });
+  if (cut > 0) return f(S.cut, { d: cut, p: pcs });
+  return S.wait;
 }
-function orderText(o, w) {
-  let t = '📦 *طلب رقم ' + o.order_no + '*\n' + status(o, w) + '\nعدد الثياب: ' + N(o.pcs) + '\nموعد التسليم: ' + String(o.delivery_date || '').slice(0, 10);
+function orderText(L, o, w) {
+  let t = f(T[L].order, { n: o.order_no }) + '\n' + status(L, o, w) + '\n' + T[L].pcs + N(o.pcs) + '\n' + T[L].due + String(o.delivery_date || '').slice(0, 10);
   // a balance only when there is a Genix invoice (no invoice = free gift / not billed yet)
   const due = String(o.invoice_no || '').trim() && !N(o.free_gift) ? N(o.total) - N(o.paid) : 0;
-  if (due >= 1) t += '\nالمبلغ المتبقي: *' + due.toFixed(2) + '* ريال';
+  if (due >= 1) t += '\n' + f(T[L].left, { v: due.toFixed(2) });
   return t;
 }
-async function myOrders(to, only) {
+async function myOrders(to, L, only) {
   const d = await data(), me = last9(to);
   let list = d.o.filter((o) => last9(o.mobile) === me);
   if (only) list = list.filter((o) => String(o.order_no) === String(only));
-  if (!list.length) {
-    return buttons(to, only ? 'لم نجد الطلب رقم ' + only + ' مسجلاً برقم جوالك هذا.\nتواصل مع الموظف للمساعدة.'
-      : 'لم نجد طلبات مسجلة برقم جوالك هذا.\nإذا سجلت الطلب برقم آخر، تواصل مع الموظف.', [['staff', '👤 موظف'], ['menu', '🏠 القائمة الرئيسية']]);
-  }
+  if (!list.length) return buttons(to, L, only ? f(T[L].noThis, { n: only }) : T[L].noOrder, [['staff', T[L].staffBtn], ['menu', T[L].home]]);
   // open ones first, then the latest delivered
   list.sort((a, b) => N(b.order_no) - N(a.order_no));
   const open = list.filter((o) => N(o.delivered_qty) < N(o.pcs));
   const show = (open.length ? open : list).slice(0, 5);
-  await text(to, show.map((o) => orderText(o, d.w[String(o.order_no)] || {})).join('\n\n'));
-  return buttons(to, 'هل تحتاج شيئاً آخر؟', [['staff', '👤 موظف'], ['menu', '🏠 القائمة الرئيسية']]);
+  await text(to, show.map((o) => orderText(L, o, d.w[String(o.order_no)] || {})).join('\n\n'));
+  return buttons(to, L, T[L].more, [['staff', T[L].staffBtn], ['menu', T[L].home]]);
 }
 
+// ------------------------------------------------------------------ one incoming message
 async function handle(m) {
   const to = m.from;
-  let id = '';
-  if (m.type === 'interactive') id = (m.interactive.list_reply || m.interactive.button_reply || {}).id || '';
-  else if (m.type === 'button') id = m.button && m.button.payload || '';
+  let raw = '';
+  if (m.type === 'interactive') raw = (m.interactive.list_reply || m.interactive.button_reply || {}).id || '';
+  else if (m.type === 'button') raw = m.button && m.button.payload || '';
   const t = m.type === 'text' ? String(m.text.body || '').trim() : '';
-  if (!id && /^\d{3,7}$/.test(t)) return myOrders(to, t);            // an order number typed
+  let [L, id] = raw.includes('|') ? raw.split('|') : ['', raw];
+  if (!T[L]) L = /[؀-ۿ]/.test(t) || !t ? 'ar' : 'en';   // typed text: Arabic letters → Arabic, else English
+  if (!id && /^\d{3,7}$/.test(t)) return myOrders(to, 'ar', t);       // an order number typed (no letters to tell the language)
   switch (id) {
-    case 'order': return myOrders(to);
-    case 'hours': return hours(to);
-    case 'fabric': return fabricMenu(to);
-    case 'summer': return seasonMenu(to, 's');
-    case 'winter': return seasonMenu(to, 'w');
-    case 's_shop': case 's_out': case 'w_shop': case 'w_out': return priceAnswer(to, id);
-    case 'staff': return staff(to);
-    case 'menu': return mainMenu(to, false);
+    case 'order': return myOrders(to, L);
+    case 'hours': return hours(to, L);
+    case 'fabric': return fabricMenu(to, L);
+    case 'summer': return seasonMenu(to, L, 's');
+    case 'winter': return seasonMenu(to, L, 'w');
+    case 's_shop': case 's_out': case 'w_shop': case 'w_out': return priceAnswer(to, L, id);
+    case 'staff': return staff(to, L);
+    case 'menu': return mainMenu(to, L, false);
+    case 'lang': return mainMenu(to, L === 'ar' ? 'en' : 'ar', true);
   }
-  return mainMenu(to, true);
+  return mainMenu(to, L, true);
 }
 
 // ------------------------------------------------------------------ the webhook
