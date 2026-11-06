@@ -1,5 +1,5 @@
 // JAMEEL AL HINDAM – WhatsApp menu bot (Arabic + English). A Cloudflare Worker (free plan, no card) = the WhatsApp Cloud API webhook.
-// The customer writes anything → the main menu in English; the 🌐 row switches to Arabic (and back).
+// The customer writes anything → the main menu in Arabic; the 🌐 row switches to English (and back).
 // The language rides in every button id ("ar|order"), so nothing has to be stored.
 // Order status comes from the shop's own data that ShopSync already uploads (Firestore ds/j_orders + ds/j_work, public read).
 // Only the customer's OWN orders (same mobile) are shown.
@@ -151,8 +151,8 @@ async function handle(m) {
   else if (m.type === 'button') raw = m.button && m.button.payload || '';
   const t = m.type === 'text' ? String(m.text.body || '').trim() : '';
   let [L, id] = raw.includes('|') ? raw.split('|') : ['', raw];
-  if (!T[L]) L = 'en';                                              // typed text: always start in English (🌐 switches to Arabic)
-  if (!id && /^\d{3,7}$/.test(t)) return myOrders(to, 'en', t);       // an order number typed
+  if (!T[L]) L = 'ar';                                              // typed text: always start in Arabic (🌐 switches to English)
+  if (!id && /^\d{3,7}$/.test(t)) return myOrders(to, 'ar', t);       // an order number typed
   switch (id) {
     case 'order': return myOrders(to, L);
     case 'hours': return hours(to, L);
