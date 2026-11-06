@@ -9,7 +9,7 @@ let ENV = {};
 
 // ------------------------------------------------------------------ shop texts (edit here)
 const MAP = 'https://maps.app.goo.gl/8h2nGbwMjAiqC5r96';
-const STAFF = '966552178881';
+const STAFF = '966544943429';
 const T = {
   ar: {
     shop: 'جميل الهندام للخياطة الرجالية',
