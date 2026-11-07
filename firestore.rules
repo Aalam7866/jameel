@@ -130,6 +130,14 @@ service cloud.firestore {
       // Admin → Settings: the work rates
       allow create, update: if id == 'rates'
         && request.resource.data.keys().hasOnly(['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY', 'at']);
+      // Admin → Rates: the workshop capacity (the shop PC puts it into JAMEEL's settings, then writes it back as src 'pc')
+      allow create, update: if id == 'capacity' && request.resource.data.src == 'web' && request.resource.data.at == request.time
+        && request.resource.data.keys().hasOnly(['DailyCapacity', 'MarginDays', 'DayOff', 'DeliveryDays', 'DueSoonDays', 'src', 'at'])
+        && request.resource.data.DailyCapacity is string && request.resource.data.DailyCapacity.size() <= 3
+        && request.resource.data.MarginDays is string && request.resource.data.MarginDays.size() <= 3
+        && request.resource.data.DeliveryDays is string && request.resource.data.DeliveryDays.size() <= 3
+        && request.resource.data.DueSoonDays is string && request.resource.data.DueSoonDays.size() <= 3
+        && request.resource.data.DayOff in ['None', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     }
     match /jobs/{id} {
       allow read: if true;

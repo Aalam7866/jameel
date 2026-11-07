@@ -870,9 +870,43 @@ async function aSetRates(key, pin, rates) {
   return { ok: true, msg: 'تم الحفظ ✔ Rates saved' };
 }
 
+// ================================================================ admin: workshop capacity (JAMEEL → Settings → Capacity)
+// sys/capacity: the PC (ShopSync) publishes JAMEEL's values (src "pc"); a change here is written with src "web" and the
+// PC puts it into JAMEEL's settings, then publishes it back (src "pc" = applied).
+const CAP_KEYS = ['DailyCapacity', 'MarginDays', 'DayOff', 'DeliveryDays', 'DueSoonDays'];
+const CAP_DAYS = ['None', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+async function aCapacity(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const s = await getDoc(doc(db, 'sys', 'capacity'));
+  if (!s.exists()) return { have: false };
+  const d = s.data(), v = {};
+  for (const k of CAP_KEYS) v[k] = d[k] == null ? '' : String(d[k]);
+  return { have: true, v, src: d.src || '', at: d.at && d.at.toDate ? riyadh(d.at.toDate()) : '' };
+}
+async function aSetCapacity(key, pin, v) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  if (!v || typeof v !== 'object') return { ok: false, msg: 'بيانات غير صحيحة – invalid data' };
+  const clean = { src: 'web', at: serverTimestamp() };
+  for (const k of CAP_KEYS) {
+    if (k === 'DayOff') {
+      const dd = String(v[k] || 'None');
+      if (!CAP_DAYS.includes(dd)) return { ok: false, msg: 'يوم الإجازة غير صحيح – invalid day off' };
+      clean[k] = dd;
+      continue;
+    }
+    const n = Number(v[k]);
+    if (!Number.isInteger(n) || n < 0 || n > 999) return { ok: false, msg: k + ': رقم غير صحيح – invalid number' };
+    clean[k] = String(n);
+  }
+  await setDoc(doc(db, 'sys', 'capacity'), clean);
+  return { ok: true, msg: 'تم الحفظ ✔ يُطبق في الكمبيوتر خلال دقيقة – Saved, the shop PC applies it within a minute' };
+}
+
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aShareAdd, aJob, aOrderWip, aShopEmployees,
 };

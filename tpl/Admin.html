@@ -348,6 +348,27 @@
           <button class="go wide" id="ratesSave" onclick="saveRates()">حفظ الأسعار · Save rates</button>
         </div>
       </div>
+
+      <div class="card" style="margin-top:14px;max-width:640px">
+        <h3>الطاقة الإنتاجية <small>Workshop capacity – same as JAMEEL → Settings → Capacity</small></h3>
+        <div class="muted" style="margin-bottom:10px">كم ثوب يُخاط في اليوم – يحدد موعد التسليم التلقائي للطلبات الجديدة<br>Thobes made per day – sets the automatic delivery date of new orders</div>
+        <div id="capLoad" class="muted">جاري التحميل… / Loading…</div>
+        <div id="capBody" style="display:none">
+          <div class="rate-row"><label>🧵 ثياب في اليوم / Thobes per day<br><small class="muted">0 = إيقاف · off</small></label><input id="cDailyCapacity" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+          <div class="rate-row"><label>➕ أيام إضافية بعد الجاهزية / Margin days</label><input id="cMarginDays" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+          <div class="rate-row"><label>📅 يوم الإجازة / Day off</label><select id="cDayOff" style="width:170px;flex:none;font-size:16px;font-weight:600">
+            <option value="None">— لا يوجد · None</option><option value="Saturday">السبت · Saturday</option><option value="Sunday">الأحد · Sunday</option>
+            <option value="Monday">الاثنين · Monday</option><option value="Tuesday">الثلاثاء · Tuesday</option><option value="Wednesday">الأربعاء · Wednesday</option>
+            <option value="Thursday">الخميس · Thursday</option><option value="Friday">الجمعة · Friday</option></select></div>
+          <div class="rate-row"><label>🗓️ أيام التسليم إذا كانت الطاقة 0 / Delivery days (capacity off)</label><input id="cDeliveryDays" type="number" inputmode="numeric" min="0" step="1" placeholder="15"></div>
+          <div class="rate-row"><label>⏰ تنبيه "قريب التسليم" خلال أيام / Due-soon alert days</label><input id="cDueSoonDays" type="number" inputmode="numeric" min="0" step="1" placeholder="2"></div>
+          <div id="capState" class="muted" style="margin-top:6px"></div>
+          <div id="capMsg"></div>
+          <button class="go wide" id="capSave" onclick="saveCap()">حفظ الطاقة · Save capacity</button>
+          <h3 style="margin-top:18px">خطة الورشة <small>Plan – next working days (approx.)</small></h3>
+          <div class="tw"><table class="st" id="capPlan"></table></div>
+        </div>
+      </div>
     </div>
 
     <!-- Tabs 5-10: Shop Online (the /app/ page) -->
@@ -419,7 +440,7 @@
       window.scrollTo(0, 0);
       if (n === 2) loadOrders();
       if (n === 3) loadWorkers();
-      if (n === 4) loadRates();
+      if (n === 4) { loadRates(); loadCap(); }
       if (n >= 5) shopTab(n);
     }
 
@@ -1068,6 +1089,72 @@
         $('ratesSave').disabled = false;
         $('ratesMsg').innerHTML = '<div class="rate-err">لا يوجد اتصال – ' + esc(e && e.message || e) + '</div>';
       }).aSetRates(KEY, PIN, rates);
+    }
+
+    // ---- capacity (JAMEEL → Settings → Capacity, through the shop PC) ----
+    var CAP_KEYS = ['DailyCapacity', 'MarginDays', 'DayOff', 'DeliveryDays', 'DueSoonDays'], CAPV = null, capPoll = null;
+    var DAYN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var DAYAR = { Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' };
+    function capState(r) {
+      if (!r.have) return 'لم يصل من الكمبيوتر بعد – not received from the shop PC yet';
+      var at = r.at ? ' (' + esc(r.at) + ')' : '';
+      return r.src === 'web' ? '⏳ بانتظار الكمبيوتر لتطبيقه – waiting for the shop PC to apply it' + at
+        : '✅ مطابق لبرنامج جميل – same as in JAMEEL' + at;
+    }
+    function loadCap(quiet) {
+      google.script.run.withSuccessHandler(function (r) {
+        $('capLoad').style.display = 'none';
+        if (!r) { $('capLoad').style.display = ''; $('capLoad').textContent = 'تعذر التحميل – could not load'; return; }
+        $('capBody').style.display = '';
+        if (!quiet || r.src === 'pc') {
+          CAPV = r.have ? r.v : null;
+          CAP_KEYS.forEach(function (k) { var v = r.have ? r.v[k] : ''; if (k === 'DayOff') $('cDayOff').value = /^(sat|sun|mon|tue|wed|thu|fri)/i.test(v) ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase() : 'None'; else $('c' + k).value = v; });
+        }
+        $('capState').innerHTML = capState(r);
+        if (r.src !== 'web' && capPoll) { clearInterval(capPoll); capPoll = null; }
+        capPlan();
+      }).withFailureHandler(function (e) { $('capLoad').textContent = 'خطأ – ' + (e && e.message || e); }).aCapacity(KEY, PIN);
+    }
+    function saveCap() {
+      var v = {};
+      CAP_KEYS.forEach(function (k) { v[k] = k === 'DayOff' ? $('cDayOff').value : Number($('c' + k).value || 0); });
+      $('capSave').disabled = true;
+      $('capMsg').innerHTML = '<div class="muted" style="margin-top:8px">جاري الحفظ…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        $('capSave').disabled = false;
+        if (!r || !r.ok) { $('capMsg').innerHTML = '<div class="rate-err">' + esc(r && r.msg || 'خطأ') + '</div>'; return; }
+        $('capMsg').innerHTML = '<div class="rate-ok">' + esc(r.msg) + '</div>';
+        CAPV = {}; CAP_KEYS.forEach(function (k) { CAPV[k] = String(v[k]); });
+        capPlan();
+        $('capState').innerHTML = '⏳ بانتظار الكمبيوتر لتطبيقه – waiting for the shop PC to apply it';
+        if (capPoll) clearInterval(capPoll);
+        var n = 0; capPoll = setInterval(function () { if (++n > 18) { clearInterval(capPoll); capPoll = null; } loadCap(true); }, 10000);
+      }).withFailureHandler(function (e) {
+        $('capSave').disabled = false;
+        $('capMsg').innerHTML = '<div class="rate-err">لا يوجد اتصال – ' + esc(e && e.message || e) + '</div>';
+      }).aSetCapacity(KEY, PIN, v);
+    }
+    // the plan like JAMEEL's dashboard: open thobes not stitched yet, booking order, fill each working day up to the capacity
+    function capPlan() {
+      var t = $('capPlan'), cap = CAPV ? Number(CAPV.DailyCapacity) || 0 : 0;
+      if (!cap) { t.innerHTML = '<tr><td class="muted">الطاقة 0 = متوقفة، التسليم بعد ' + esc(CAPV ? CAPV.DeliveryDays : '') + ' يوم – capacity off</td></tr>'; return; }
+      var off = CAPV.DayOff && CAPV.DayOff !== 'None' ? CAPV.DayOff.slice(0, 3).toLowerCase() : '';
+      var isOff = function (d) { return off && DAYN[d.getUTCDay()].slice(0, 3).toLowerCase() === off; };
+      var q = ALL.filter(function (r) { var p = Number(r[5]) || 0; return (Number(r[12]) || 0) < p && (Number(r[7]) || 0) < p; })
+        .map(function (r) { return { no: r[0], todo: (Number(r[5]) || 0) - (Number(r[7]) || 0), b: String(r[3] || '') }; })
+        .sort(function (a, b) { return a.b < b.b ? -1 : a.b > b.b ? 1 : Number(a.no) - Number(b.no); });
+      var day = new Date(riyToday() + 'T00:00:00Z'), days = [], cur = null;
+      function next() { if (cur) day = new Date(day.getTime() + 864e5); while (isOff(day)) day = new Date(day.getTime() + 864e5); cur = { d: day, n: 0, o: [] }; days.push(cur); }
+      next();
+      q.forEach(function (x) { var left = x.todo; while (left > 0) { if (cur.n >= cap) next(); var take = Math.min(left, cap - cur.n); cur.n += take; left -= take; if (cur.o.indexOf(x.no) < 0) cur.o.push(x.no); } });
+      while (days.length < 14) next();
+      var total = q.reduce(function (a, x) { return a + x.todo; }, 0);
+      t.innerHTML = '<thead><tr><th>التاريخ · Date</th><th>اليوم · Day</th><th>مخطط · Planned</th><th>متاح · Free</th><th>الطلبات · Orders</th></tr></thead><tbody>' +
+        days.slice(0, 14).map(function (x) {
+          var dn = DAYN[x.d.getUTCDay()], free = Math.max(0, cap - x.n);
+          return '<tr><td>' + x.d.toISOString().slice(0, 10) + '</td><td>' + DAYAR[dn] + ' · ' + dn.slice(0, 3) + '</td><td class="' + (x.n >= cap ? 'c-late' : x.n ? 'c-part' : 'c-ok') + '"><b>' + x.n + '</b> / ' + cap + '</td><td>' + free +
+            '</td><td style="font-size:12px">' + esc(x.o.slice(0, 12).join(', ') + (x.o.length > 12 ? ' …' : '')) + '</td></tr>';
+        }).join('') + '</tbody><tfoot><tr><td colspan="5" class="muted">' + total + ' ثوب متبقي ≈ ' + (Math.round(total / cap * 10) / 10) + ' يوم عمل – thobes waiting ≈ working days</td></tr></tfoot>';
     }
 
     // ---- workers (Diamond-style) ----
