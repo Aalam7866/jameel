@@ -78,6 +78,16 @@
             border-radius: 14px; padding: 14px 18px; box-shadow: 0 10px 30px rgba(15, 20, 30, .35); white-space: pre-line; font-weight: 600; border-top: 4px solid var(--gold); }
   #banner button { margin-top: 10px; background: var(--gold); color: #fff; padding: 7px 16px; font-size: 14px; }
   /* orders table */
+  .drange { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+  .drange label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--mute); flex: 1 1 140px; }
+  .drange input { margin: 0; font-size: 15px; }
+  .drange .dq { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 100%; }
+  .drange .dq button { border: 1px solid var(--line); background: var(--card, #fff); border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .drange .dq button.on { background: #0d1b2e; color: #fff; border-color: #0d1b2e; }
+  .dsum { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 0 0 12px; }
+  .dsum div { border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; background: #fff; }
+  .dsum b { display: block; font-size: 26px; line-height: 1.1; color: #0d1b2e; } .dsum span { font-size: 12px; color: var(--mute); font-weight: 600; }
+  .dsum .ok b { color: #137a4b; } .dsum .bad b { color: #b42318; }
   .sbar { display: flex; gap: 10px; } .sbar input { margin: 0; } .sbar #sqo { flex: 0 0 32%; } .sbar #sq { flex: 1; }
   @media (max-width: 560px) { .sbar { flex-direction: column; } .sbar #sqo { flex: none; } }
   .tw { overflow: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 12px; max-height: 72vh; }
@@ -293,6 +303,13 @@
     <div id="p2" style="display:none">
       <div class="card big" style="margin-top:10px">
         <h3>كل الطلبات <small>All orders – work progress, balance and delivery</small></h3>
+        <div class="drange">
+          <label>التسليم من · Delivery from<input id="dFrom" type="date"></label>
+          <label>إلى · to<input id="dTo" type="date"></label>
+          <div class="dq"><button type="button" data-q="0">اليوم · Today</button><button type="button" data-q="1">غداً · Tomorrow</button>
+            <button type="button" data-q="7">7 أيام · 7 days</button><button type="button" data-q="x">✕ الكل · All</button></div>
+        </div>
+        <div id="dSum" class="dsum" style="display:none"></div>
         <div class="tiles wip" id="wip2"></div>
         <div class="sbar">
           <input id="sqo" type="search" inputmode="numeric" placeholder="رقم الطلب فقط · Order no">
@@ -571,6 +588,18 @@
     }
     $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
     $('sqo').addEventListener('input', function () { if ($('sqo').value) $('sq').value = ''; renderTable(); });
+    $('dFrom').addEventListener('change', function () { dqOn(''); renderTable(); });
+    $('dTo').addEventListener('change', function () { dqOn(''); renderTable(); });
+    function dqOn(q) { [].forEach.call(document.querySelectorAll('.drange .dq button'), function (b) { b.classList.toggle('on', b.getAttribute('data-q') === q); }); }
+    [].forEach.call(document.querySelectorAll('.drange .dq button'), function (b) {
+      b.addEventListener('click', function () {
+        var q = b.getAttribute('data-q'), t = riyToday(), add = function (n) { return new Date(new Date(t + 'T00:00:00Z').getTime() + n * 864e5).toISOString().slice(0, 10); };
+        if (q === 'x') { $('dFrom').value = ''; $('dTo').value = ''; dqOn(''); }
+        else if (q === '7') { $('dFrom').value = t; $('dTo').value = add(6); dqOn(q); }
+        else { $('dFrom').value = $('dTo').value = add(Number(q)); dqOn(q); }
+        renderTable();
+      });
+    });
     var WIP = { cut: [], sti: [], rdy: [], open: [] };
     // ---- a small popup for every order that is ready and whose "order ready" WhatsApp has not gone yet ----
     var RSENT = {}, RA_LATER = {}, RA_NO = {};
@@ -1039,6 +1068,21 @@
         if (only) return r[0].indexOf(d) === 0 || (tail.length >= 3 && r[2].replace(/\D/g, '').indexOf(tail) >= 0);
         return r[1].toLowerCase().indexOf(lower) >= 0;
       });
+      // delivery date range (top of the tab): only orders delivering in it, with a summary of the pieces
+      var df = $('dFrom').value, dt = $('dTo').value;
+      if (df || dt) {
+        if (df && dt && dt < df) { var sw = df; df = dt; dt = sw; }
+        list = list.filter(function (r) { var x = String(r[4] || '').slice(0, 10); return x && (!df || x >= df) && (!dt || x <= dt); });
+        var S = { o: list.length, p: 0, rd: 0, gv: 0, nr: 0 };
+        list.forEach(function (r) {
+          var pcs = Number(r[5]) || 0, g = Math.min(pcs, Number(r[12]) || 0), done = Number(r[13]) === 1 || r[15] === 'Ready' || r[15] === 'Delivered';
+          S.p += pcs; S.gv += g; if (done) S.rd += pcs - g; else S.nr += pcs - g;
+        });
+        $('dSum').style.display = '';
+        $('dSum').innerHTML = '<div><b>' + S.o + '</b><span>طلبات · Orders</span></div><div><b>' + S.p + '</b><span>ثياب للتسليم · Pcs</span></div>' +
+          '<div class="ok"><b>' + S.rd + '</b><span>جاهز · Ready</span></div><div class="bad"><b>' + S.nr + '</b><span>غير جاهز · Not ready</span></div>' +
+          '<div><b>' + S.gv + '</b><span>تم التسليم · Delivered</span></div>';
+      } else $('dSum').style.display = 'none';
       var shown = list.slice(0, 300);
       $('scount').textContent = list.length + ' طلب' + (list.length > shown.length ? ' (أول 300)' : '') +
                                 '   ·   + = أُرسل أونلاين ولم يستلمه المحل';
