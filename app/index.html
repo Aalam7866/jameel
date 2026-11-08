@@ -834,13 +834,20 @@ function jOrder(o) {
     <div class="stat"><b style="color:${due >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.invoice_no ? `<button class="btn small" id="pdf">Invoice ${H(o.invoice_no)} PDF</button>` : ''}
     ${o.mobile ? `<a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a>` : ''}</div>
-    <div id="pdfst"></div></div>
+    <div id="pdfst"></div>
+    ${due >= DUE_MIN ? `<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap;align-items:center"><span class="muted" style="font-weight:600">Extra discount · خصم إضافي</span>
+      <input id="dsc" type="number" inputmode="decimal" min="1" max="${Math.floor(due * 100) / 100}" step="0.01" placeholder="SAR" style="width:110px;margin:0">
+      <button class="btn small" id="dscGo">Apply</button><button class="btn ghost small" id="dscAll">All ${money(due)}</button></div><div id="dscst"></div>` : ''}</div>
     <h2>Details</h2><div class="card">${kv(o, ['customer_name', 'mobile', 'customer_no', 'paid', 'open', 'unpaid'])}</div>
     <h2>Items</h2><div class="card">${lines.rows.length ? `<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>${lines.rows.map(l => `<tr><td class="ar">${H(l.item || l.code)}${l.fabric ? `<div class="muted">${H(l.fabric)}</div>` : ''}</td><td class="n">${H(l.qty)}</td><td class="n">${money(l.rate)}</td><td class="n">${money(l.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No lines</p>'}</div>
     <h2>Payments</h2><div class="card">${pays.rows.length ? `<table><tr><th>Date</th><th>Kind</th><th>Method</th><th class="n">Amount</th></tr>${pays.rows.map(p => `<tr><td>${H(p.date)}</td><td>${H(p.kind)}</td><td>${H(p.method)}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No payments</p>'}</div>
     ${meas.rows.length ? `<h2>Measurements – المقاسات</h2><div class="card" style="padding:6px">${d7Html(meas.rows[0])}</div>` : ''}
     ${inv.rows.length ? `<h2>InvProject</h2><div class="card"><button class="btn ghost small" id="io">Open InvProject order ${H(o.order_no)}</button></div>` : ''}`;
     if (o.invoice_no) $('#pdf', m).onclick = () => pdfJob(o.invoice_no, $('#pdfst', m));
+    if (due >= DUE_MIN) {
+      $('#dscAll', m).onclick = () => { $('#dsc', m).value = (Math.round(due * 100) / 100).toFixed(2); };
+      $('#dscGo', m).onclick = () => discountJob(o, due, $('#dsc', m), $('#dscst', m), $('#dscGo', m));
+    }
     if (inv.rows.length) $('#io', m).onclick = () => iOrder(inv.rows[0]);
     d7Fit(m);
   });
@@ -1044,6 +1051,26 @@ function gInvoice(v) {
 }
 
 // PDF: the shop PC renders it with Genix's own report (GenixBridge pdf)
+// an extra discount on an order's balance: the shop PC adds it to JAMEEL as a payment row (amount 0 + discount)
+async function discountJob(o, due, input, el, btn) {
+  const amt = Math.round(N(input.value) * 100) / 100;
+  if (!(amt > 0)) { el.innerHTML = '<div class="err">Amount likhiye</div>'; return; }
+  if (amt > due + 0.01) { el.innerHTML = `<div class="err">Discount balance (${money(due)}) se zyada hai</div>`; return; }
+  if (!confirm(`Order ${o.order_no}: ${money(amt)} SAR extra discount?\nBalance ${money(due)} → ${money(due - amt)}`)) return;
+  btn.disabled = true;
+  el.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC mein discount daal rahe hain…</p>';
+  try {
+    let j = await jobNew('discount', { order: Number(o.order_no), amount: amt, by: 'Shop Online' });
+    const t0 = Date.now();
+    while (j.status === 'new' || j.status === 'running') {
+      if (Date.now() - t0 > 90000) { el.innerHTML = '<div class="note">Shop PC abhi jawab nahin de raha. PC on hone par discount lag jayega – More → Jobs mein dekhein.</div>'; return; }
+      await new Promise(r => setTimeout(r, 2500));
+      j = await jobGet(j.id);
+    }
+    if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+    el.innerHTML = `<div class="note">✔ ${H(j.result.msg || 'Discount saved')} – list 1–2 minute mein update hogi.</div>`;
+  } catch (e) { el.innerHTML = `<div class="err">${H(e.message)}</div>`; btn.disabled = false; }
+}
 async function pdfJob(no, el, type = 1) {
   el.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC se PDF mangwa rahe hain…</p>';
   try {
