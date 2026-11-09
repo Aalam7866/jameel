@@ -989,11 +989,10 @@
       var amt = Math.round((Number($('dAmt').value) || 0) * 100) / 100, bal = Math.round((D.due - amt) * 100) / 100;
       var by = $('dBy').value.trim();
       if (!by) { $('dWarn').textContent = 'اكتب اسمك – enter your name'; $('dBy').focus(); return; }
-      var force = false;
-      if (KIND === 'DELIVER' && bal > 0.5) {
-        if (!confirm('على العميل ' + money(bal) + ' – still owes ' + money(bal) + '.\nتسليم؟ – Deliver anyway?')) return;
-        force = true;
-      }
+      // the balance shown here is the one that counts (no Genix invoice = nothing due, e.g. a free gift): once the admin
+      // has seen it – and confirmed a balance – the shop PC delivers without asking again
+      var force = KIND === 'DELIVER';
+      if (KIND === 'DELIVER' && bal > 0.5 && !confirm('على العميل ' + money(bal) + ' – still owes ' + money(bal) + '.\nتسليم؟ – Deliver anyway?')) return;
       try { localStorage.setItem('ts_aby', by); } catch (x) { }
       var act = { order: D.no, kind: KIND, amount: amt, method: $('dMethod').value, ref: $('dRef').value.trim(),
                   qty: Math.floor(Number($('dQty').value) || 0), by: by, force: force };
