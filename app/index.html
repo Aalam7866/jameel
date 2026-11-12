@@ -133,7 +133,7 @@ const DUE_MIN = 1;
 // a balance only when the order has a Genix invoice (no invoice = free gift / not billed yet → nothing due)
 const oDue = (o) => String(o.invoice_no ?? '').trim() ? N(o.total) - N(o.paid) : 0;
 const d10 = (v) => String(v ?? '').slice(0, 10);
-const state = { tab: 'home', sub: {}, q: {} };
+const state = { tab: 'home', sub: {}, q: {}, rng: null };   // rng: { f, t } – the home page's date range (null = today)
 // inside the admin page (/exec?a=KEY): no own login – the admin page's KEY + PIN are checked instead
 const EMBED = new URLSearchParams(location.search).has('embed') && window.parent !== window;
 if (EMBED) document.documentElement.classList.add('embed');
@@ -257,17 +257,27 @@ async function homeView() {
   <div class="card row tap" data-go="jobs" style="justify-content:space-between"><div><b>Shop PC</b><div class="muted" style="font-size:13px">${ag ? 'Last contact ' + H(ag.at.slice(5, 16)) + (online ? '' : ` · ${agoMin} min ago`) : 'Never connected yet'}</div></div>
   <span class="pill ${online ? 'ok' : 'warn'}">${online ? 'Online' : 'Offline'}</span></div>
   ${s.pendingJobs ? `<div class="note">${s.pendingJobs} kaam shop PC ka intezaar kar rahe hain (More → Jobs)</div>` : ''}
-  <h2>Jameel · today ${H(s.today)}</h2>
+  <h2>Jameel · ${s.F === s.T ? (s.F === s.today ? 'today ' : '') + H(s.F) : H(s.F) + ' → ' + H(s.T)}</h2>
+  <div class="card" style="padding:12px 14px">
+    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label class="muted" style="flex:1 1 130px;font-size:12px;font-weight:600">From · من<input id="rf" type="date" value="${H(s.F)}" max="${H(s.today)}" style="margin:4px 0 0"></label>
+      <label class="muted" style="flex:1 1 130px;font-size:12px;font-weight:600">To · إلى<input id="rt" type="date" value="${H(s.T)}" max="${H(s.today)}" style="margin:4px 0 0"></label>
+    </div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn ghost small" data-r="0">Today</button><button class="btn ghost small" data-r="1">Yesterday</button>
+      <button class="btn ghost small" data-r="7">7 days</button><button class="btn ghost small" data-r="m">This month</button><button class="btn ghost small" data-r="pm">Last month</button>
+    </div>
+  </div>
   <div class="grid">
     <div class="stat tap" data-go="booked"><b>${s.booked.n}</b><span>Orders booked (${N(s.booked.pcs)} pcs)</span></div>
     <div class="stat tap" data-go="booked"><b>${money(s.booked.amt)}</b><span>Booked amount SAR</span></div>
     <div class="stat tap" data-go="booked"><b>${money(s.genixInv.amt)}</b><span>Genix invoice total (${s.genixInv.n})</span></div>
-    <div class="stat tap" data-go="paid"><b>${money(s.paidToday.amt)}</b><span>Received today (${s.paidToday.n})</span></div>
-    <div class="stat tap" data-go="duerecv"><b>${money(s.dueRecv.amt)}</b><span>Due received today – purane orders (${s.dueRecv.n})</span></div>
-    <div class="stat tap" data-go="advance"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – aaj ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
+    <div class="stat tap" data-go="paid"><b>${money(s.paidToday.amt)}</b><span>Received (${s.paidToday.n})</span></div>
+    <div class="stat tap" data-go="duerecv"><b>${money(s.dueRecv.amt)}</b><span>Due received – purane orders (${s.dueRecv.n})</span></div>
+    <div class="stat tap" data-go="advance"><b>${money(s.paidToday.amt - s.dueRecv.amt)}</b><span>Advance – in dino ke orders (${s.paidToday.n - s.dueRecv.n})</span></div>
     <div class="stat tap" data-go="due"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
     <div class="stat tap" data-go="unpaid"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
-    <div class="stat tap" data-go="genix"><b>${money(s.genixToday.amt)}</b><span>Genix invoices today (${s.genixToday.n})</span></div>
+    <div class="stat tap" data-go="genix"><b>${money(s.genixToday.amt)}</b><span>Genix invoices (${s.genixToday.n})</span></div>
   </div>
   <h2>Quick</h2>
   <div class="row" style="flex-wrap:wrap">
@@ -281,6 +291,18 @@ async function homeView() {
   <div class="card" id="dsc" style="margin-top:8px"${dsOpen() ? '' : ' hidden'}><table><tr><th>Data</th><th class="n">Rows</th><th>Updated</th></tr>
   ${s.meta.map(x => `<tr><td>${H(DSNAME[x.ds] || x.ds)}${x.err ? `<div class="err" style="margin:4px 0 0;font-size:12px">${H(x.err)}</div>` : ''}</td><td class="n">${x.n}</td><td class="muted">${H(String(x.at || '').slice(5, 16))}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Abhi koi data nahin aaya – shop PC par ShopSync chalaiye</td></tr>'}
   </table></div>`;
+  const setR = (f, t) => { if (f > t) [f, t] = [t, f]; state.rng = f === s.today && t === s.today ? null : { f, t }; render(); };
+  const dAdd = (d, n) => new Date(new Date(d + 'T00:00:00Z').getTime() + n * 864e5).toISOString().slice(0, 10);
+  $('#rf').onchange = () => $('#rf').value && setR($('#rf').value, $('#rt').value || $('#rf').value);
+  $('#rt').onchange = () => $('#rt').value && setR($('#rf').value || $('#rt').value, $('#rt').value);
+  m.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
+    const r = b.dataset.r, t = s.today, mo = t.slice(0, 8) + '01';
+    if (r === '0') setR(t, t);
+    else if (r === '1') setR(dAdd(t, -1), dAdd(t, -1));
+    else if (r === '7') setR(dAdd(t, -6), t);
+    else if (r === 'm') setR(mo, t);
+    else { const pmEnd = dAdd(mo, -1); setR(pmEnd.slice(0, 8) + '01', pmEnd); }
+  });
   $('#qn').onclick = () => newInvoice();
   $('#qo').onclick = () => newInvOrder();
   $('#ds').onclick = () => { const o = !dsOpen(); try { localStorage.setItem('dsOpen', o ? '1' : ''); } catch (e) { } $('#dsc').hidden = !o; $('#ds').textContent = o ? 'Hide' : 'Show'; };
@@ -450,34 +472,36 @@ function homeGo(k, s) {
   if (k === 'unpaid') return tabTo('jameel', 'unpaid');
   if (k === 'jobs') return tabTo('more', 'jobs');
   const list = (title, arr, item, open) => openDetail(title, async (m) => {
-    m.innerHTML = `<div class="card list">${arr.map((x, i) => `<div class="it" data-i="${i}">${item(x)}</div>`).join('') || '<p class="muted center">Aaj kuch nahin</p>'}</div>`;
+    m.innerHTML = `<div class="card list">${arr.map((x, i) => `<div class="it" data-i="${i}">${item(x)}</div>`).join('') || '<p class="muted center">Kuch nahin</p>'}</div>`;
     m.querySelectorAll('.it').forEach(el => el.onclick = () => open(arr[+el.dataset.i]));
   });
   const pay = p => `<div class="no">${H(p.order_no)}</div><div class="main"><div class="t">${H(p.kind)} · ${H(p.method)}</div><div class="s">${H(p.date)} · ${H(p.created_by)}</div></div><div class="r">${money(p.amount)}</div>`;
-  if (k === 'booked') return list('Aaj ke orders', s.lists.booked, jOrderItem, jOrder);
-  if (k === 'paid') return list('Aaj mila – Received today', s.lists.paid, pay, p => jOrderByNo(p.order_no));
+  if (k === 'booked') return list('Orders ' + s.F + (s.F === s.T ? '' : ' → ' + s.T), s.lists.booked, jOrderItem, jOrder);
+  if (k === 'paid') return list('Received ' + s.F + (s.F === s.T ? '' : ' → ' + s.T), s.lists.paid, pay, p => jOrderByNo(p.order_no));
   if (k === 'duerecv') return list('Due received – purane orders', s.lists.duerecv, pay, p => jOrderByNo(p.order_no));
   if (k === 'advance') return list('Advance – aaj ke orders', s.lists.advance, pay, p => jOrderByNo(p.order_no));
-  if (k === 'genix') return list('Aaj ke Genix invoices', s.lists.genix, gInvItem, gInvoice);
+  if (k === 'genix') return list('Genix invoices ' + s.F + (s.F === s.T ? '' : ' → ' + s.T), s.lists.genix, gInvItem, gInvoice);
 }
 async function summary() {
   const now = riyadh(), today = now.slice(0, 10);
+  // the date range picked on the home page (default today): the day's figures become the range's
+  const F = state.rng ? state.rng.f : today, T = state.rng ? state.rng.t : today, inR = (d) => { d = String(d || '').slice(0, 10); return d >= F && d <= T; };
   const soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
   const [jo, jp, gi, metas, ag, pj] = await Promise.all([
     loadDs('j_orders').catch(() => ({ rows: [] })), loadDs('j_payments').catch(() => ({ rows: [] })), loadDs('g_invoices').catch(() => ({ rows: [] })),
     getDocs(collection(db, 'ds')), getDoc(doc(db, 'sys', 'agent')), getDocs(query(collection(db, 'jobs'), where('st', '==', 'new'))),
   ]);
-  const bk = jo.rows.filter(o => o.booking_date === today);
-  const pt = jp.rows.filter(p => p.date === today);
+  const bk = jo.rows.filter(o => inR(o.booking_date));
+  const pt = jp.rows.filter(p => inR(p.date));
   const un = jo.rows.filter(o => oDue(o) >= DUE_MIN);
-  const gt = gi.rows.filter(v => String(v.date || '').slice(0, 10) === today);
+  const gt = gi.rows.filter(v => inR(v.date));
   const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || '');
-  const dl = pt.filter(p => (bd[p.order_no] || today) < today); const dueList = () => dl;
+  const dl = pt.filter(p => (bd[p.order_no] || F) < F); const dueList = () => dl;
   const meta = [];
   metas.forEach(x => { const d = x.data(); meta.push({ ds: x.id, n: d.n || 0, err: d.err || '', at: d.at && d.at.toDate ? riyadh(d.at.toDate()) : '' }); });
   const a = ag.exists() ? ag.data() : null;
   return {
-    today, now,
+    today, now, F, T,
     booked: { n: bk.length, pcs: bk.reduce((s, o) => s + N(o.pcs), 0), amt: bk.reduce((s, o) => s + N(o.total), 0) },
     genixInv: { n: bk.filter(o => o.invoice_no).length, amt: bk.filter(o => o.invoice_no).reduce((s, o) => s + N(o.total), 0) },
     paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
