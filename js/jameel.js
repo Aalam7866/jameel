@@ -327,6 +327,32 @@ export async function kReturn(token, kind, order, qty, day, id) {
   await setDoc(doc(db, 'wkx', w.token), { dfn: true, ret: { [key]: { kind, o, q, d: day, id: String(id || ''), at: serverTimestamp() } } }, { merge: true });
   return { ok: true };
 }
+// ---------------------------------------------------------------- duty time (Admin → Rates) and the time a piece of work took
+// sys/duty {shifts: [["09:00","12:00"],["16:00","23:00"]]}; the time from Start to Finish is counted only inside the shifts
+const DUTY_DEF = [['09:00', '12:00'], ['16:00', '23:00']];
+let dutyCache = null;
+async function dutyShifts() {
+  if (dutyCache && Date.now() - dutyCache.t < 300000) return dutyCache.v;
+  let v = DUTY_DEF;
+  try { const s = await getDoc(doc(db, 'sys', 'duty')); const x = s.exists() && J(s.data().shifts, null); if (Array.isArray(x) && x.length) v = x; } catch (e) { }
+  dutyCache = { t: Date.now(), v };
+  return v;
+}
+// minutes between two moments that fall inside the duty shifts (Riyadh time, UTC+3, every day)
+function dutyMinutes(a, b, shifts) {
+  if (!(b > a)) return 0;
+  const H = 3 * 3600000, mm = (t) => { const p = String(t).split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); };
+  let tot = 0;
+  for (let day = Math.floor((a + H) / 864e5) * 864e5 - H; day < b; day += 864e5) {
+    for (const [f, t] of shifts) {
+      let s1 = day + mm(f) * 60000, s2 = day + mm(t) * 60000;
+      if (s2 <= s1) s2 += 864e5;   // a shift past midnight
+      const x = Math.max(a, s1), y = Math.min(b, s2);
+      if (y > x) tot += y - x;
+    }
+  }
+  return Math.round(tot / 60000);
+}
 export async function kFinish(token, id, pin) {
   const w = await worker(token);
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
@@ -334,7 +360,17 @@ export async function kFinish(token, id, pin) {
   if (!s.exists() || s.data().token !== w.token) return { ok: false, msg: 'غير موجود – not found' };
   const x = s.data();
   const r = await submit(token, [{ order: x.o, qty: x.half ? 0.5 : x.q, fit: !x.half && !!x.fit }], pin, x.kind);
-  if (r.ok) await deleteDoc(ref);
+  if (r.ok) {
+    // how long it took: Start → Finish, only the duty hours counted (admin → Work log)
+    try {
+      if (x.at && x.at.toMillis) {
+        const st = x.at.toMillis(), en = Date.now();
+        await addDoc(collection(db, 'wtime'), { tok: w.token, name: String(w.name || '').slice(0, 40), kind: x.kind, o: Number(x.o) || 0,
+          q: x.half ? 0.5 : (Number(x.q) || 0) + (x.fit ? 1 : 0), s: x.at, e: serverTimestamp(), m: dutyMinutes(st, en, await dutyShifts()), raw: Math.max(0, Math.round((en - st) / 60000)) });
+      }
+    } catch (e) { }
+    await deleteDoc(ref);
+  }
   return r;
 }
 
@@ -924,6 +960,32 @@ async function aSetCapacity(key, pin, v) {
   return { ok: true, msg: 'تم الحفظ ✔ يُطبق في الكمبيوتر خلال دقيقة – Saved, the shop PC applies it within a minute' };
 }
 
+// ================================================================ admin: duty time + work time
+async function aDuty(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  dutyCache = null;
+  return { shifts: await dutyShifts() };
+}
+async function aSetDuty(key, pin, shifts) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const re = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const v = (Array.isArray(shifts) ? shifts : []).filter(x => Array.isArray(x) && x[0] && x[1]).map(x => [String(x[0]), String(x[1])]);
+  if (!v.length || v.length > 4 || !v.every(x => re.test(x[0]) && re.test(x[1]) && x[0] !== x[1])) return { ok: false, msg: 'الوقت غير صحيح – invalid times' };
+  await setDoc(doc(db, 'sys', 'duty'), { shifts: JSON.stringify(v), at: serverTimestamp() });
+  dutyCache = null;
+  return { ok: true, msg: 'تم الحفظ ✔ – Saved' };
+}
+async function aWorkTime(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const s = await getDocs(query(collection(db, 'wtime'), orderBy('e', 'desc'), limit(3000))).catch(() => null), out = [];
+  if (s) s.forEach(x => { const d = x.data(), st = d.s && d.s.toDate ? d.s.toDate() : null, en = d.e && d.e.toDate ? d.e.toDate() : null;
+    out.push({ w: d.name || '', k: d.kind || '', o: String(d.o || ''), q: Number(d.q) || 0, s: st ? riyadh(st) : '', e: en ? riyadh(en) : '', m: Number(d.m) || 0, raw: Number(d.raw) || 0 }); });
+  return out;
+}
+
 // ================================================================ admin: work log (who cut / stitched how many, when)
 // ds/j_worklog = JAMEEL's work_log with the employee's name (ShopSync), ds/j_orders for the customer and the pieces
 async function aWorkLog(key, pin) {
@@ -938,6 +1000,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aShareAdd, aJob, aOrderWip, aShopEmployees,
 };

@@ -62,6 +62,18 @@ service cloud.firestore {
     match /jwip/{id} { allow read, write: if true; }
     // finished work not taken by TailorShop yet (opens the next work while the shop PC is off)
     match /jdone/{id} { allow read, write: if true; }
+    // how long a piece of work took (worker app: Start → Finish, duty hours only) – Admin → Work log
+    match /wtime/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['tok', 'name', 'kind', 'o', 'q', 's', 'e', 'm', 'raw'])
+        && isKey(request.resource.data.tok) && request.resource.data.name is string && request.resource.data.name.size() <= 40
+        && request.resource.data.kind in ['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY']
+        && request.resource.data.o is int && request.resource.data.q is number && request.resource.data.q <= 1000
+        && request.resource.data.s is timestamp && request.resource.data.s < request.time && request.resource.data.e == request.time
+        && request.resource.data.m is int && request.resource.data.m >= 0 && request.resource.data.m <= 100000
+        && request.resource.data.raw is int && request.resource.data.raw >= 0;
+      allow update, delete: if isOwner();
+    }
     // half pieces (two tailors make one piece): a finished half waiting for its other half
     match /half/{id} { allow read, write: if true; }
 
@@ -130,6 +142,9 @@ service cloud.firestore {
       // Admin → Settings: the work rates
       allow create, update: if id == 'rates'
         && request.resource.data.keys().hasOnly(['CUT', 'STITCH', 'HINGE', 'MEASURE', 'EMBROIDERY', 'at']);
+      // Admin → Rates: the duty time (shifts, JSON text)
+      allow create, update: if id == 'duty' && request.resource.data.keys().hasOnly(['shifts', 'at'])
+        && request.resource.data.shifts is string && request.resource.data.shifts.size() <= 200 && request.resource.data.at == request.time;
       // Admin → Rates: the workshop capacity (the shop PC puts it into JAMEEL's settings, then writes it back as src 'pc')
       allow create, update: if id == 'capacity' && request.resource.data.src == 'web' && request.resource.data.at == request.time
         && request.resource.data.keys().hasOnly(['DailyCapacity', 'MarginDays', 'DayOff', 'DeliveryDays', 'DueSoonDays', 'src', 'at'])

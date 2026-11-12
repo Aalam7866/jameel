@@ -365,6 +365,12 @@
         <div id="wlMsg" class="muted">جاري التحميل… / Loading…</div>
         <div class="tw"><table class="st" id="wlTab"></table></div>
       </div>
+      <div class="card" style="margin-top:14px">
+        <h3>⏱ وقت العمل <small>Work time – Start → Finish on the worker app, duty hours only</small></h3>
+        <div id="wtSum" class="dsum"></div>
+        <div id="wtMsg" class="muted"></div>
+        <div class="tw"><table class="st" id="wtTab"></table></div>
+      </div>
     </div>
     <div id="p4" style="display:none">
       <div class="card" style="margin-top:10px;max-width:640px">
@@ -402,6 +408,14 @@
           <h3 style="margin-top:18px">خطة الورشة <small>Plan – next working days (approx.)</small></h3>
           <div class="tw"><table class="st" id="capPlan"></table></div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;max-width:640px">
+        <h3>وقت الدوام <small>Duty time – the work time of a piece counts only these hours</small></h3>
+        <div id="dutyRows"></div>
+        <button class="sec" type="button" onclick="dutyAdd()" style="margin:6px 0 10px">+ فترة · Add shift</button>
+        <div id="dutyMsg"></div>
+        <button class="go wide" id="dutySave" onclick="saveDuty()">حفظ الدوام · Save duty time</button>
       </div>
     </div>
 
@@ -474,9 +488,9 @@
       window.scrollTo(0, 0);
       if (n === 2) loadOrders();
       if (n === 3) loadWorkers();
-      if (n === 4) { loadRates(); loadCap(); }
+      if (n === 4) { loadRates(); loadCap(); loadDuty(); }
       if (n >= 5 && n <= 10) shopTab(n);
-      if (n === 11) loadWorkLog();
+      if (n === 11) { loadWorkLog(); loadWorkTime(); }
     }
 
     function start() {
@@ -1152,6 +1166,55 @@
       }).aSetRates(KEY, PIN, rates);
     }
 
+    // ---- duty time (Rates tab) ----
+    function dutyRow(f, t) {
+      var d = document.createElement('div'); d.className = 'rate-row duty-row';
+      d.innerHTML = '<label>من · From <input type="time" class="df" value="' + esc(f || '') + '" style="width:120px"></label><label>إلى · To <input type="time" class="dt" value="' + esc(t || '') + '" style="width:120px"></label>' +
+        '<button type="button" class="sec" onclick="this.parentNode.remove()" style="flex:none">✕</button>';
+      $('dutyRows').appendChild(d);
+    }
+    function dutyAdd() { if (document.querySelectorAll('.duty-row').length < 4) dutyRow('', ''); }
+    function loadDuty() {
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r) return;
+        $('dutyRows').innerHTML = '';
+        r.shifts.forEach(function (x) { dutyRow(x[0], x[1]); });
+      }).aDuty(KEY, PIN);
+    }
+    function saveDuty() {
+      var v = [].map.call(document.querySelectorAll('.duty-row'), function (r) { return [r.querySelector('.df').value, r.querySelector('.dt').value]; })
+        .filter(function (x) { return x[0] && x[1]; });
+      $('dutySave').disabled = true;
+      google.script.run.withSuccessHandler(function (r) {
+        $('dutySave').disabled = false;
+        $('dutyMsg').innerHTML = '<div class="' + (r && r.ok ? 'rate-ok' : 'rate-err') + '">' + esc(r && r.msg || 'خطأ') + '</div>';
+      }).withFailureHandler(function (e) { $('dutySave').disabled = false; $('dutyMsg').innerHTML = '<div class="rate-err">' + esc(e && e.message || e) + '</div>'; }).aSetDuty(KEY, PIN, v);
+    }
+    // ---- work time (Work log tab) ----
+    var WT = null;
+    function hm(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), r = m % 60; return h ? h + 'h ' + (r < 10 ? '0' : '') + r + 'm' : r + 'm'; }
+    function loadWorkTime() {
+      $('wtMsg').textContent = 'جاري التحميل… / Loading…';
+      google.script.run.withSuccessHandler(function (r) { WT = r || []; renderWorkTime(); })
+        .withFailureHandler(function (e) { $('wtMsg').textContent = 'خطأ – ' + (e && e.message || e); }).aWorkTime(KEY, PIN);
+    }
+    function renderWorkTime() {
+      if (!WT) return;
+      var f = $('wlF').value, t = $('wlT').value, on = $('wlO').value.replace(/\D/g, ''), w = $('wlW').value;
+      if (f && t && t < f) { var sw = f; f = t; t = sw; }
+      var rows = WT.filter(function (x) { var d = x.e.slice(0, 10); return (!f || d >= f) && (!t || d <= t) && (!on || x.o.indexOf(on) === 0) && (!w || x.w.toLowerCase() === w.toLowerCase()); });
+      var per = {};
+      rows.forEach(function (x) { var k = x.w + '|' + x.k; var p = per[k] = per[k] || { m: 0, q: 0 }; p.m += x.m; p.q += x.q; });
+      $('wtSum').innerHTML = Object.keys(per).sort().map(function (k) { var p = per[k], kk = k.split('|');
+        return '<div><b>' + hm(p.m) + '</b><span>' + esc(kk[0]) + ' · ' + esc((WLK[kk[1]] || kk[1]).split(' · ')[0]) + ' · ' + p.q + ' pcs' + (p.q ? ' · ≈' + hm(p.m / p.q) + '/pc' : '') + '</span></div>'; }).join('');
+      $('wtMsg').textContent = rows.length ? rows.length + ' عمل · jobs (Start → Finish)' : 'لا يوجد – nothing yet (only work started and finished on the worker app is timed)';
+      $('wtTab').innerHTML = rows.length ? '<thead><tr><th>العامل · Worker</th><th>الطلب · Order</th><th>العمل · Work</th><th>القطع · Pcs</th><th>البداية · Start</th><th>النهاية · Finish</th><th>الوقت (الدوام) · Time</th><th>للقطعة · Per pc</th></tr></thead><tbody>' +
+        rows.slice(0, 500).map(function (x) {
+          return '<tr><td><b>' + esc(x.w) + '</b></td><td class="l">' + esc(x.o) + '</td><td>' + esc((WLK[x.k] || x.k).split(' · ')[0]) + '</td><td>' + x.q + '</td><td>' + esc(x.s.slice(5, 16)) + '</td><td>' + esc(x.e.slice(5, 16)) +
+            '</td><td><b>' + hm(x.m) + '</b>' + (x.raw > x.m + 1 ? ' <span class="muted" style="font-size:11px">(' + hm(x.raw) + ' total)</span>' : '') + '</td><td>' + (x.q ? hm(x.m / x.q) : '') + '</td></tr>';
+        }).join('') + '</tbody>' : '';
+    }
+
     // ---- work log: per order, who cut / stitched how many and when ----
     var WL = null, WLK = { CUT: 'قص · Cut', STITCH: 'خياطة · Stitch', HINGE: 'زرار · Hinge', EMBROIDERY: 'تطريز · Emb', MEASURE: 'قياس · Measure' };
     function loadWorkLog() {
@@ -1168,6 +1231,7 @@
       }).withFailureHandler(function (e) { $('wlMsg').textContent = 'خطأ – ' + (e && e.message || e); }).aWorkLog(KEY, PIN);
     }
     function renderWorkLog() {
+      renderWorkTime();
       if (!WL) return;
       var f = $('wlF').value, t = $('wlT').value, on = $('wlO').value.replace(/\D/g, ''), w = $('wlW').value;
       if (f && t && t < f) { var sw = f; f = t; t = sw; }
