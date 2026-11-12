@@ -904,9 +904,20 @@ async function aSetCapacity(key, pin, v) {
   return { ok: true, msg: 'تم الحفظ ✔ يُطبق في الكمبيوتر خلال دقيقة – Saved, the shop PC applies it within a minute' };
 }
 
+// ================================================================ admin: work log (who cut / stitched how many, when)
+// ds/j_worklog = JAMEEL's work_log with the employee's name (ShopSync), ds/j_orders for the customer and the pieces
+async function aWorkLog(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const [log, orders] = await Promise.all([dsRows('j_worklog').catch(() => null), dsRows('j_orders').catch(() => [])]);
+  const o = {};
+  for (const x of orders) o[String(x.order_no)] = { n: String(x.customer_name || ''), p: Number(x.pcs) || 0, b: String(x.booking_date || '').slice(0, 10), d: String(x.delivery_date || '').slice(0, 10) };
+  return { ok: !!log, log: (log || []).map(x => ({ d: String(x.date || '').slice(0, 10), o: String(x.order_no), k: String(x.kind || '').toUpperCase(), q: Number(x.qty) || 0, w: String(x.name || ('#' + x.emp_no)) })), o };
+}
+
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aShareAdd, aJob, aOrderWip, aShopEmployees,
 };
