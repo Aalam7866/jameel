@@ -416,7 +416,33 @@ function filterBar(main) {
 }
 const inPeriod = (d) => { d = String(d || ''); return fmode === 'all' || (fmode === 'day' ? d === fday : d.slice(0, 7) === fmonth); };
 const periodLabel = () => fmode === 'day' ? dmy(fday) : fmode === 'month' ? new Date(fmonth + '-01T12:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn-ca-gregory', { month: 'long', year: 'numeric' }) : L('الكل', 'All');
+let wq = '';   // My work → search by order number
 function drawWork(main) {
+  const inp = el('input', { class: 'inp', type: 'search', inputmode: 'numeric', value: wq, placeholder: '🔍 ' + L('ابحث برقم الطلب', 'Search order no'), style: 'margin-bottom:10px;width:100%;box-sizing:border-box' });
+  const body = el('div');
+  main.appendChild(inp); main.appendChild(body);
+  const fill = () => { body.innerHTML = ''; if (wq) drawWorkSearch(body); else drawWorkList(body); };
+  inp.addEventListener('input', () => { wq = inp.value.replace(/\D/g, ''); fill(); });
+  fill();
+}
+// every piece this worker made for the order(s) matching the number: when, how many, which work
+function drawWorkSearch(main) {
+  const hits = items().filter(w => String(w.o).indexOf(wq) === 0);
+  if (!hits.length) { main.appendChild(el('div', { class: 'empty' }, [el('b', { text: '🔍' }), L('لا يوجد عمل لك في هذا الطلب (آخر 3 أشهر).', 'No work of yours on this order (last 3 months).')])); return; }
+  const by = {}; hits.forEach(w => { (by[w.o] = by[w.o] || []).push(w); });
+  Object.keys(by).sort((a, b) => +b - +a).slice(0, 30).forEach(o => {
+    const l = by[o].sort((a, b) => String(a.d).localeCompare(String(b.d))), x = orders[String(o)] || {}, due = dueOf(o);
+    const tk = {}; l.forEach(w => { tk[w.kind] = (tk[w.kind] || 0) + w.q; });
+    main.appendChild(el('div', { class: 'card', style: 'margin-bottom:12px' }, [
+      el('div', { class: 'top', style: 'display:flex;justify-content:space-between;align-items:center' }, [el('span', { class: 'num', style: 'font-size:20px;font-weight:700', text: '#' + o }),
+        el('span', { class: 'st ok', text: Object.keys(tk).map(k => kName(k) + ' ' + tk[k]).join(' · ') + ' ' + L('قطعة', 'pcs') })]),
+      el('div', { style: 'margin-top:6px', text: [x.customer_name, x.pcs ? L('القطع في الطلب: ', 'Order pcs: ') + x.pcs : '', due ? L('التسليم: ', 'Due: ') + dmy(due) : ''].filter(Boolean).join(' · ') }),
+      el('div', { style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:6px' }, l.map(w => el('div', { class: 'row', style: 'justify-content:space-between;padding:4px 0' }, [
+        el('span', { text: dmy(w.d) + (w.time ? ' ' + w.time : '') + ' · ' + kName(w.kind) }),
+        el('b', { text: w.q + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.st === 'new' ? ' ⏳' : ' ✔') })])))]));
+  });
+}
+function drawWorkList(main) {
   filterBar(main);
   const list = items().filter(w => inPeriod(w.d)).sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(b.time).localeCompare(String(a.time)) || (+b.o - +a.o));
   const t = tally(fmode, fmode === 'day' ? fday : fmonth), earn = t.earn, pcs = t.pcs;
