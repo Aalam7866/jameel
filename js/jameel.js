@@ -310,6 +310,23 @@ export async function kDateFix(token, kind, order, qty, from, to, id) {
   await setDoc(doc(db, 'wkx', w.token), { dfn: true, datefix: { [key]: { kind, o: Number(orderKey(order)) || 0, q: Math.floor(Number(qty)) || 0, from, to, id: String(id || ''), at: serverTimestamp() } } }, { merge: true });
   return { ok: true };
 }
+// "added by mistake": the worker gives back pieces of his own saved work (or of a transfer the shop has not taken yet);
+// the shop PC (ShopSync) takes them off TailorShop's work list and writes it in the audit log
+export async function kReturn(token, kind, order, qty, day, id) {
+  const w = await worker(token);
+  if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
+  kind = String(kind || '').toUpperCase();
+  if (!String(w.kind || '').split(',').includes(kind)) return { ok: false, msg: 'ليس عملك – not your work' };
+  const o = Number(orderKey(order)) || 0, q = Math.round(Number(qty) * 2) / 2;
+  if (!o) return { ok: false, msg: 'رقم الطلب؟ – Order no?' };
+  if (!(q > 0) || q > 1000) return { ok: false, msg: 'العدد غير صحيح – wrong number' };
+  const today = workDay(), min = new Date(Date.parse(today + 'T00:00:00Z') - 60 * 864e5).toISOString().slice(0, 10);
+  day = String(day || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > today || day < min) return { ok: false, msg: 'آخر 60 يوماً فقط – last 60 days only' };
+  const key = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  await setDoc(doc(db, 'wkx', w.token), { dfn: true, ret: { [key]: { kind, o, q, d: day, id: String(id || ''), at: serverTimestamp() } } }, { merge: true });
+  return { ok: true };
+}
 export async function kFinish(token, id, pin) {
   const w = await worker(token);
   if (!w) return { ok: false, msg: 'الرابط غير صالح – Link not valid' };
@@ -375,10 +392,13 @@ export async function kWork(token) {
   // date changes asked for, not applied by the shop PC yet
   const fx = xx && xx.exists() ? (xx.data().datefix || {}) : {};
   const fixes = Object.values(fx).map(f => ({ kind: f.kind, o: Number(f.o), from: f.from, to: f.to, id: f.id || '' }));
+  // work given back (added by mistake), not applied by the shop PC yet
+  const rt = xx && xx.exists() ? (xx.data().ret || {}) : {};
+  const rets = Object.values(rt).map(f => ({ kind: f.kind, o: Number(f.o), q: Number(f.q) || 0, d: f.d, id: f.id || '' }));
   const pending = [], ded = [];
   e.forEach(x => pending.push(entryOf(x)));            // sent from the link, not in TailorShop yet
   if (d) d.forEach(x => ded.push(dedOf(x)));
-  return { pending, ded, fixes, ...(await statsOf(a.exists() ? a.data() : w, w.token)) };
+  return { pending, ded, fixes, rets, ...(await statsOf(a.exists() ? a.data() : w, w.token)) };
 }
 
 // ================================================================ online new-order page (?o=KEY)

@@ -98,7 +98,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, PAST_KINDS } from '/js/jameel.js?v=31';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, kReturn, PAST_KINDS } from '/js/jameel.js?v=32';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -437,10 +437,38 @@ function drawWorkSearch(main) {
       el('div', { class: 'top', style: 'display:flex;justify-content:space-between;align-items:center' }, [el('span', { class: 'num', style: 'font-size:20px;font-weight:700', text: '#' + o }),
         el('span', { class: 'st ok', text: Object.keys(tk).map(k => kName(k) + ' ' + tk[k]).join(' · ') + ' ' + L('قطعة', 'pcs') })]),
       el('div', { style: 'margin-top:6px', text: [x.customer_name, x.pcs ? L('القطع في الطلب: ', 'Order pcs: ') + x.pcs : '', due ? L('التسليم: ', 'Due: ') + dmy(due) : ''].filter(Boolean).join(' · ') }),
-      el('div', { style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:6px' }, l.map(w => el('div', { class: 'row', style: 'justify-content:space-between;padding:4px 0' }, [
-        el('span', { text: dmy(w.d) + (w.time ? ' ' + w.time : '') + ' · ' + kName(w.kind) }),
-        el('b', { text: w.q + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.st === 'new' ? ' ⏳' : ' ✔') })])))]));
+      el('div', { style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:6px' }, l.map(w => retLine(w)))]));
   });
+}
+// one line of the search: when, which work, how many – and "↩ give back" for a piece added by mistake
+let retKey = '';
+function retLine(w) {
+  const key = (w.id || '') + '|' + w.kind + '|' + w.o + '|' + w.d + '|' + w.q;
+  const asked = (acct.rets || []).filter(r => r.kind === w.kind && +r.o === +w.o && r.d === w.d && (!w.id || r.id === w.id));
+  const box = el('div', { style: 'padding:4px 0;border-bottom:1px dashed var(--line)' });
+  box.appendChild(el('div', { class: 'row', style: 'justify-content:space-between' }, [
+    el('span', { text: dmy(w.d) + (w.time ? ' ' + w.time : '') + ' · ' + kName(w.kind) }),
+    el('b', { text: w.q + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.st === 'new' ? ' ⏳' : ' ✔') })]));
+  if (asked.length) { box.appendChild(el('div', { class: 'st blue', style: 'margin:4px 0', text: '↩ ' + L('إرجاع ', 'Giving back ') + asked.reduce((a, r) => a + r.q, 0) + ' ' + L('قطعة – بانتظار المحل', 'pcs – waiting for the shop') })); return box; }
+  if (w.half || !(w.q > 0)) return box;
+  if (retKey !== key) { box.appendChild(el('button', { type: 'button', class: 'btn sm line', style: 'margin:4px 0', text: '↩ ' + L('أُضيف بالخطأ؟ إرجاع', 'Added by mistake? Give back'), onclick: () => { retKey = key; draw(); } })); return box; }
+  const n = el('input', { class: 'inp', type: 'number', inputmode: 'decimal', min: '0.5', max: String(w.q), step: '0.5', value: String(w.q), style: 'max-width:110px' });
+  const msg = el('p', { class: 'msg' });
+  const go = el('button', { type: 'button', class: 'btn acc sm', text: '✓ ' + L('إرجاع', 'Give back'), onclick: async () => {
+    const q = Math.round(Number(n.value) * 2) / 2;
+    if (!(q > 0) || q > w.q) { msg.textContent = L('من 0.5 إلى ', 'From 0.5 to ') + w.q; msg.className = 'msg err'; return; }
+    if (!confirm(L('إرجاع ', 'Give back ') + q + ' ' + L('قطعة من الطلب ', 'pcs of order ') + '#' + w.o + ' (' + dmy(w.d) + ')?')) return;
+    go.disabled = true; msg.textContent = '…'; msg.className = 'msg';
+    try {
+      const r = await kReturn(tok, w.kind, w.o, q, w.d, w.id || '');
+      if (!r.ok) { go.disabled = false; msg.textContent = r.msg || ''; msg.className = 'msg err'; return; }
+      chime(); retKey = ''; await refreshWork();
+    } catch (e) { go.disabled = false; msg.textContent = L('لم يتم: ', 'Failed: ') + (e.message || e); msg.className = 'msg err'; }
+  } });
+  box.appendChild(el('div', { class: 'row', style: 'gap:8px;margin-top:6px;align-items:center' }, [n, el('span', { class: 'small', text: L('قطعة', 'pcs') }), go,
+    el('button', { type: 'button', class: 'btn sm line', text: '✕', onclick: () => { retKey = ''; draw(); } })]));
+  box.appendChild(msg);
+  return box;
 }
 function drawWorkList(main) {
   filterBar(main);
