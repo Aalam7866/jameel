@@ -474,6 +474,7 @@
 
   <script>
     var KEY = <?= key ?>, NEEDPIN = <?= needPin ?>;
+    var DEEP = ''; try { DEEP = (new URLSearchParams(location.search).get('ord') || '').replace(/[^0-9]/g, ''); } catch (x) { }
     var PIN = '', first = true, seenWork = {}, seenOrders = {}, seenActs = {}, unread = 0, audio = null, timer = null, newIds = {};
     var KINDS = { CUT: 'قص – Cutting', STITCH: 'خياطة – Stitching', HINGE: 'زرار – Hinge', MEASURE: 'مقاس – Measuring',
                   ARRIVE: 'وصل الورشة – Arrived', EMBROIDERY: 'تطريز – Embroidery' };
@@ -616,6 +617,8 @@
         if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk();
+        // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once
+        if (DEEP && ALL.some(function (x) { return x[0] === DEEP; })) { var dn = DEEP; DEEP = ''; openAct(dn); }
       }).withFailureHandler(function () { }).aOrders(KEY, PIN);
     }
     $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
