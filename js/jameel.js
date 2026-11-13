@@ -658,6 +658,19 @@ async function aSearch(key, pin, q) {
   out.sort((a, b) => (b.no === d) - (a.no === d));
   return out;
 }
+// one order as InvLink's order window shows it: invoice, total, paid and its payments (JAMEEL's data)
+async function aOrderInfo(key, pin, order) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const no = Number(orderKey(order));
+  const [os, ps] = await Promise.all([dsRows('j_orders').catch(() => []), dsRows('j_payments').catch(() => [])]);
+  const o = os.find(x => Number(x.order_no) === no);
+  if (!o) return { ok: false, msg: 'طلب ' + no + ' غير موجود في جميل بعد – not in JAMEEL yet' };
+  const pays = ps.filter(p => Number(p.order_no) === no).sort((a, b) => Number(a.id) - Number(b.id)).map(p => ({
+    receipt: p.receipt_no || '', date: String(p.date || '').slice(0, 10), amount: Number(p.amount) || 0, method: p.method || '',
+    status: p.status || p.kind || '', qty: Number(p.delivered_qty) || 0, after: p.balance_after == null ? '' : Number(p.balance_after) }));
+  return { ok: true, invoice: o.invoice_no || '', total: Number(o.total) || 0, paid: Number(o.paid) || 0, pays };
+}
 async function aAct(key, pin, act) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -1001,5 +1014,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aWorkTime,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aShareAdd, aJob, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aShopEmployees,
 };

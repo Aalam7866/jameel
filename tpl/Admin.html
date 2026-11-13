@@ -125,6 +125,25 @@
   body.popmode .hdr, body.popmode .tape, body.popmode nav.nav, body.popmode main, body.popmode #rask, body.popmode #banner, body.popmode .status { display: none !important; }
   body.popmode #dlg { padding: 0; background: var(--bg, #f4f4f6); }
   body.popmode #dlg .card { margin: 0 auto; border-radius: 0; box-shadow: none; max-width: none; min-height: 100vh; }
+  #popv { display: none; font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f0f0; min-height: 100vh; padding: 12px 14px; color: #111; }
+  body.popmode #popv { display: block; } body.popmode #dlg { display: none !important; }
+  #popv .ph { font-size: 19px; font-weight: 700; margin: 4px 2px 14px; }
+  #popv .pt { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  #popv .pt div { text-align: center; font-size: 13px; } #popv .pt b { display: block; margin-top: 4px; background: #f7f7f7; border: 1px solid #9a9a9a; padding: 14px 4px; font-size: 20px; }
+  #popv .pl { margin: 14px 2px 4px; font-size: 13px; }
+  #popv .pp { background: #fff; border: 1px solid #9a9a9a; height: 230px; overflow: auto; }
+  #popv table { width: 100%; border-collapse: collapse; font-size: 13px; } #popv th { text-align: start; font-weight: 400; border-bottom: 1px solid #ddd; padding: 4px 6px; background: #fff; position: sticky; top: 0; }
+  #popv td { padding: 4px 6px; border-bottom: 1px solid #f0f0f0; }
+  #popv .pf { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 2px; align-items: center; font-size: 13px; }
+  #popv .pf label { display: flex; align-items: center; gap: 6px; margin: 0; } #popv .pf span, #popv .pbt span { font-weight: 400; }
+  #popv .pf input, #popv .pf select { width: 130px; padding: 4px 6px; font-size: 14px; border: 1px solid #9a9a9a; border-radius: 0; margin: 0; }
+  #popv .pf input#pQty { width: 70px; }
+  #popv .pbt { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  #popv .pbt button { width: auto; border: 0; border-radius: 0; color: #fff; font-weight: 700; font-size: 14px; padding: 10px 18px; cursor: pointer; }
+  #popv .b1 { background: #1f6fd1; } #popv .b2 { background: #1d9d4f; } #popv .b9 { background: #8a8a8a; } #popv .b3 { background: #2bb35a; } #popv .b4 { background: #13868a; }
+  #popv button:disabled { opacity: .55; } #popv .pm { margin-top: 10px; font-size: 13px; min-height: 18px; white-space: pre-line; }
+  #popv .du { color: #b3261e; } #popv .iv { color: #1a237e; }
+  @media (max-width: 560px) { #popv .pt { grid-template-columns: repeat(3, 1fr); } }
   #dlg { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(15, 20, 30, .55); overflow-y: auto; padding: 24px 12px; }
   #dlg .card { max-width: 500px; margin: 0 auto; padding: 0; overflow: hidden; box-shadow: 0 20px 50px rgba(15, 20, 30, .35); border: 0; }
   #dlg #dTitle { background: var(--ink); color: #fff; margin: 0; padding: 14px 18px; font-size: 17px; border-bottom: 3px solid var(--gold); }
@@ -429,6 +448,29 @@
   </div>
 
   <div id="rask"></div>
+  <!-- the order alone, like InvLink's order window (InvProject on another PC opens it: ?ord=NO&pop=1) -->
+  <div id="popv" dir="ltr">
+    <div class="ph" id="pH"></div>
+    <div class="pt" id="pT"></div>
+    <div class="pl"><b>الدفعات</b> Payments</div>
+    <div class="pp" id="pP"></div>
+    <div class="pf">
+      <label>المبلغ <span>Amount</span><input id="pAmt" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label>الطريقة <span>Method</span><select id="pMethod"></select></label>
+      <label>القطع <span>Deliver pcs</span><input id="pQty" type="number" min="0" step="1" inputmode="numeric"></label>
+    </div>
+    <div class="pbt">
+      <button type="button" class="b1" onclick="popDo('PAY')">دفع <span>Pay</span></button>
+      <button type="button" class="b2" onclick="popDo('DELIVER')">دفع وتسليم <span>Pay &amp; Deliver</span></button>
+      <button type="button" class="b9" onclick="closeAct()">إغلاق <span>Close</span></button>
+    </div>
+    <div class="pbt">
+      <button type="button" class="b3" id="pWa1" onclick="waReady(D.no, this, 'ready')">جاهز للاستلام <span>WhatsApp:</span></button>
+      <button type="button" class="b4" id="pWa2" onclick="waReady(D.no, this, 'sample')">البروفة جاهزة <span>WhatsApp:</span></button>
+    </div>
+    <div class="pm" id="pMsg"></div>
+  </div>
+
   <!-- list behind a Today tile -->
   <div id="lst" onclick="if (event.target === this) closeLst()"><div class="card">
     <h3 id="lTitle"></h3><button id="lX" type="button" aria-label="Close" onclick="closeLst()">✕</button>
@@ -624,7 +666,8 @@
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk();
         // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once
-        if (DEEP && ALL.some(function (x) { return x[0] === DEEP; })) { var dn = DEEP; DEEP = ''; openAct(dn); }
+        if (DEEP && ALL.some(function (x) { return x[0] === DEEP; })) { var dn = DEEP; DEEP = ''; if (POP) popOpen(dn); else openAct(dn); }
+        else if (DEEP && POP && !$('pH').textContent) $('pH').textContent = 'طلب ' + DEEP + ' – لا يوجد في القائمة بعد (not in the list yet)';
       }).withFailureHandler(function () { }).aOrders(KEY, PIN);
     }
     $('sq').addEventListener('input', function () { if ($('sq').value) $('sqo').value = ''; renderTable(); });
@@ -997,6 +1040,51 @@
         }, 3000);
       }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e) + ' (Firestore rules?)'); }).aDueDate(KEY, PIN, no, d, by);
     }
+    // ---- the order window (popmode): InvLink's order window, on the admin page ----
+    function popOpen(no) {
+      openAct(no); $('dlg').style.display = 'none';
+      var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
+      $('pH').innerHTML = 'Order ' + esc(D.no) + ' &nbsp;(' + esc(r[15] || '') + ') &nbsp; <span dir="ltr">' + esc(r[2] || '') + '</span> &nbsp; ' + esc(D.name) + ' <span id="pInv"></span>';
+      document.title = 'Order ' + D.no + ' – ' + D.name;
+      $('pMethod').innerHTML = $('dMethod').innerHTML;
+      $('pAmt').value = $('dAmt').value; $('pQty').value = Math.max(0, D.pcs - D.given) || 0;
+      popTiles(null);
+      $('pP').innerHTML = '<div class="pm">…</div>';
+      popInfo();
+    }
+    function popTiles(i) {
+      var t = function (ar, en, v, cls) { return '<div>' + ar + ' <span>' + en + '</span><b class="' + (cls || '') + '">' + v + '</b></div>'; };
+      $('pT').innerHTML = t('الفاتورة', 'Invoice', i && i.invoice ? esc(i.invoice) : '–', 'iv') + t('الإجمالي', 'Total', i ? money(i.total) : '…') +
+        t('المدفوع', 'Paid', i ? money(i.paid) : '…') + t('المتبقي', 'Due', money(D.due), D.due > 0.005 ? 'du' : '') + t('القطع', 'Pieces', '<span dir="ltr">' + D.given + ' / ' + D.pcs + '</span>');
+    }
+    function popInfo() {
+      if (!D) return;
+      var no = D.no;
+      google.script.run.withSuccessHandler(function (i) {
+        if (!D || D.no !== no) return;
+        if (!i || !i.ok) { $('pP').innerHTML = '<div class="pm">' + esc((i && i.msg) || '') + '</div>'; return; }
+        popTiles(i);
+        if (i.invoice) $('pInv').textContent = ' – Invoice ' + i.invoice;
+        $('pP').innerHTML = '<table><tr><th>Receipt</th><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Pieces</th><th>Due after</th></tr>' +
+          i.pays.map(function (p) {
+            return '<tr><td>' + esc(p.receipt) + '</td><td dir="ltr">' + esc(day(p.date)) + '</td><td>' + money(p.amount) + '</td><td>' + esc(p.method) + '</td><td>' + esc(p.status) +
+                   '</td><td>' + (p.qty || '') + '</td><td>' + (p.after === '' ? '' : money(p.after)) + '</td></tr>';
+          }).join('') + '</table>';
+      }).withFailureHandler(function () { $('pP').innerHTML = '<div class="pm">لا يوجد اتصال – no connection</div>'; }).aOrderInfo(KEY, PIN, no);
+    }
+    function popBusy(b) { Array.prototype.forEach.call(document.querySelectorAll('#popv .b1, #popv .b2'), function (x) { x.disabled = b; }); }
+    function popDo(kind) {
+      if (!D) return;
+      setKind(kind);
+      $('dAmt').value = $('pAmt').value || '0'; $('dMethod').value = $('pMethod').value; $('dRef').value = '';
+      $('dQty').value = kind === 'DELIVER' ? ($('pQty').value || '0') : '0';
+      if (!$('dBy').value.trim()) $('dBy').value = (function () { try { return localStorage.getItem('ts_aby') || ''; } catch (x) { return ''; } })() || 'InvProject PC';
+      var errs = check().filter(function (e) { return e.indexOf('⏳') !== 0; });
+      if (errs.length) { $('pMsg').textContent = errs.join('\n'); return; }
+      popBusy(true); $('pMsg').textContent = '…';
+      saveAct();
+      setTimeout(function () { var w = $('dWarn').textContent; if (w && w !== '…') { $('pMsg').textContent = w; popBusy(false); } }, 300);
+    }
     function closeAct() {
       $('dlg').style.display = 'none'; D = null;
       // the order's own window (InvProject on another PC): closing the order closes the window
@@ -1044,12 +1132,14 @@
       $('dSave').disabled = true; $('dWarn').textContent = '…';
       google.script.run.withSuccessHandler(function (r) {
         $('dSave').disabled = false;
-        if (!r || !r.ok) { $('dWarn').textContent = (r && r.msg) || 'خطأ – error'; return; }
+        if (!r || !r.ok) { $('dWarn').textContent = (r && r.msg) || 'خطأ – error'; if (POP) { $('pMsg').textContent = $('dWarn').textContent; popBusy(false); } return; }
         r.acts.forEach(function (a) { if (!seenActs[a.id]) seenActs[a.id] = a.status; });
         showActs(r.acts);
+        if (POP) { $('pMsg').textContent = '✔ أُرسل إلى كمبيوتر المحل – sent to the shop PC (' + (KIND === 'DELIVER' ? 'Pay & Deliver' : 'Pay') + ' ' + money(amt) + ')'; popBusy(false); setTimeout(popInfo, 8000); return; }
         closeAct();
       }).withFailureHandler(function () {
         $('dSave').disabled = false; $('dWarn').textContent = 'لا يوجد اتصال – no connection, try again';
+        if (POP) { $('pMsg').textContent = $('dWarn').textContent; popBusy(false); }
       }).aAct(KEY, PIN, act);
     }
     function cell(done, total, pend) {
