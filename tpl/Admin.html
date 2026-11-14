@@ -279,6 +279,7 @@
         <button id="t2" onclick="tab(2)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg>الطلبات<small>Orders</small></button>
         <button id="t3" onclick="tab(3)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>العمال<small>Workers</small></button>
         <button id="t11" onclick="tab(11)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>سجل العمل<small>Work log</small></button>
+        <button id="t12" onclick="tab(12)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="6" width="14" height="11" rx="1.5"/><path d="M15 10h4l3 3v4h-7M5.5 20.5a2 2 0 1 0 0-.01M18.5 20.5a2 2 0 1 0 0-.01"/></svg>التسليمات<small>Deliveries</small></button>
         <button id="t4" onclick="tab(4)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></svg>الأسعار<small>Rates</small></button>
         <span class="sep"></span>
         <button id="t6" onclick="tab(6)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>جميل<small>Jameel</small></button>
@@ -395,6 +396,19 @@
         <div class="tw"><table class="st" id="wtTab"></table></div>
       </div>
     </div>
+    <div id="p12" style="display:none">
+      <div class="card" style="margin-top:10px">
+        <h3>التسليمات <small>Deliveries – every order with its delivery on the day you pick</small></h3>
+        <div class="drange">
+          <label>تاريخ التسليم · Delivery date<input id="dvD" type="date"></label>
+          <div class="dq"><button type="button" data-dv="-1">أمس · Yesterday</button><button type="button" data-dv="0">اليوم · Today</button>
+            <button type="button" data-dv="1">غداً · Tomorrow</button><button type="button" data-dv="2">بعد غد · +2</button></div>
+        </div>
+        <div id="dvSum" class="dsum"></div>
+        <div class="tw"><table class="st" id="dvTab"></table></div>
+      </div>
+    </div>
+
     <div id="p4" style="display:none">
       <div class="card" style="margin-top:10px;max-width:640px">
         <h3>أسعار العمل <small>Work rates per piece (SAR)</small></h3>
@@ -533,13 +547,35 @@
 
     function tab(n) {
       CUR_TAB = n;
-      for (var i = 1; i <= 11; i++) { var p = $('p' + i); if (p) p.style.display = (i === n || (i === 5 && n > 5 && n <= 10)) ? '' : 'none'; var t = $('t' + i); if (t) t.className = i === n ? 'on' : ''; }
+      for (var i = 1; i <= 12; i++) { var p = $('p' + i); if (p) p.style.display = (i === n || (i === 5 && n > 5 && n <= 10)) ? '' : 'none'; var t = $('t' + i); if (t) t.className = i === n ? 'on' : ''; }
       window.scrollTo(0, 0);
       if (n === 2) loadOrders();
       if (n === 3) loadWorkers();
       if (n === 4) { loadRates(); loadCap(); loadDuty(); }
       if (n >= 5 && n <= 10) shopTab(n);
       if (n === 11) { loadWorkLog(); loadWorkTime(); }
+      if (n === 12) { if (!$('dvD').value) dvDay(0); renderDeliv(); loadOrders(); }
+    }
+    // ---- deliveries of one day (Deliveries tab): name, order no, pieces – from the orders list ----
+    function dvDay(n) { $('dvD').value = new Date(Date.now() + 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
+    function renderDeliv() {
+      var d = $('dvD').value;
+      if (!d) { $('dvTab').innerHTML = ''; $('dvSum').innerHTML = ''; return; }
+      if (!ALL.length) { $('dvSum').innerHTML = '<span class="muted">جاري التحميل… / Loading…</span>'; return; }
+      var list = ALL.filter(function (r) { return String(r[4] || '').slice(0, 10) === d; }).sort(function (a, b) { return Number(a[0]) - Number(b[0]); });
+      var pcs = 0, done = 0, rdy = 0;
+      list.forEach(function (r) {
+        var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0); pcs += P;
+        if (P && g >= P) done++; else if (Number(r[13]) === 1 || r[15] === 'Ready') rdy++;
+      });
+      $('dvSum').innerHTML = '<b dir="ltr">' + esc(day(d)) + '</b> · ' + list.length + ' طلب · orders · <b>' + pcs + '</b> ثوب · pcs' +
+        (list.length ? ' · <span style="color:#1e8449">جاهز ' + rdy + ' · ready</span> · سُلّم ' + done + ' · delivered' : '');
+      $('dvTab').innerHTML = list.length ? '<tr><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>ثياب<br>Pcs</th><th>الحالة<br>Status</th></tr>' +
+        list.map(function (r) {
+          var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0);
+          return '<tr class="ro" data-row="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+                 '<td><b>' + P + '</b>' + (g ? ' <span class="muted">(' + g + ' ✔)</span>' : '') + '</td><td>' + (function () { var st = STAT[r[15]] || ['', r[15] || '']; return '<span class="sp ' + st[0] + '">' + esc(st[1]) + '</span>'; })() + '</td></tr>';
+        }).join('') : '<tr><td class="muted">لا يوجد تسليم في هذا اليوم – no deliveries on this day</td></tr>';
     }
 
     function start() {
@@ -664,7 +700,7 @@
       google.script.run.withSuccessHandler(function (r) {
         if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
-        renderTable(); readyAsk();
+        renderTable(); readyAsk(); if (CUR_TAB === 12) renderDeliv();
         // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once
         if (DEEP && ALL.some(function (x) { return x[0] === DEEP; })) { var dn = DEEP; DEEP = ''; if (POP) popOpen(dn); else openAct(dn); }
         else if (DEEP && POP && !$('pH').textContent) $('pH').textContent = 'طلب ' + DEEP + ' – لا يوجد في القائمة بعد (not in the list yet)';
@@ -1369,6 +1405,9 @@
             (other.length ? other.map(function (x) { return '<div style="white-space:nowrap">' + esc((WLK[x.k] || x.k).split(' · ')[0]) + ': <b>' + esc(x.w) + '</b> × ' + x.q + ' <span class="muted" style="font-size:12px">' + esc(x.d.slice(5)) + '</span></div>'; }).join('') : '<span class="c-no">—</span>') + '</td></tr>';
         }).join('') + '</tbody>';
     }
+    $('dvD').addEventListener('change', renderDeliv);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
+    $('dvTab').addEventListener('click', function (ev) { var tr = ev.target.closest && ev.target.closest('tr[data-row]'); if (tr) openAct(tr.getAttribute('data-row')); });
     ['wlF', 'wlT', 'wlW'].forEach(function (id) { $(id).addEventListener('change', function () { wlQ(''); renderWorkLog(); }); });
     $('wlO').addEventListener('input', renderWorkLog);
     function wlQ(q) { [].forEach.call(document.querySelectorAll('[data-wq]'), function (b) { b.classList.toggle('on', b.getAttribute('data-wq') === q); }); }
