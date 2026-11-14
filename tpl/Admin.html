@@ -193,7 +193,7 @@
   .tile { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 10px 10px; box-shadow: inset 0 3px 0 var(--gold); }
   .tile b { display: block; font-family: var(--disp); font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1.1; }
   .tile span { font-size: 12px; color: var(--mute); }
-  .tiles.wip { margin: 10px 0 4px; } .tile.cut { box-shadow: inset 0 3px 0 #c0392b; } .tile.sti { box-shadow: inset 0 3px 0 #d68910; } .tile.rdy { box-shadow: inset 0 3px 0 #1e8449; }
+  .tiles.wip { margin: 10px 0 4px; } .tile.cut { box-shadow: inset 0 3px 0 #c0392b; } .tile.sti { box-shadow: inset 0 3px 0 #d68910; } .tile.rdy { box-shadow: inset 0 3px 0 #1e8449; } .tile.emb { box-shadow: inset 0 3px 0 #7b3fa0; }
   #soon table tr { cursor: pointer; } #soon .dl { font-weight: 700; white-space: nowrap; } #soon .lt { color: #c0392b; } #soon .sn { color: #b9770e; }
   .tile em { display: block; font-style: normal; font-size: 11.5px; color: var(--mute); margin-top: 3px; }
   /* rates */
@@ -731,7 +731,7 @@
       return list.length ? '<table>' + list.map(function (x) {
         var r = x[0];
         return '<tr data-o="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td><b>' + esc(r[1]) + '</b><br><span class="muted" dir="ltr">' + esc(r[2]) + '</span></td>' +
-               '<td>' + esc(x[1]) + '<br><span class="muted">التسليم <span dir="ltr">' + esc(day(r[4])) + '</span></span></td></tr>';
+               '<td>' + x[1].split('<br>').map(esc).join('<br>') + '<br><span class="muted">التسليم <span dir="ltr">' + esc(day(r[4])) + '</span></span></td></tr>';
       }).join('') + '</table>' : '<span class="muted">لا يوجد – none</span>';
     }
     function openOrder(no) {
@@ -740,7 +740,7 @@
       openAct(no);
     }
     function tileClick(t) {
-      var T = { cut: 'قص متبقي · To cut', sti: 'خياطة متبقية · To stitch', rdy: 'جاهز لم يُسلّم · Ready', open: 'قيد العمل · In work (not ready)' };
+      var T = { cut: 'قص متبقي · To cut', sti: 'خياطة متبقية · To stitch', rdy: 'جاهز لم يُسلّم · Ready', open: 'قيد العمل · In work (not ready)', emb: 'تطريز – لم يُقص بعد · Embroidery, not cut yet' };
       if (t.indexOf('w:') === 0) { var k = t.slice(2); showLst(T[k] + ' (' + WIP[k].length + ')', ordRows(WIP[k])); return; }
       if (t.indexOf('k:') === 0) {
         var kd = t.slice(2), ws = (FEED.work || []).filter(function (w) { return w.kind === kd && w.status !== 'deleted'; });
@@ -1155,7 +1155,8 @@
     // pieces still to cut / stitch over all orders not yet delivered (with the online work the shop has not taken in yet)
     function renderWip() {
       var c = 0, s = 0, w = 0, rd = 0, open = 0, oc = 0, os = 0;
-      WIP = { cut: [], sti: [], rdy: [], open: [] };
+      WIP = { cut: [], sti: [], rdy: [], open: [], emb: [] };
+      var ep = 0;
       ALL.forEach(function (r) {
         var n = function (i) { return Number(r[i]) || 0; }, P = n(5), del = Math.min(n(12), P);
         if (!P || del >= P) return;
@@ -1165,12 +1166,17 @@
         if (P - cut > 0) { c += P - cut; oc++; WIP.cut.push([r, 'قص ' + (P - cut) + ' من ' + P]); }
         if (P - sti > 0) { s += P - sti; os++; w += cut - sti; WIP.sti.push([r, 'خياطة ' + (P - sti) + ' من ' + P + (cut - sti > 0 ? ' · مقصوص ' + (cut - sti) : '')]); }
         if (rdy - del > 0) { rd += rdy - del; WIP.rdy.push([r, 'جاهز ' + (rdy - del) + ' ثوب']); }
+        // embroidery to do on an order whose cutting is not finished yet
+        var em = n(10) - n(11) - (Number(p.EMBROIDERY) || 0);
+        if (em > 0 && cut < P) { ep += em; WIP.emb.push([r, 'تطريز ' + em + ' · Embroidery ' + em + '<br>قص ' + cut + ' من ' + P + ' · cut ' + cut + '/' + P]); }
       });
+      WIP.emb.sort(function (a, b) { return String(a[0][4] || '9') < String(b[0][4] || '9') ? -1 : 1; });
       var T = open + rd || 1, bar = function (v) { return '<i class="pb"><u style="width:' + Math.max(v > 0 ? 3 : 0, Math.min(100, Math.round(v / T * 100))) + '%"></u></i>'; };
       var h = '<div class="tile cut" data-t="w:cut"><b>' + c + '</b><span>قص متبقي · To cut</span><em>' + oc + ' طلب · orders</em>' + bar(c) + '</div>' +
               '<div class="tile sti" data-t="w:sti"><b>' + s + '</b><span>خياطة متبقية · To stitch</span><em>' + w + ' مقصوص بانتظار الخياطة · cut, waiting</em>' + bar(s) + '</div>' +
               '<div class="tile rdy" data-t="w:rdy"><b>' + rd + '</b><span>جاهز لم يُسلّم · Ready</span><em>بانتظار العميل · not collected</em>' + bar(rd) + '</div>' +
-              '<div class="tile" data-t="w:open"><b>' + open + '</b><span>قيد العمل · In work</span><em>لم يجهز بعد · not ready yet</em>' + bar(open) + '</div>';
+              '<div class="tile" data-t="w:open"><b>' + open + '</b><span>قيد العمل · In work</span><em>لم يجهز بعد · not ready yet</em>' + bar(open) + '</div>' +
+              '<div class="tile emb" data-t="w:emb"><b>' + ep + '</b><span>تطريز قبل القص · Embroidery</span><em>' + WIP.emb.length + ' طلب لم يُقص بعد · not cut yet</em>' + bar(ep) + '</div>';
       $('wip1').innerHTML = h; $('wip2').innerHTML = h;
       // not ready yet and the delivery date is today, in 1-2 days, or already past
       var ry = new Date(Date.now() + 3 * 3600e3), today = ry.toISOString().slice(0, 10), lim = new Date(ry.getTime() + 2 * 864e5).toISOString().slice(0, 10);

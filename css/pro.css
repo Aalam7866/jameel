@@ -271,7 +271,7 @@ button.go, .go, button.act, .shop .btn:not(.ghost):not(.line):not(.ok):not(.blue
 .tile em { border-top: 0 !important; padding-top: 0 !important; margin-top: 2px !important; }
 .pb { display: block; height: 6px; border-radius: 99px; background: #eceae4; overflow: hidden; margin-top: 12px; }
 .pb u { display: block; height: 100%; border-radius: 99px; background: var(--p-gold); text-decoration: none; transition: width .4s; }
-.tile.cut .pb u { background: #c2410c; } .tile.sti .pb u { background: #b7791f; } .tile.rdy .pb u { background: var(--p-ok); }
+.tile.cut .pb u { background: #c2410c; } .tile.sti .pb u { background: #b7791f; } .tile.rdy .pb u { background: var(--p-ok); } .tile.emb .pb u { background: #7b3fa0; }
 /* orders table: done/total + a bar */
 table.st .pv { display: inline-flex; align-items: center; gap: 10px; direction: ltr; }
 table.st .pv .pn { min-width: 34px; text-align: start; font-variant-numeric: tabular-nums; }
