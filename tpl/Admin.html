@@ -78,6 +78,19 @@
             border-radius: 14px; padding: 14px 18px; box-shadow: 0 10px 30px rgba(15, 20, 30, .35); white-space: pre-line; font-weight: 600; border-top: 4px solid var(--gold); }
   #banner button { margin-top: 10px; background: var(--gold); color: #fff; padding: 7px 16px; font-size: 14px; }
   /* orders table */
+  .noww { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; align-items: start; }
+  .noww .nw { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+  .noww .nh { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f5f7fa; border-bottom: 1px solid var(--line); }
+  .noww .nh i { width: 30px; height: 30px; border-radius: 50%; background: #0d1b2e; color: #fff; font-style: normal; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+  .noww .nh b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .noww .nh em { font-style: normal; font-weight: 700; color: #806427; background: #f7f2e6; border-radius: 6px; padding: 2px 8px; font-size: 13px; white-space: nowrap; }
+  .noww .nl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 8px; align-items: baseline; padding: 8px 12px; border-top: 1px solid #edf0f4; cursor: pointer; }
+  .noww .nl:first-of-type { border-top: 0; } .noww .nl:hover { background: #f7f8fa; }
+  .noww .nl .no { font-weight: 700; color: #0d1b2e; white-space: nowrap; } .noww .nl .nm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .noww .nl .nq { font-weight: 700; white-space: nowrap; } .noww .nl .nq small { font-weight: 500; color: var(--mute); font-size: 11.5px; }
+  .noww .nl .nk { grid-column: 1 / span 2; font-size: 12px; font-weight: 600; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .noww .nl .nk .fx::before { content: ' + '; white-space: pre; }
+  .noww .nl .nt { font-size: 11.5px; color: var(--mute); white-space: nowrap; text-align: end; }
   .drange { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
   .drange label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--mute); flex: 1 1 140px; }
   .drange input { margin: 0; font-size: 15px; }
@@ -296,6 +309,10 @@
 
     <!-- Tab 1: Today -->
     <div id="p1" style="margin-top:10px">
+      <div class="card">
+        <h3>في العمل الآن <small>In work now – which tailor has which pieces</small></h3>
+        <div id="nowWip" class="muted">…</div>
+      </div>
       <div class="grid2">
         <div>
           <div class="card">
@@ -598,6 +615,34 @@
         .withFailureHandler(function () { $('stInfo').innerHTML = '<span class="off-t">لا يوجد اتصال – no connection, trying…</span>'; }).aFeed(KEY, PIN);
     }
 
+    // ---- Today, top: which worker has which pieces in work now (worker app: Start pressed, Finish not yet) ----
+    var NOWK = { STITCH: '🧵 خياطة · Stitching', HINGE: '🔘 زرار · Hinge', EMBROIDERY: '🪡 تطريز · Embroidery', CUT: '✂️ قص · Cutting', MEASURE: '📏 مقاس · Measuring' };
+    function renderNow() {
+      var el = $('nowWip'), w = FEED && FEED.wip;
+      if (!el || !w) return;
+      if (!w.length) { el.className = 'muted'; el.innerHTML = 'لا أحد لديه عمل مفتوح الآن · Nobody has work started now'; return; }
+      var names = {}; ALL.forEach(function (r) { names[r[0]] = r; });
+      var by = {}, order = [];
+      w.forEach(function (x) { var k = x.name.toLowerCase(); if (!by[k]) { by[k] = { name: x.name, l: [], q: 0 }; order.push(k); } by[k].l.push(x); by[k].q += x.q; });
+      order.sort();
+      var now = Date.now(), tot = w.reduce(function (a, x) { return a + x.q; }, 0);
+      el.className = '';
+      el.innerHTML = '<div class="muted" style="margin-bottom:8px"><b>' + order.length + '</b> <span>عامل · workers</span><b style="margin-inline-start:14px">' + tot + '</b> <span>قطعة في العمل · pcs in work</span></div><div class="noww">' +
+        order.map(function (k) {
+          var g = by[k];
+          g.l.sort(function (a, b) { return a.ms - b.ms; });
+          return '<div class="nw"><div class="nh"><i>' + esc((g.name.trim().charAt(0) || '?').toUpperCase()) + '</i><b>' + esc(g.name) + '</b><em>' + g.q + ' <span>قطعة · pcs</span></em></div>' +
+            g.l.map(function (x) {
+              var r = names[x.o], mins = x.ms ? Math.max(0, Math.round((now - x.ms) / 60000)) : 0, sameDay = x.at.slice(0, 10) === riyToday();
+              return '<div class="nl" data-ord="' + esc(x.o) + '"><span class="no">#' + esc(x.o) + '</span><span class="nm">' + esc(r ? r[1] : '') + '</span>' +
+                '<span class="nq">' + x.q + ' <small>قطعة · pcs</small></span>' +
+                '<span class="nk">' + esc(NOWK[x.kind] || x.kind) + (x.half ? ' · 🤝 ½' : '') + (x.fit ? '<span class="fx">بروفة · fitting</span>' : '') + '</span>' +
+                '<span class="nt" dir="ltr" title="' + esc(x.at) + '">' + esc(sameDay ? x.at.slice(11, 16) : x.at.slice(5, 16)) + (x.ms ? ' · ' + (mins >= 1440 ? Math.floor(mins / 1440) + 'd ' + Math.floor(mins % 1440 / 60) + 'h' : hm(mins)) : '') + '</span></div>';
+            }).join('') + '</div>';
+        }).join('') + '</div>';
+    }
+    $('nowWip').addEventListener('click', function (ev) { var l = ev.target.closest && ev.target.closest('[data-ord]'); if (l) openOrder(l.getAttribute('data-ord')); });
+
     // ---- alerts ----
     function enableAlerts() {
       try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); beep(); } catch (x) { audio = null; }
@@ -656,6 +701,7 @@
         seenActs[a.id] = a.status;
       });
       showActs(r.acts || []);
+      renderNow();
       if (reload) loadOrders();
       first = false;
       if (lines.length) alertNew(lines);
@@ -702,7 +748,7 @@
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
       google.script.run.withSuccessHandler(function (r) {
-        if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
+        if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); setTimeout(renderNow, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk(); if (CUR_TAB === 12) renderDeliv();
         // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once

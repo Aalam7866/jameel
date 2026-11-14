@@ -595,7 +595,18 @@ async function aFeed(key, pin) {
   if (r.r) {
     try { orders = await mineListAll(r.r); } catch (e) { }
   }
-  return { now: riyadh().slice(11, 16), work: feed.work || [], orders, acts: await actList(r) };
+  const [acts, wip] = await Promise.all([actList(r), wipNow().catch(() => [])]);
+  return { now: riyadh().slice(11, 16), work: feed.work || [], orders, acts, wip };
+}
+// who has which pieces in work right now (worker app: Start pressed, Finish not yet) – Admin → Today, top
+async function wipNow() {
+  const s = await getDocs(collection(db, 'jwip')), out = [];
+  s.forEach(x => {
+    const d = x.data(), at = d.at && d.at.toDate ? d.at.toDate() : null;
+    out.push({ name: String(d.name || ''), kind: String(d.kind || '').toUpperCase(), o: String(d.o || ''), q: d.half ? 0.5 : (Number(d.q) || 0) + (d.fit ? 1 : 0),
+               fit: !!d.fit, half: !!d.half, at: at ? riyadh(at).slice(0, 16) : '', ms: at ? at.getTime() : 0 });
+  });
+  return out;
 }
 async function mineListAll(okRoot) {
   const s = await getDocs(query(collection(db, 'ok', okRoot, 'o'), orderBy('ts', 'desc'), limit(300)));
