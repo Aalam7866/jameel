@@ -798,6 +798,15 @@ async function aOrderWip(key, pin, order) {
   if (s) s.forEach(x => { const d = x.data(); out.push({ token: d.token, name: d.name || '', kind: d.kind, q: Number(d.q || 0) + (d.fit ? 1 : 0), fit: !!d.fit, d: d.at && d.at.toDate ? riyadh(d.at.toDate()).slice(0, 10) : '' }); });
   return out;
 }
+// one order: who has pieces in work now (worker app: Start, not finished) + the work done on it (JAMEEL's work log)
+async function aOrderWork(key, pin, order) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const o = Number(orderKey(order));
+  if (!o) return { wip: [], log: [] };
+  const [wip, log] = await Promise.all([aOrderWip(key, pin, o).catch(() => []), dsRows('j_worklog').catch(() => [])]);
+  return { wip: wip || [], log: log.filter(x => Number(x.order_no) === o).map(x => ({ d: String(x.date || '').slice(0, 10), k: String(x.kind || '').toUpperCase(), q: Number(x.qty) || 0, w: String(x.name || ('#' + x.emp_no)) })) };
+}
 async function aWorkerSave(key, pin, token, patch) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -1014,5 +1023,5 @@ export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
   aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aWorkTime,
-  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aShopEmployees,
+  aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };

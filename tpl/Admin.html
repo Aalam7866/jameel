@@ -115,6 +115,7 @@
   .duebox button { width: auto; padding: 8px 14px; font-size: 14px; } .duebox input[type=date] { flex: 1; min-width: 150px; font-size: 16px; padding: 8px; }
   .duebox .dq { display: flex; gap: 6px; width: 100%; } .duebox .dq button { flex: 1; padding: 7px 4px; font-size: 13px; }
   .duebox select { width: 100%; font-size: 15px; padding: 8px; }
+  .duebox.wipb { border-inline-start: 4px solid #1f4e8c; background: #f2f6fc; } .duebox .wot { width: 100%; font-size: 13px; }
   .duebox.prova { border-inline-start: 4px solid #b88a3e; } .duebox .qn { display: flex; align-items: center; gap: 6px; }
   .duebox .qn input { width: 64px; text-align: center; font-size: 18px; font-weight: 700; padding: 6px; } .duebox .qn button { padding: 6px 12px; font-size: 18px; }
   .duebox .lb { width: 100%; font-size: 13px; color: var(--mute); margin-top: 2px; }
@@ -500,6 +501,7 @@
       <div id="dTrk"></div>
       <div class="sum" id="dSum"></div>
       <div class="duebox" id="dDue"></div>
+      <div id="dWip"></div>
       <div class="duebox prova" id="dProva"></div>
       <div id="dFit"></div>
       <div id="dWa"></div>
@@ -527,6 +529,7 @@
       <div class="warn" id="dWarn"></div>
       <button class="go wide" id="dSave" onclick="saveAct()">حفظ / Save</button>
       </div>
+      <div id="dWho"></div>
       <button class="sec wide" onclick="closeAct()">إغلاق / Close</button>
       </div>
     </div>
@@ -908,7 +911,7 @@
         '<div class="fitb">' + wb('sample', f ? 'go' : 'sec', 'البروفة جاهزة') + wb('feedback', 'sec', 'كيف كانت البروفة؟') + '</div></div>';
       $('dSum').innerHTML = 'المتبقي / Due: <b>' + money(D.due) + ' ' + esc(CUR) + '</b><br>القطع: <b>' + D.pcs + '</b> · سُلّم: <b>' + D.given +
                             '</b> · الباقي: <b>' + Math.max(0, D.pcs - D.given) + '</b>';
-      dueShow(r); provaShow();
+      dueShow(r); provaShow(); whoShow();
       $('dMethod').innerHTML = METHODS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
       $('dAmt').value = D.due > 0.005 ? money(D.due) : '0';
       $('dRef').value = '';
@@ -1038,6 +1041,23 @@
         toast('✔ تم – Saved\n🤝 ' + d.fromName + ' −' + sar(r.amount) + ' → ' + d.toName + ' +' + sar(r.amount), 'ok');
         shareShow(); WD = null;
       }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'حفظ · Save'; alert('خطأ – ' + (e && e.message || e)); }).aShareAdd(KEY, PIN, d);
+    }
+    // ---- who has the order now (Start on the worker app, not finished) and, at the bottom, who made how many pieces ----
+    function whoShow() {
+      if (!D) return;
+      var no = D.no; $('dWip').innerHTML = ''; $('dWho').innerHTML = '';
+      google.script.run.withSuccessHandler(function (x) {
+        if (!x || !D || D.no !== no) return;
+        $('dWip').innerHTML = x.wip.length ? '<div class="duebox wipb"><div class="dv">🧑‍🔧 <b>عند الخياط الآن · With now</b>' + x.wip.map(function (w) {
+          return '<div><b>' + esc(w.name) + '</b> · ' + (WKINDS[w.kind] || esc(w.kind)) + ' · <b>' + w.q + '</b> ثوب' + (w.fit ? ' (بروفة)' : '') + (w.d ? ' · <span class="muted" dir="ltr">' + esc(day(w.d)) + '</span>' : '') + '</div>';
+        }).join('') + '</div></div>' : '';
+        var by = {}, ord = [];
+        x.log.forEach(function (l) { var k = l.k + '|' + l.w; if (!by[k]) { by[k] = { k: l.k, w: l.w, q: 0, d: l.d }; ord.push(by[k]); } by[k].q += l.q; if (l.d > by[k].d) by[k].d = l.d; });
+        ord.sort(function (a, b) { return (KORDER.indexOf(a.k) - KORDER.indexOf(b.k)) || a.w.localeCompare(b.w); });
+        $('dWho').innerHTML = ord.length ? '<div class="duebox"><div class="dv"><b>👥 من صنع الطلب · Who made it</b><table class="wot" style="margin-top:6px"><tr><th>العمل<br>Work</th><th>العامل<br>Worker</th><th>القطع<br>Pcs</th><th>آخر تاريخ<br>Last date</th></tr>' +
+          ord.map(function (l) { return '<tr><td>' + (WKINDS[l.k] || esc(l.k)) + '</td><td><b>' + esc(l.w) + '</b></td><td><b>' + (Math.round(l.q * 100) / 100) + '</b></td><td dir="ltr">' + esc(day(l.d)) + '</td></tr>'; }).join('') +
+          '</table></div></div>' : '';
+      }).withFailureHandler(function () { }).aOrderWork(KEY, PIN, no);
     }
     function dueEdit() {
       var r = ALL.filter(function (x) { return D && x[0] === String(D.no); })[0]; if (!r) return;
