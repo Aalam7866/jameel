@@ -115,6 +115,7 @@
   .duebox button { width: auto; padding: 8px 14px; font-size: 14px; } .duebox input[type=date] { flex: 1; min-width: 150px; font-size: 16px; padding: 8px; }
   .duebox .dq { display: flex; gap: 6px; width: 100%; } .duebox .dq button { flex: 1; padding: 7px 4px; font-size: 13px; }
   .duebox select { width: 100%; font-size: 15px; padding: 8px; }
+  .trk .tkw { display: block; font-style: normal; font-size: 11.5px; font-weight: 700; color: #1f4e8c; margin-top: 3px; line-height: 1.25; }
   .duebox.wipb { border-inline-start: 4px solid #1f4e8c; background: #f2f6fc; } .duebox .wot { width: 100%; font-size: 13px; }
   .duebox.prova { border-inline-start: 4px solid #b88a3e; } .duebox .qn { display: flex; align-items: center; gap: 6px; }
   .duebox .qn input { width: 64px; text-align: center; font-size: 18px; font-weight: 700; padding: 6px; } .duebox .qn button { padding: 6px 12px; font-size: 18px; }
@@ -879,18 +880,18 @@
       var n = function (i) { return Number(r[i]) || 0; };
       var P = Math.max(1, n(5)), del = Math.min(n(12), P), rdy = Math.max(n(13), del), isR = rdy >= P;
       var sti = Math.max(n(7), rdy), cut = Math.max(n(6), sti), st = [];
-      var add = function (ar, en, d, of) { st.push({ ar: ar, en: en, d: Math.min(d, of), of: of }); };
-      add('القص', 'Cutting', cut, P);
-      add('الخياطة', 'Tailoring', sti, P);
-      if (n(10) > 0) add('التطريز', 'Embroidery', isR ? n(10) : n(11), n(10));
-      if (n(8) > 0) add('الكبسات', 'Hinge', isR ? n(8) : n(9), n(8));
+      var add = function (ar, en, d, of, k) { st.push({ ar: ar, en: en, d: Math.min(d, of), of: of, k: k || '' }); };
+      add('القص', 'Cutting', cut, P, 'CUT');
+      add('الخياطة', 'Tailoring', sti, P, 'STITCH');
+      if (n(10) > 0) add('التطريز', 'Embroidery', isR ? n(10) : n(11), n(10), 'EMBROIDERY');
+      if (n(8) > 0) add('الكبسات', 'Hinge', isR ? n(8) : n(9), n(8), 'HINGE');
       add('جاهز للاستلام', 'Ready', rdy, P);
       add('تم التسليم', 'Delivered', del, P);
       var cur = -1; for (var i = 0; i < st.length; i++) if (st[i].d < st[i].of) { cur = i; break; }
       return '<div class="trk">' + st.map(function (s, i) {
         var cls = cur < 0 || i < cur ? 'done' : i === cur ? 'now' : 'next';
         var sm = s.d >= s.of ? '✓' : s.d > 0 ? s.d + '/' + s.of : '';
-        return '<div class="tk ' + cls + '"><i></i><b>' + s.ar + '</b><small>' + s.en + (sm ? ' · ' + sm : '') + '</small></div>';
+        return '<div class="tk ' + cls + '"><i></i><b>' + s.ar + '</b><small>' + s.en + (sm ? ' · ' + sm : '') + '</small><em class="tkw" data-k="' + s.k + '"></em></div>';
       }).join('') + '</div>';
     }
     function openAct(no) {
@@ -1048,9 +1049,13 @@
       var no = D.no; $('dWip').innerHTML = ''; $('dWho').innerHTML = '';
       google.script.run.withSuccessHandler(function (x) {
         if (!x || !D || D.no !== no) return;
-        $('dWip').innerHTML = x.wip.length ? '<div class="duebox wipb"><div class="dv">🧑‍🔧 <b>عند الخياط الآن · With now</b>' + x.wip.map(function (w) {
-          return '<div><b>' + esc(w.name) + '</b> · ' + (WKINDS[w.kind] || esc(w.kind)) + ' · <b>' + w.q + '</b> ثوب' + (w.fit ? ' (بروفة)' : '') + (w.d ? ' · <span class="muted" dir="ltr">' + esc(day(w.d)) + '</span>' : '') + '</div>';
-        }).join('') + '</div></div>' : '';
+        // in work now: the worker's name right under that step (Tailoring …) until he finishes; then he is in the list below
+        var who = {};
+        x.wip.forEach(function (w) { (who[w.kind] = who[w.kind] || []).push(esc(w.name) + ' · ' + w.q); });
+        Array.prototype.forEach.call(document.querySelectorAll('#dTrk .tkw'), function (e) {
+          var l = who[e.getAttribute('data-k')] || [];
+          e.innerHTML = l.length ? '🧑‍🔧 ' + l.join('<br>🧑‍🔧 ') : '';
+        });
         var by = {}, ord = [];
         x.log.forEach(function (l) { var k = l.k + '|' + l.w; if (!by[k]) { by[k] = { k: l.k, w: l.w, q: 0, d: l.d }; ord.push(by[k]); } by[k].q += l.q; if (l.d > by[k].d) by[k].d = l.d; });
         ord.sort(function (a, b) { return (KORDER.indexOf(a.k) - KORDER.indexOf(b.k)) || a.w.localeCompare(b.w); });
