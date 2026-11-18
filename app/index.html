@@ -584,8 +584,8 @@ function jStatus(o) {
 }
 const jOrderItem = (o) => {
   const due = oDue(o);
-  return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)} · ${N(o.pcs)} pcs</div></div>
-  <div class="r"><div>${money(o.total)}</div>${due >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
+  return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)}</div></div>
+  <div class="r"><div style="font-size:12.5px;font-weight:700;color:var(--muted)">${N(o.pcs)} pcs</div><div>${money(o.total)}</div>${due >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
 };
 async function jameelView() {
   const m = shell('Jameel Al Hindam');
