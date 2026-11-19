@@ -637,14 +637,20 @@
       var G = dvGroups(); if (!G.length) { alert('No deliveries on these days'); return; }
       var h = '<!doctype html><html><head><meta charset="utf-8"><title>Deliveries</title><style>@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif;color:#000;margin:0}' +
         '.day{page-break-inside:avoid;margin-bottom:18px}h2{text-align:center;font-size:20px;margin:0 0 8px;letter-spacing:1px}table{width:100%;border-collapse:collapse;font-size:13px}' +
-        'th,td{border:1px solid #000;padding:5px 6px;text-align:left}th{background:#eee}td.n{width:28px;text-align:center}td.q{text-align:center;width:48px}.tp{text-align:center;vertical-align:middle;font-size:30px;font-weight:bold;width:90px}.ar{direction:rtl;text-align:right}</style></head><body>' +
+        'th,td{border:1px solid #000;padding:5px 6px;text-align:left}th{background:#eee}td.n{width:28px;text-align:center}td.q{text-align:center;width:48px}.tp{text-align:center;vertical-align:middle;font-size:30px;font-weight:bold;width:90px}.ar{direction:rtl;text-align:right}table.sm{margin-top:10px;page-break-inside:avoid}table.sm td{text-align:center;width:25%;padding:8px}.lb{font-size:12px;font-weight:bold;color:#333}.vv{font-size:26px;font-weight:bold}</style></head><body>' +
         G.map(function (x) {
           return '<div class="day"><h2>' + esc(day(x.d)) + '</h2><table><tr><th></th><th>Order No.</th><th>Name</th><th>Qty</th><th>Total Pcs</th></tr>' +
             x.list.map(function (r, i) {
               return '<tr><td class="n">' + (i + 1) + '</td><td><b>' + esc(r[0]) + '</b></td><td class="ar">' + esc(r[1]) + '</td><td class="q">' + (Number(r[5]) || 0) + '</td>' +
                 (i === 0 ? '<td class="tp" rowspan="' + x.list.length + '">' + x.pcs + '</td>' : '') + '</tr>';
             }).join('') + '</table></div>';
-        }).join('') + '</body></html>';
+        }).join('') + (function () {
+          var T = 0, D = 0, Rd = 0;
+          G.forEach(function (x) { x.list.forEach(function (r) { var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0); T += P; D += g;
+            if (g < P && (Number(r[13]) === 1 || r[15] === 'Ready')) Rd += P - g; }); });
+          var B = Math.max(0, T - D - Rd), c = function (t, v) { return '<td><div class="lb">' + t + '</div><div class="vv">' + v + '</div></td>'; };
+          return '<table class="sm"><tr>' + c('Total Pcs', T) + c('Ready', Rd) + c('Remaining', B) + c('Delivered', D) + '</tr></table>';
+        })() + '</body></html>';
       var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
       document.body.appendChild(fr);
       var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
