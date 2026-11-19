@@ -281,7 +281,7 @@
   .dvk .ok b { color: var(--ok); } .dvk .bd b { color: var(--bad); } .dvk .gd b { color: var(--mute); }
   .dvk .bar { grid-column: 1 / -1; padding: 0 16px 14px; border: 0; }
   .dvbar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #eef1f5; }
-  .dvbar i { display: block; height: 100%; } .dvbar .g { background: #8a93a3; } .dvbar .r { background: var(--ok); }
+  .dvbar i { display: block; height: 100%; } .dvbar .g { background: #137a4b; } .dvbar .r { background: #6cc596; }
   .dvleg { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--mute); margin-top: 7px; }
   .dvleg span::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -1px; background: var(--c); }
   .dvday { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--p-sh1); overflow: hidden; }
@@ -689,7 +689,7 @@
       google.script.run.withSuccessHandler(function (r) { if (r && !r.ok) alert(r.msg || 'Not saved'); })
         .withFailureHandler(function (e) { alert('لم يُحفظ – Not saved: ' + (e && e.message || e)); }).aSetPrio(KEY, PIN, PRIO);
     }
-    function dvBar(x, h) {   // delivered (grey) · ready (green) · left (track)
+    function dvBar(x, h) {   // delivered (dark green) · ready (light green) · left (track)
       var t = x.P || 1;
       return '<div class="dvbar"' + (h ? ' style="height:' + h + 'px"' : '') + '><i class="g" style="width:' + (x.g / t * 100) + '%"></i><i class="r" style="width:' + (x.rd / t * 100) + '%"></i></div>';
     }
@@ -702,7 +702,7 @@
       $('dvSum').innerHTML = '<div class="dvk">' +
         k('', 'طلبات', 'Orders', T.n, G.length + ' ' + LB('يوم', G.length === 1 ? 'day' : 'days')) + k('', 'مجموع القطع', 'Total pcs', T.P, LB('ثوب', 'thobes')) +
         k('ok', 'جاهز', 'Ready', T.rd, pc(T.rd)) + k('bd', 'باقي', 'Remaining', T.left, pc(T.left)) + k('gd', 'سُلّم', 'Delivered', T.g, pc(T.g)) +
-        '<div class="bar">' + dvBar({ P: T.P, g: T.g, rd: T.rd }, 8) + '<div class="dvleg"><span style="--c:#8a93a3">' + LB('سُلّم', 'Delivered') + '</span><span style="--c:var(--ok)">' + LB('جاهز', 'Ready') + '</span><span style="--c:#dfe3ea">' + LB('باقي', 'Remaining') + '</span></div></div></div>';
+        '<div class="bar">' + dvBar({ P: T.P, g: T.g, rd: T.rd }, 8) + '<div class="dvleg"><span style="--c:#137a4b">' + LB('سُلّم', 'Delivered') + '</span><span style="--c:#6cc596">' + LB('جاهز', 'Ready') + '</span><span style="--c:#dfe3ea">' + LB('باقي', 'Remaining') + '</span></div></div></div>';
       $('dvTab').innerHTML = G.length ? G.map(function (x) {
         var wd = dvWd(x.d), dd = x.d.split('-'), tag = x.d === td ? '<span class="dvtag t">' + LB('اليوم', 'Today') + '</span>' : x.d === dvDate(1) ? '<span class="dvtag t">' + LB('غداً', 'Tomorrow') + '</span>' : (x.d < td && x.left ? '<span class="dvtag l">' + LB('متأخر', 'Late') + '</span>' : '');
         return '<section class="dvday"><div class="dvdh"><div class="dvcal"><b>' + Number(dd[2]) + '</b><span>' + DV_MO[Number(dd[1]) - 1] + '</span></div>' +
