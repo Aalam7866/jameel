@@ -417,14 +417,16 @@
     </div>
     <div id="p12" style="display:none">
       <div class="card" style="margin-top:10px">
-        <h3>التسليمات <small>Deliveries – every order with its delivery on the day you pick</small></h3>
+        <h3>التسليمات <small>Deliveries – every order with its delivery date, day by day</small></h3>
         <div class="drange">
-          <label>تاريخ التسليم · Delivery date<input id="dvD" type="date"></label>
+          <label>من · From<input id="dvF" type="date"></label>
+          <label>إلى · To<input id="dvT" type="date"></label>
           <div class="dq"><button type="button" data-dv="-1">أمس · Yesterday</button><button type="button" data-dv="0">اليوم · Today</button>
-            <button type="button" data-dv="1">غداً · Tomorrow</button><button type="button" data-dv="2">بعد غد · +2</button></div>
+            <button type="button" data-dv="1">غداً · Tomorrow</button><button type="button" data-dv="2">بعد غد · +2</button><button type="button" data-dv="7">7 أيام · 7 days</button>
+            <button type="button" id="dvPrint" style="margin-inline-start:auto;background:#0d1b2e;color:#fff;border-color:#0d1b2e">🖨 طباعة · Print</button></div>
         </div>
         <div id="dvSum" class="dsum"></div>
-        <div class="tw"><table class="st" id="dvTab"></table></div>
+        <div id="dvTab"></div>
       </div>
     </div>
 
@@ -575,28 +577,58 @@
       if (n === 4) { loadRates(); loadCap(); loadDuty(); }
       if (n >= 5 && n <= 10) shopTab(n);
       if (n === 11) { loadWorkLog(); loadWorkTime(); }
-      if (n === 12) { if (!$('dvD').value) dvDay(0); renderDeliv(); loadOrders(); }
+      if (n === 12) { if (!$('dvF').value && !$('dvT').value) dvDay(0); renderDeliv(); loadOrders(); }
     }
     // ---- deliveries of one day (Deliveries tab): name, order no, pieces – from the orders list ----
-    function dvDay(n) { $('dvD').value = new Date(Date.now() + 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
-    function renderDeliv() {
-      var d = $('dvD').value;
-      if (!d) { $('dvTab').innerHTML = ''; $('dvSum').innerHTML = ''; return; }
-      if (!ALL.length) { $('dvSum').innerHTML = '<span class="muted">جاري التحميل… / Loading…</span>'; return; }
-      var list = ALL.filter(function (r) { return String(r[4] || '').slice(0, 10) === d; }).sort(function (a, b) { return Number(a[0]) - Number(b[0]); });
-      var pcs = 0, done = 0, rdy = 0;
-      list.forEach(function (r) {
-        var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0); pcs += P;
-        if (P && g >= P) done++; else if (Number(r[13]) === 1 || r[15] === 'Ready') rdy++;
+    function dvDate(n) { return new Date(Date.now() + 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
+    function dvDay(n) { if (n === 7) { $('dvF').value = dvDate(0); $('dvT').value = dvDate(6); } else $('dvF').value = $('dvT').value = dvDate(n); }
+    // orders grouped by delivery date between From and To
+    function dvGroups() {
+      var f = $('dvF').value, t = $('dvT').value || f; if (!f) f = t; if (f > t) { var x = f; f = t; t = x; }
+      var g = {};
+      ALL.forEach(function (r) { var d = String(r[4] || '').slice(0, 10); if (d && d >= f && d <= t) (g[d] = g[d] || []).push(r); });
+      return Object.keys(g).sort().map(function (d) {
+        var list = g[d].sort(function (a, b) { return Number(a[0]) - Number(b[0]); }), pcs = 0, done = 0, rdy = 0;
+        list.forEach(function (r) { var P = Number(r[5]) || 0, gv = Math.min(P, Number(r[12]) || 0); pcs += P; if (P && gv >= P) done++; else if (Number(r[13]) === 1 || r[15] === 'Ready') rdy++; });
+        return { d: d, list: list, pcs: pcs, done: done, rdy: rdy };
       });
-      $('dvSum').innerHTML = '<b dir="ltr">' + esc(day(d)) + '</b> · ' + list.length + ' طلب · orders · <b>' + pcs + '</b> ثوب · pcs' +
-        (list.length ? ' · <span style="color:#1e8449">جاهز ' + rdy + ' · ready</span> · سُلّم ' + done + ' · delivered' : '');
-      $('dvTab').innerHTML = list.length ? '<tr><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>ثياب<br>Pcs</th><th>الحالة<br>Status</th></tr>' +
-        list.map(function (r) {
-          var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0);
-          return '<tr class="ro" data-row="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
-                 '<td><b>' + P + '</b>' + (g ? ' <span class="muted">(' + g + ' ✔)</span>' : '') + '</td><td>' + (function () { var st = STAT[r[15]] || ['', r[15] || '']; return '<span class="sp ' + st[0] + '">' + esc(st[1]) + '</span>'; })() + '</td></tr>';
-        }).join('') : '<tr><td class="muted">لا يوجد تسليم في هذا اليوم – no deliveries on this day</td></tr>';
+    }
+    function renderDeliv() {
+      if (!$('dvF').value && !$('dvT').value) { $('dvTab').innerHTML = ''; $('dvSum').innerHTML = ''; return; }
+      if (!ALL.length) { $('dvSum').innerHTML = '<span class="muted">جاري التحميل… / Loading…</span>'; return; }
+      var G = dvGroups(), n = 0, pcs = 0;
+      G.forEach(function (x) { n += x.list.length; pcs += x.pcs; });
+      $('dvSum').innerHTML = (G.length > 1 ? G.length + ' أيام · days · ' : '') + n + ' طلب · orders · <b>' + pcs + '</b> ثوب · pcs';
+      $('dvTab').innerHTML = G.length ? G.map(function (x) {
+        return '<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 2px;border-bottom:2px solid #0d1b2e">' +
+          '<b dir="ltr" style="font-size:16px">' + esc(day(x.d)) + '</b><span>' + x.list.length + ' طلب · orders · <b style="font-size:16px">' + x.pcs + '</b> pcs' +
+          ' · <span style="color:#1e8449">جاهز ' + x.rdy + ' ready</span> · سُلّم ' + x.done + ' delivered</span></div>' +
+          '<div class="tw"><table class="st"><tr><th>#</th><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>ثياب<br>Qty</th><th>الحالة<br>Status</th></tr>' +
+          x.list.map(function (r, i) {
+            var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0), st = STAT[r[15]] || ['', r[15] || ''];
+            return '<tr class="ro" data-row="' + esc(r[0]) + '"><td class="muted">' + (i + 1) + '</td><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+                   '<td><b>' + P + '</b>' + (g ? ' <span class="muted">(' + g + ' ✔)</span>' : '') + '</td><td><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td></tr>';
+          }).join('') + '<tr><td></td><td colspan="3" class="l"><b>المجموع · Total pcs</b></td><td><b>' + x.pcs + '</b></td><td></td></tr></table></div></div>';
+      }).join('') : '<div class="muted" style="padding:10px">لا يوجد تسليم في هذه الأيام – no deliveries on these days</div>';
+    }
+    // print: one block per date – #, order no, name, qty, total pcs (like the paper sheet)
+    function printDeliv() {
+      if (!ALL.length) { alert('Loading… try again'); return; }
+      var G = dvGroups(); if (!G.length) { alert('No deliveries on these days'); return; }
+      var h = '<!doctype html><html><head><meta charset="utf-8"><title>Deliveries</title><style>@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif;color:#000;margin:0}' +
+        '.day{page-break-inside:avoid;margin-bottom:18px}h2{text-align:center;font-size:20px;margin:0 0 8px;letter-spacing:1px}table{width:100%;border-collapse:collapse;font-size:13px}' +
+        'th,td{border:1px solid #000;padding:5px 6px;text-align:left}th{background:#eee}td.n{width:28px;text-align:center}td.q{text-align:center;width:48px}.tp{text-align:center;vertical-align:middle;font-size:30px;font-weight:bold;width:90px}.ar{direction:rtl;text-align:right}</style></head><body>' +
+        G.map(function (x) {
+          return '<div class="day"><h2>' + esc(day(x.d)) + '</h2><table><tr><th></th><th>Order No.</th><th>Name</th><th>Qty</th><th>Total Pcs</th></tr>' +
+            x.list.map(function (r, i) {
+              return '<tr><td class="n">' + (i + 1) + '</td><td><b>' + esc(r[0]) + '</b></td><td class="ar">' + esc(r[1]) + '</td><td class="q">' + (Number(r[5]) || 0) + '</td>' +
+                (i === 0 ? '<td class="tp" rowspan="' + x.list.length + '">' + x.pcs + '</td>' : '') + '</tr>';
+            }).join('') + '</table></div>';
+        }).join('') + '</body></html>';
+      var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+      document.body.appendChild(fr);
+      var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
+      setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
     }
 
     function start() {
@@ -1476,8 +1508,8 @@
             (other.length ? other.map(function (x) { return '<div style="white-space:nowrap">' + esc((WLK[x.k] || x.k).split(' · ')[0]) + ': <b>' + esc(x.w) + '</b> × ' + x.q + ' <span class="muted" style="font-size:12px">' + esc(x.d.slice(5)) + '</span></div>'; }).join('') : '<span class="c-no">—</span>') + '</td></tr>';
         }).join('') + '</tbody>';
     }
-    $('dvD').addEventListener('change', renderDeliv);
-    Array.prototype.forEach.call(document.querySelectorAll('[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
+    $('dvF').addEventListener('change', renderDeliv); $('dvT').addEventListener('change', renderDeliv); $('dvPrint').addEventListener('click', printDeliv);
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
     $('dvTab').addEventListener('click', function (ev) { var tr = ev.target.closest && ev.target.closest('tr[data-row]'); if (tr) openAct(tr.getAttribute('data-row')); });
     ['wlF', 'wlT', 'wlW'].forEach(function (id) { $(id).addEventListener('change', function () { wlQ(''); renderWorkLog(); }); });
     $('wlO').addEventListener('input', renderWorkLog);
