@@ -1000,6 +1000,21 @@ async function aDuty(key, pin) {
   dutyCache = null;
   return { shifts: await dutyShifts() };
 }
+// Admin → Deliveries: the order in which orders are worked (↑ ↓), read by the worker app – sys/prio {o:'1242,1279,…'}
+async function aPrio(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const s = await getDoc(doc(db, 'sys', 'prio'));
+  return { o: s.exists() ? String(s.data().o || '') : '' };
+}
+async function aSetPrio(key, pin, list) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const v = (Array.isArray(list) ? list : []).map(x => String(x).replace(/\D/g, '')).filter(Boolean);
+  const o = [...new Set(v)].slice(-700).join(',');
+  await setDoc(doc(db, 'sys', 'prio'), { o, at: serverTimestamp() });
+  return { ok: true };
+}
 async function aSetDuty(key, pin, shifts) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -1033,6 +1048,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aWorkTime,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };

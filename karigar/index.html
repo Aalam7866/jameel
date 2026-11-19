@@ -98,9 +98,9 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, kReturn, PAST_KINDS } from '/js/jameel.js?v=36';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, kReturn, PAST_KINDS } from '/js/jameel.js?v=37';
 import { db, workDay } from '/js/fb.js';
-import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { getDocs, getDoc, doc, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const app = document.getElementById('app');
 let LANG = 'ar'; try { LANG = localStorage.getItem('k-lang') || 'ar'; } catch (e) { }
@@ -172,7 +172,10 @@ async function loadOrders() {   // customer name + delivery date from the shop d
     const m = {}; s.forEach(x => { try { JSON.parse(x.data().v).forEach(o => { m[String(o.order_no)] = o; }); } catch (e) { } });
     orders = m;
   } catch (e) { }
+  try { const p = await getDoc(doc(db, 'sys', 'prio')); const o = p.exists() ? String(p.data().o || '') : ''; PRIO = {}; o.split(',').forEach((k, i) => { if (k) PRIO[k] = i; }); } catch (e) { }
 }
+let PRIO = {};   // Admin → Deliveries ↑ ↓: the order in which orders are worked (same delivery date)
+const prioOf = (o) => PRIO[String(o)] == null ? 1e6 + Number(o) : PRIO[String(o)];
 async function refresh(quiet) {
   try {
     const r = await kOpen(tok, kind);
@@ -390,7 +393,7 @@ function drawMine(main) {
 }
 function drawOpen(main) {
   const td = today();
-  const all = open.filter(x => recent(x.o)).sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999') || x.o - y.o);
+  const all = open.filter(x => recent(x.o)).sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999') || prioOf(x.o) - prioOf(y.o) || x.o - y.o);
   const todo = all.filter(x => x.avail > 0);
   const seg = (k, t) => el('button', { type: 'button', class: 'btn sm ' + (olist === k ? 'acc' : 'line'), text: t, onclick: () => { olist = k; draw(); } });
   main.appendChild(el('div', { class: 'row', style: 'justify-content:space-between;margin:4px 0 10px' }, [
