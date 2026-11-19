@@ -96,7 +96,6 @@
   .drange input { margin: 0; font-size: 15px; }
   .drange .dq { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 100%; }
   .drange .dq button { border: 1px solid var(--line); background: var(--card, #fff); border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
-  .pv { white-space: nowrap; } .pmv { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 34px; height: 30px; margin: 0 2px; cursor: pointer; font-size: 13px; color: #0d1b2e; } .pmv:disabled { opacity: .25; cursor: default; }
   .drange .dq button.on { background: #0d1b2e; color: #fff; border-color: #0d1b2e; }
   .dsum { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 0 0 12px; }
   .dsum div { border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; background: #fff; }
@@ -259,6 +258,62 @@
   .wbtns .bad { background: var(--badbg); color: var(--bad); border: 0; }
   /* shop online tabs */
   #shopFrame { display: block; width: 100%; height: calc(100vh - 150px); height: calc(100dvh - 150px); min-height: 480px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+
+  /* Deliveries */
+  .dv { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+  .dvh { padding: 16px 18px !important; }
+  .dvtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .dv h3 small, .dv .lbx small, .dvctl label small, .dvq small, .dvbtn small, .dvsub small, .dvday small, .dvk small, .dvt th small { font-size: inherit; color: inherit; font-weight: inherit; margin: 0; margin-inline-start: .35em; display: inline; }
+  .dvsub { font-size: 12.5px; margin-top: 2px; }
+  .dvbtn { display: inline-flex; align-items: center; gap: 7px; background: #0d1b2e; color: #fff; border: 0; border-radius: 9px; padding: 10px 16px; font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .dvbtn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; } .dvbtn:hover { background: #16304f; }
+  .dvctl { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .dvctl label { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; flex: 0 1 170px; }
+  .dvctl input { margin: 0; font-size: 15px; height: 40px; text-transform: none; letter-spacing: 0; }
+  .dvq { display: inline-flex; flex-wrap: wrap; background: #eef1f5; border-radius: 10px; padding: 3px; gap: 2px; }
+  .dvq button { border: 0; background: transparent; border-radius: 8px; padding: 8px 13px; font-weight: 600; font-size: 13px; color: var(--mute); cursor: pointer; }
+  .dvq button.on { background: #fff; color: #0d1b2e; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+  .dvk { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--p-sh1); }
+  .dvk > div { padding: 14px 16px; border-inline-start: 1px solid var(--line); min-width: 0; } .dvk > div:first-child { border-inline-start: 0; }
+  .dvk .lbx { font-size: 11px; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; }
+  .dvk b { display: block; font-size: 28px; line-height: 1.15; margin-top: 4px; color: #0d1b2e; font-variant-numeric: tabular-nums; }
+  .dvk em { font-style: normal; font-size: 12px; color: var(--mute); }
+  .dvk .ok b { color: var(--ok); } .dvk .bd b { color: var(--bad); } .dvk .gd b { color: var(--mute); }
+  .dvk .bar { grid-column: 1 / -1; padding: 0 16px 14px; border: 0; }
+  .dvbar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #eef1f5; }
+  .dvbar i { display: block; height: 100%; } .dvbar .g { background: #8a93a3; } .dvbar .r { background: var(--ok); }
+  .dvleg { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--mute); margin-top: 7px; }
+  .dvleg span::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -1px; background: var(--c); }
+  .dvday { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--p-sh1); overflow: hidden; }
+  .dvdh { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f7f8fa; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .dvcal { width: 46px; flex: none; text-align: center; border-radius: 9px; background: #0d1b2e; color: #fff; padding: 4px 0 5px; line-height: 1; }
+  .dvcal b { display: block; font-size: 19px; } .dvcal span { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #cfae6a; }
+  .dvdt { flex: 1 1 160px; min-width: 0; } .dvdt b { font-size: 15.5px; color: #0d1b2e; } .dvdt div { font-size: 12.5px; color: var(--mute); margin-top: 2px; }
+  .dvtag { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-inline-start: 6px; vertical-align: 1px; }
+  .dvtag.t { background: #e9f0fa; color: #1d4f91; } .dvtag.l { background: var(--badbg); color: var(--bad); }
+  .dvds { display: flex; gap: 18px; text-align: center; } .dvds div { min-width: 46px; } .dvds b { display: block; font-size: 19px; color: #0d1b2e; font-variant-numeric: tabular-nums; }
+  .dvds span { font-size: 10.5px; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; } .dvds .ok b { color: var(--ok); } .dvds .bd b { color: var(--bad); }
+  .dvt { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .dvt th { font-size: 11px; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; padding: 9px 10px; text-align: start; border-bottom: 1px solid var(--line); background: #fff; white-space: nowrap; }
+  .dvt td { padding: 10px; border-bottom: 1px solid #edf0f4; vertical-align: middle; text-align: start; }
+  .dvt tr.ro { cursor: pointer; } .dvt tr.ro:hover td { background: #fafbfc; } .dvt tr.ro.dn td { color: var(--mute); }
+  .dvt .c { text-align: center; } .dvt .mobi { display: none; }
+  @media (max-width: 720px) { .dvt .mobi { display: block; } } .dvt .nm b { font-size: 14.5px; } .dvt .nm span { font-size: 12.5px; color: var(--mute); }
+  .dvt .no { font-weight: 700; font-variant-numeric: tabular-nums; color: #0d1b2e; white-space: nowrap; }
+  .dvt .q b { font-size: 16px; } .dvt .q .dvbar { height: 5px; margin-top: 5px; min-width: 60px; } .dvt .q em { display: block; font-style: normal; font-size: 11.5px; color: var(--mute); margin-top: 3px; white-space: nowrap; }
+  .dvt tfoot td { font-weight: 700; background: #f7f8fa; border-bottom: 0; }
+  .dvrk { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .dvrk .n { width: 22px; height: 22px; border-radius: 6px; background: #eef1f5; color: #0d1b2e; font-weight: 700; font-size: 12px; display: inline-grid; place-items: center; }
+  .pmv { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 28px; height: 26px; cursor: pointer; font-size: 10px; color: #0d1b2e; padding: 0; }
+  .pmv:hover:not(:disabled) { background: #0d1b2e; color: #fff; border-color: #0d1b2e; } .pmv:disabled { opacity: .25; cursor: default; }
+  #dvTab { display: flex; flex-direction: column; gap: 12px; }
+  .dvhint { font-size: 12px; color: var(--mute); padding: 4px 4px 0; }
+  .dvnone { background: #fff; border: 1px dashed var(--line); border-radius: 12px; padding: 34px 16px; text-align: center; color: var(--mute); }
+  @media (max-width: 720px) {
+    .dvk { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dvk > div { border-inline-start: 0; border-top: 1px solid var(--line); } .dvk > div:first-child { grid-column: 1 / -1; border-top: 0; }
+    .dvk .bar { padding-top: 12px; } .dvds { width: 100%; justify-content: space-between; gap: 6px; padding-top: 4px; }
+    .dvt .mob, .dvt .st2 { display: none; } .dvt td, .dvt th { padding: 9px 6px; } .dvctl label { flex: 1 1 130px; }
+  }
 </style>
 </head>
 <body>
@@ -417,17 +472,23 @@
       </div>
     </div>
     <div id="p12" style="display:none">
-      <div class="card" style="margin-top:10px">
-        <h3>التسليمات <small>Deliveries – every order with its delivery date, day by day</small></h3>
-        <div class="drange">
-          <label>من · From<input id="dvF" type="date"></label>
-          <label>إلى · To<input id="dvT" type="date"></label>
-          <div class="dq"><button type="button" data-dv="-1">أمس · Yesterday</button><button type="button" data-dv="0">اليوم · Today</button>
-            <button type="button" data-dv="1">غداً · Tomorrow</button><button type="button" data-dv="2">بعد غد · Day after</button><button type="button" data-dv="7">أسبوع · 7 days</button>
-            <button type="button" id="dvPrint" style="margin-inline-start:auto;background:#0d1b2e;color:#fff;border-color:#0d1b2e">🖨 طباعة · Print</button></div>
+      <div class="dv">
+        <div class="card dvh">
+          <div class="dvtop">
+            <div><h3 style="margin:0">التسليمات<small>Deliveries</small></h3>
+              <div class="muted dvsub"><span>كل طلب حسب تاريخ تسليمه، يوماً بيوم<small>Every order by its delivery date, day by day</small></span></div></div>
+            <button type="button" id="dvPrint" class="dvbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>طباعة<small>Print</small></span></button>
+          </div>
+          <div class="dvctl">
+            <label><span>من تاريخ<small>From</small></span><input id="dvF" type="date"></label>
+            <label><span>إلى تاريخ<small>To</small></span><input id="dvT" type="date"></label>
+            <div class="dvq" role="group">
+              <button type="button" data-dv="-1"><span>أمس<small>Yesterday</small></span></button><button type="button" data-dv="0"><span>اليوم<small>Today</small></span></button>
+              <button type="button" data-dv="1"><span>غداً<small>Tomorrow</small></span></button><button type="button" data-dv="2"><span>بعد غد<small>Day after</small></span></button>
+              <button type="button" data-dv="7"><span>أسبوع<small>7 days</small></span></button><button type="button" data-dv="30"><span>شهر<small>30 days</small></span></button></div>
+          </div>
         </div>
-        <div id="dvSum" class="dsum"></div>
-        <div class="muted" style="font-size:12px;margin:-4px 0 6px">▲ ▼ <span>ترتيب العمل – عامل القص يرى الطلبات بنفس الترتيب · work order – the cutting worker sees the orders in this order</span></div>
+        <div id="dvSum"></div>
         <div id="dvTab"></div>
       </div>
     </div>
@@ -583,9 +644,15 @@
     }
     // ---- deliveries of one day (Deliveries tab): name, order no, pieces – from the orders list ----
     function dvDate(n) { return new Date(Date.now() + 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
-    function dvDay(n) { if (n === 7) { $('dvF').value = dvDate(0); $('dvT').value = dvDate(6); } else $('dvF').value = $('dvT').value = dvDate(n); }
-    // orders grouped by delivery date between From and To
-    // pieces of one order: P total, g delivered, rd ready (not delivered) – part of an order counts too (stitched, hinge/embroidery done)
+    function dvDay(n) {
+      if (n === 7 || n === 30) { $('dvF').value = dvDate(0); $('dvT').value = dvDate(n - 1); } else $('dvF').value = $('dvT').value = dvDate(n);
+      dvChip(String(n));
+    }
+    function dvChip(n) { Array.prototype.forEach.call(document.querySelectorAll('.dvq button'), function (b) { b.classList.toggle('on', b.getAttribute('data-dv') === n); }); }
+    function LB(ar, en) { return '<span>' + ar + '<small>' + en + '</small></span>'; }
+    var DV_WD = [['الأحد', 'Sunday'], ['الإثنين', 'Monday'], ['الثلاثاء', 'Tuesday'], ['الأربعاء', 'Wednesday'], ['الخميس', 'Thursday'], ['الجمعة', 'Friday'], ['السبت', 'Saturday']];
+    var DV_MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function dvWd(d) { return DV_WD[new Date(d + 'T12:00:00Z').getUTCDay()]; }
     function dvPcs(r) {
       var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0), p = PEND[r[0]] || {}, rd;
       if (Number(r[13]) === 1 || r[15] === 'Ready' || r[15] === 'Delivered') rd = P - g;
@@ -622,48 +689,71 @@
       google.script.run.withSuccessHandler(function (r) { if (r && !r.ok) alert(r.msg || 'Not saved'); })
         .withFailureHandler(function (e) { alert('لم يُحفظ – Not saved: ' + (e && e.message || e)); }).aSetPrio(KEY, PIN, PRIO);
     }
+    function dvBar(x, h) {   // delivered (grey) · ready (green) · left (track)
+      var t = x.P || 1;
+      return '<div class="dvbar"' + (h ? ' style="height:' + h + 'px"' : '') + '><i class="g" style="width:' + (x.g / t * 100) + '%"></i><i class="r" style="width:' + (x.rd / t * 100) + '%"></i></div>';
+    }
+    function dvTotals(G) { var T = { n: 0, P: 0, rd: 0, g: 0 }; G.forEach(function (x) { T.n += x.list.length; T.P += x.pcs; T.rd += x.rp; T.g += x.dp; }); T.left = Math.max(0, T.P - T.rd - T.g); return T; }
     function renderDeliv() {
       if (!$('dvF').value && !$('dvT').value) { $('dvTab').innerHTML = ''; $('dvSum').innerHTML = ''; return; }
-      if (!ALL.length) { $('dvSum').innerHTML = '<span class="muted">جاري التحميل… / Loading…</span>'; return; }
-      var G = dvGroups(), n = 0, pcs = 0;
-      G.forEach(function (x) { n += x.list.length; pcs += x.pcs; });
-      var rp = 0, dp = 0; G.forEach(function (x) { rp += x.rp; dp += x.dp; });
-      var bx = function (v, t, c) { return '<div><b' + (c ? ' style="color:' + c + '"' : '') + '>' + v + '</b><span>' + t + '</span></div>'; };
-      $('dvSum').innerHTML = (G.length > 1 ? bx(G.length, 'أيام · Days') : '') + bx(n, 'طلبات · Orders') + bx(pcs, 'مجموع القطع · Total pcs') +
-        bx(rp, 'جاهز · Ready', '#1e8449') + bx(Math.max(0, pcs - rp - dp), 'باقي · Remaining', '#b03a2e') + bx(dp, 'سُلّم · Delivered');
+      if (!ALL.length) { $('dvSum').innerHTML = '<div class="dvnone">' + LB('جاري التحميل…', 'Loading…') + '</div>'; $('dvTab').innerHTML = ''; return; }
+      var G = dvGroups(), T = dvTotals(G), td = dvDate(0), pc = function (v) { return T.P ? Math.round(v / T.P * 100) + '%' : '–'; };
+      var k = function (cls, ar, en, v, sub) { return '<div class="' + cls + '"><div class="lbx">' + LB(ar, en) + '</div><b>' + v + '</b><em>' + (sub || '&nbsp;') + '</em></div>'; };
+      $('dvSum').innerHTML = '<div class="dvk">' +
+        k('', 'طلبات', 'Orders', T.n, G.length + ' ' + LB('يوم', G.length === 1 ? 'day' : 'days')) + k('', 'مجموع القطع', 'Total pcs', T.P, LB('ثوب', 'thobes')) +
+        k('ok', 'جاهز', 'Ready', T.rd, pc(T.rd)) + k('bd', 'باقي', 'Remaining', T.left, pc(T.left)) + k('gd', 'سُلّم', 'Delivered', T.g, pc(T.g)) +
+        '<div class="bar">' + dvBar({ P: T.P, g: T.g, rd: T.rd }, 8) + '<div class="dvleg"><span style="--c:#8a93a3">' + LB('سُلّم', 'Delivered') + '</span><span style="--c:var(--ok)">' + LB('جاهز', 'Ready') + '</span><span style="--c:#dfe3ea">' + LB('باقي', 'Remaining') + '</span></div></div></div>';
       $('dvTab').innerHTML = G.length ? G.map(function (x) {
-        return '<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 2px;border-bottom:2px solid #0d1b2e">' +
-          '<b dir="ltr" style="font-size:16px">' + esc(day(x.d)) + '</b><span><span>' + x.list.length + ' <span>طلب · orders</span></span> · <b style="font-size:16px">' + x.pcs + '</b> pcs' +
-          ' · <span style="color:#1e8449">' + x.rp + ' <span>جاهز · ready</span></span> · <span style="color:#b03a2e">' + x.left + ' <span>باقي · left</span></span> · <span>' + x.dp + ' <span>سُلّم · delivered</span></span></span></div>' +
-          '<div class="tw"><table class="st"><tr><th>#</th><th>الطلب<br>Order</th><th>العميل<br>Customer</th><th>الجوال<br>Mobile</th><th>ثياب<br>Qty</th><th>الحالة<br>Status</th><th>الترتيب<br>Order</th></tr>' +
+        var wd = dvWd(x.d), dd = x.d.split('-'), tag = x.d === td ? '<span class="dvtag t">' + LB('اليوم', 'Today') + '</span>' : x.d === dvDate(1) ? '<span class="dvtag t">' + LB('غداً', 'Tomorrow') + '</span>' : (x.d < td && x.left ? '<span class="dvtag l">' + LB('متأخر', 'Late') + '</span>' : '');
+        return '<section class="dvday"><div class="dvdh"><div class="dvcal"><b>' + Number(dd[2]) + '</b><span>' + DV_MO[Number(dd[1]) - 1] + '</span></div>' +
+          '<div class="dvdt"><b>' + LB(wd[0], wd[1]) + '</b>' + tag + '<div dir="ltr" style="text-align:start">' + esc(day(x.d)) + '</div></div>' +
+          '<div class="dvds"><div><b>' + x.list.length + '</b><span>' + LB('طلب', 'Orders') + '</span></div><div><b>' + x.pcs + '</b><span>' + LB('قطع', 'Pcs') + '</span></div>' +
+          '<div class="ok"><b>' + x.rp + '</b><span>' + LB('جاهز', 'Ready') + '</span></div><div class="bd"><b>' + x.left + '</b><span>' + LB('باقي', 'Left') + '</span></div><div><b>' + x.dp + '</b><span>' + LB('سُلّم', 'Given') + '</span></div></div></div>' +
+          '<div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt"><thead><tr><th>' + LB('الترتيب', 'Work order') + '</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th class="mob">' + LB('الجوال', 'Mobile') + '</th><th class="c">' + LB('القطع', 'Qty') + '</th><th class="st2">' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
           x.list.map(function (r, i) {
-            var P = Number(r[5]) || 0, g = Math.min(P, Number(r[12]) || 0), st = STAT[r[15]] || ['', r[15] || ''];
-            return '<tr class="ro" data-row="' + esc(r[0]) + '"><td class="muted">' + (i + 1) + '</td><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
-                   '<td><b>' + P + '</b>' + (function () { var k = dvPcs(r), t = []; if (k.rd) t.push('<span style="color:#1e8449">' + k.rd + ' ready</span>'); if (g) t.push(g + ' ✔'); return t.length ? ' <span class="muted" style="font-size:12px">(' + t.join(' · ') + ')</span>' : ''; })() + '</td><td><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td>' +
-                   '<td class="pv"><button type="button" class="pmv" data-mv="-1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i ? '' : ' disabled') + ' aria-label="Up">▲</button>' +
-                   '<button type="button" class="pmv" data-mv="1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i < x.list.length - 1 ? '' : ' disabled') + ' aria-label="Down">▼</button></td></tr>';
-          }).join('') + '<tr><td></td><td colspan="3" class="l"><b>المجموع · Total pcs</b></td><td><b>' + x.pcs + '</b></td><td></td><td></td></tr></table></div></div>';
-      }).join('') : '<div class="muted" style="padding:10px">لا يوجد تسليم في هذه الأيام – no deliveries on these days</div>';
+            var q = dvPcs(r), st = STAT[r[15]] || ['', r[15] || ''], dn = q.P && q.g >= q.P;
+            var note = dn ? 'all given' : [q.rd ? q.rd + ' ready' : '', q.g ? q.g + ' given' : '', q.left ? q.left + ' left' : ''].filter(Boolean).join(' · ');
+            return '<tr class="ro' + (dn ? ' dn' : '') + '" data-row="' + esc(r[0]) + '"><td class="pv"><span class="dvrk"><span class="n">' + (i + 1) + '</span>' +
+                   '<button type="button" class="pmv" data-mv="-1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i ? '' : ' disabled') + ' aria-label="Up">▲</button>' +
+                   '<button type="button" class="pmv" data-mv="1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i < x.list.length - 1 ? '' : ' disabled') + ' aria-label="Down">▼</button></span></td>' +
+                   '<td class="no">' + esc(r[0]) + '</td><td class="nm"><b dir="auto">' + esc(r[1]) + '</b><span class="mobi" dir="ltr">' + esc(r[2]) + '</span></td><td class="mob" dir="ltr">' + esc(r[2]) + '</td>' +
+                   '<td class="c q"><b>' + q.P + '</b>' + dvBar(q) + '<em dir="ltr">' + note + '</em></td><td class="st2"><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td></tr>';
+          }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">' + LB('المجموع', 'Total') + '</td><td class="mob"></td><td class="c">' + x.pcs + '</td><td class="st2"></td></tr></tfoot></table></div>' +
+          '</section>';
+      }).join('') + '<div class="dvhint">▲ ▼ ' + LB('ترتيب العمل – عامل القص يرى الطلبات بنفس الترتيب', 'Work order – the cutting worker sees the orders of each day in this order') + '</div>'
+        : '<div class="dvnone">' + LB('لا يوجد تسليم في هذه الأيام', 'No deliveries on these days') + '</div>';
     }
-    // print: one block per date – #, order no, name, qty, total pcs (like the paper sheet)
+    // print: A4, shop header, summary, one block per day (#, order no, customer, mobile, qty, ready, left, ✓ box)
     function printDeliv() {
-      if (!ALL.length) { alert('Loading… try again'); return; }
-      var G = dvGroups(); if (!G.length) { alert('No deliveries on these days'); return; }
-      var h = '<!doctype html><html><head><meta charset="utf-8"><title>Deliveries</title><style>@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif;color:#000;margin:0}' +
-        '.day{page-break-inside:avoid;margin-bottom:18px}h2{text-align:center;font-size:20px;margin:0 0 8px;letter-spacing:1px}table{width:100%;border-collapse:collapse;font-size:13px}' +
-        'th,td{border:1px solid #000;padding:5px 6px;text-align:left}th{background:#eee}td.n{width:28px;text-align:center}td.q{text-align:center;width:48px}.tp{text-align:center;vertical-align:middle;font-size:30px;font-weight:bold;width:90px}.ar{direction:rtl;text-align:right}table.sm{margin-top:10px;page-break-inside:avoid}table.sm td{text-align:center;width:25%;padding:8px}.lb{font-size:12px;font-weight:bold;color:#333}.vv{font-size:26px;font-weight:bold}</style></head><body>' +
+      if (!ALL.length) { alert('جاري التحميل… · Loading… try again'); return; }
+      var G = dvGroups(); if (!G.length) { alert('لا يوجد تسليم · No deliveries on these days'); return; }
+      var T = dvTotals(G), f = G[0].d, l = G[G.length - 1].d, now = new Date(Date.now() + 3 * 3600e3).toISOString();
+      var box = function (t, v, c) { return '<div class="k' + (c ? ' ' + c : '') + '"><span>' + t + '</span><b>' + v + '</b></div>'; };
+      var h = '<!doctype html><html><head><meta charset="utf-8"><title>Deliveries ' + esc(day(f)) + (f === l ? '' : ' – ' + esc(day(l))) + '</title><style>' +
+        '@page{size:A4;margin:12mm 11mm 14mm}*{box-sizing:border-box}body{font-family:Arial,"Segoe UI",Tahoma,sans-serif;color:#111;margin:0;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0d1b2e;padding-bottom:8px}.hd .sh{font-size:18px;font-weight:bold;color:#0d1b2e;letter-spacing:.5px}.hd .ar{font-size:15px;color:#806427;font-weight:bold}' +
+        '.hd .tt{text-align:right}.hd .tt b{display:block;font-size:17px;color:#0d1b2e}.hd .tt span{color:#555}.gold{height:2px;background:#b8964f;margin:2px 0 12px}' +
+        '.ks{display:flex;border:1px solid #c9ced6;border-radius:6px;margin-bottom:14px}.k{flex:1;padding:7px 10px;border-left:1px solid #c9ced6}.k:first-child{border-left:0}.k span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#555;font-weight:bold}.k b{font-size:20px}.k.ok b{color:#137a4b}.k.bd b{color:#b42318}' +
+        '.day{page-break-inside:avoid;margin-bottom:14px}.dh{display:flex;justify-content:space-between;align-items:center;background:#0d1b2e;color:#fff;padding:6px 10px;border-radius:5px 5px 0 0}.dh b{font-size:14px}.dh .s{font-size:11.5px}.dh .s b{font-size:13px;color:#e6cf9a}' +
+        'table{width:100%;border-collapse:collapse}th{background:#eef1f5;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#333;text-align:left;padding:5px 7px;border:1px solid #c9ced6}' +
+        'td{padding:6px 7px;border:1px solid #c9ced6;font-size:12.5px}td.n{width:26px;text-align:center;color:#555}td.o{font-weight:bold;width:70px}td.nm{direction:rtl;text-align:right;font-size:13px}td.m{width:100px;direction:ltr}td.c{text-align:center;width:46px}td.ok{color:#137a4b;font-weight:bold}td.bd{color:#b42318;font-weight:bold}td.x{width:30px}' +
+        'td.x i{display:block;width:13px;height:13px;border:1.5px solid #333;margin:auto}tr.dn td{color:#888}tfoot td{background:#f7f8fa;font-weight:bold}tfoot td.big{font-size:16px}' +
+        '.ft{margin-top:6px;display:flex;justify-content:space-between;color:#777;font-size:10px;border-top:1px solid #ccc;padding-top:5px}.sg{margin-top:26px;display:flex;justify-content:space-between;font-size:11px;color:#333}.sg div{width:30%;border-top:1px solid #333;padding-top:4px;text-align:center}' +
+        '</style></head><body>' +
+        '<div class="hd"><div><div class="sh">JAMEEL AL HINDAM</div><div class="ar">جميل الهندام للخياطة الرجالية</div></div><div class="tt"><b>Delivery Schedule · جدول التسليم</b><span>' + esc(day(f)) + (f === l ? '' : ' → ' + esc(day(l))) + '</span></div></div><div class="gold"></div>' +
+        '<div class="ks">' + box('Days', G.length) + box('Orders', T.n) + box('Total Pcs', T.P) + box('Ready', T.rd, 'ok') + box('Remaining', T.left, 'bd') + box('Delivered', T.g) + '</div>' +
         G.map(function (x) {
-          return '<div class="day"><h2>' + esc(day(x.d)) + '</h2><table><tr><th></th><th>Order No.</th><th>Name</th><th>Qty</th><th>Total Pcs</th></tr>' +
+          var wd = dvWd(x.d);
+          return '<div class="day"><div class="dh"><b>' + esc(day(x.d)) + ' · ' + wd[1] + ' · ' + wd[0] + '</b><span class="s">' + x.list.length + (x.list.length === 1 ? ' order' : ' orders') + ' · <b>' + x.pcs + '</b> pcs · ready ' + x.rp + ' · left ' + x.left + '</span></div>' +
+            '<table><thead><tr><th>#</th><th style="white-space:nowrap">Order No.</th><th style="text-align:right">Name</th><th>Mobile</th><th style="text-align:center">Qty</th><th style="text-align:center">Ready</th><th style="text-align:center">Left</th><th style="text-align:center">✓</th></tr></thead><tbody>' +
             x.list.map(function (r, i) {
-              return '<tr><td class="n">' + (i + 1) + '</td><td><b>' + esc(r[0]) + '</b></td><td class="ar">' + esc(r[1]) + '</td><td class="q">' + (Number(r[5]) || 0) + '</td>' +
-                (i === 0 ? '<td class="tp" rowspan="' + x.list.length + '">' + x.pcs + '</td>' : '') + '</tr>';
-            }).join('') + '</table></div>';
-        }).join('') + (function () {
-          var T = 0, D = 0, Rd = 0;
-          G.forEach(function (x) { T += x.pcs; D += x.dp; Rd += x.rp; });
-          var B = Math.max(0, T - D - Rd), c = function (t, v) { return '<td><div class="lb">' + t + '</div><div class="vv">' + v + '</div></td>'; };
-          return '<table class="sm"><tr>' + c('Total Pcs', T) + c('Ready', Rd) + c('Remaining', B) + c('Delivered', D) + '</tr></table>';
-        })() + '</body></html>';
+              var q = dvPcs(r), dn = q.P && q.g >= q.P;
+              return '<tr' + (dn ? ' class="dn"' : '') + '><td class="n">' + (i + 1) + '</td><td class="o">' + esc(r[0]) + '</td><td class="nm">' + esc(r[1]) + '</td><td class="m">' + esc(r[2]) + '</td><td class="c"><b>' + q.P + '</b></td>' +
+                '<td class="c ok">' + (dn ? '✔' : q.rd || '') + '</td><td class="c bd">' + (q.left || '') + '</td><td class="x">' + (dn ? '✔' : '<i></i>') + '</td></tr>';
+            }).join('') + '</tbody><tfoot><tr><td></td><td colspan="3">Total Pcs</td><td class="c big">' + x.pcs + '</td><td class="c ok">' + x.rp + '</td><td class="c bd">' + x.left + '</td><td></td></tr></tfoot></table></div>';
+        }).join('') +
+        '<div class="sg"><div>Prepared by</div><div>Checked by</div><div>Date</div></div>' +
+        '<div class="ft"><span>Jameel Al Hindam · Deliveries</span><span>Printed ' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</span></div></body></html>';
       var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
       document.body.appendChild(fr);
       var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
@@ -1548,8 +1638,8 @@
         }).join('') + '</tbody>';
     }
     $('dvTab').addEventListener('click', function (ev) { if (!ev.target.closest || !ev.target.closest('.pv')) return; ev.stopPropagation(); var b = ev.target.closest('.pmv'); if (!b || b.disabled) return; movePrio(b.getAttribute('data-d'), b.getAttribute('data-o'), Number(b.getAttribute('data-mv'))); }, true);
-    $('dvF').addEventListener('change', renderDeliv); $('dvT').addEventListener('change', renderDeliv); $('dvPrint').addEventListener('click', printDeliv);
-    Array.prototype.forEach.call(document.querySelectorAll('button[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
+    $('dvF').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvT').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvPrint').addEventListener('click', printDeliv);
+    Array.prototype.forEach.call(document.querySelectorAll('.dvq button[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
     $('dvTab').addEventListener('click', function (ev) { var tr = ev.target.closest && ev.target.closest('tr[data-row]'); if (tr) openAct(tr.getAttribute('data-row')); });
     ['wlF', 'wlT', 'wlW'].forEach(function (id) { $(id).addEventListener('change', function () { wlQ(''); renderWorkLog(); }); });
     $('wlO').addEventListener('input', renderWorkLog);
