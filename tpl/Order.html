@@ -100,6 +100,7 @@
   <div class="card">
     <h1>طلب جديد – New order</h1>
     <div class="muted"><?= shop ?></div>
+    <div id="brTag" style="display:none;margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:#0d1b2e;color:#fff;font-weight:700"></div>
     <label class="f">اسمك / Your name (entered by)</label>
     <input id="by" autocomplete="name" placeholder="اسم الموظف">
   </div>
@@ -226,6 +227,13 @@
   <script>
     var KEY = <?= key ?>, NEEDPIN = <?= needPin ?>;
     var PIN = '', META = null, SPEC = null, ITEMS = [], EMB = [], IMG = null;
+    // branch: the page opened with ?b=CODE books the orders for that branch (kept on this device; ?b=- = main shop)
+    var BRANCH = '', BR_OK = true;
+    (function () {
+      var q = ''; try { q = (new URLSearchParams(location.search).get('b') || '').trim().toUpperCase(); } catch (x) { }
+      try { if (q === '-' || q === 'MAIN') localStorage.removeItem('ts_branch'); else if (q) localStorage.setItem('ts_branch', q); BRANCH = q === '-' || q === 'MAIN' ? '' : q || localStorage.getItem('ts_branch') || ''; } catch (x) { BRANCH = q === '-' ? '' : q; }
+    })();
+    function brNo(no) { return no && BRANCH ? BRANCH + '-' + no : no; }
     var cust = null, isNew = false, lines = [], embs = [], meas = {}, manualDelivery = false, scale = 0, built = false;
 
     function $(id) { return document.getElementById(id); }
@@ -255,6 +263,14 @@
         if (!r.meta || !r.spec) { $('pinCard').style.display = 'none'; showMsg('لم يتم تجهيز الصفحة بعد من جهاز المحل – the shop PC has not sent the data yet. Try again in a few minutes.', true); $('main').style.display = 'block'; return; }
         try { if (NEEDPIN) sessionStorage.setItem('ts_pin', PIN); } catch (x) { }
         META = r.meta; SPEC = r.spec; ITEMS = r.items || []; EMB = r.emb || [];
+        if (BRANCH) {
+          var bb = (r.branches || []).filter(function (x) { return x.c === BRANCH; })[0];
+          BR_OK = !!bb;
+          $('brTag').style.display = 'block';
+          $('brTag').style.background = bb ? '#0d1b2e' : '#b3261e';
+          $('brTag').textContent = bb ? '🏬 الفرع ' + (bb.ar || bb.n || BRANCH) + ' · Branch ' + (bb.n || bb.ar || BRANCH) + ' (' + BRANCH + ')'
+                                      : '⚠ الفرع ' + BRANCH + ' غير موجود – branch ' + BRANCH + ' is not in Admin → Branches. Orders cannot be sent.';
+        }
         $('pinCard').style.display = 'none';
         $('main').style.display = 'block';
         var sel = $('method'); sel.innerHTML = '';
@@ -740,9 +756,11 @@
         gift: $('gift').checked,
         hinge: hinge, zip: zip, sample: $('sample').checked, notes: $('notes').value.trim(),
         delivery: d, discount: t.disc, down: down, method: down > 0 ? $('method').value : '', ref: $('ref').value.trim(),
-        by: by, meas: meas, prova: $('prova').checked, provaDate: $('prova').checked ? $('provaDate').value : '', total: t.total
+        by: by, meas: meas, prova: $('prova').checked, provaDate: $('prova').checked ? $('provaDate').value : '', total: t.total,
+        branch: BRANCH
       };
-      var sum = c.name + '\n' + pcs() + ' ثوب – pcs' + (embs.length ? '\nتطريز / Embroidery: ' + embs.length : '') +
+      if (!BR_OK) { showMsg('الفرع ' + BRANCH + ' غير موجود – branch ' + BRANCH + ' is not in Admin → Branches', true); return; }
+      var sum = (BRANCH ? '🏬 ' + BRANCH + '\n' : '') + c.name + '\n' + pcs() + ' ثوب – pcs' + (embs.length ? '\nتطريز / Embroidery: ' + embs.length : '') +
                 '\nالإجمالي / Total: ' + money(t.total) + '\nالعربون / Down: ' + money(down) + '\nالتسليم / Delivery: ' + day(d) +
                 ($('gift').checked ? '\nهدية – بدون فاتورة / FREE GIFT' : '');
       if (!confirm('إرسال الطلب؟ – Send this order?\n\n' + sum)) return;
@@ -771,7 +789,7 @@
       var el = $('mine');
       if (!list || !list.length) { el.innerHTML = '<div class="muted">لا يوجد – none yet</div>'; return; }
       el.innerHTML = '<table class="mine" style="width:100%;border-collapse:collapse">' + list.map(function (r) {
-        var st = r.status === 'saved' ? '<span class="tag saved">✔ طلب ' + esc(r.order_no) + (r.invoice_no ? ' · فاتورة ' + esc(r.invoice_no) : '') + '</span>' +
+        var st = r.status === 'saved' ? '<span class="tag saved">✔ طلب ' + esc(brNo(r.order_no)) + (r.invoice_no ? ' · فاتورة ' + esc(r.invoice_no) : '') + '</span>' +
                                         (r.note ? '<br><span class="muted">' + esc(r.note) + '</span>' : '')
                : r.status === 'error' ? '<span class="tag error">✖ ' + esc(r.note) + '</span>'
                : r.status === 'deleted' ? '<span class="tag error">🗑 محذوف – deleted</span>'
@@ -780,7 +798,7 @@
         var canDel = r.status === 'new' || r.status === 'saved' || r.status === 'error';
         return '<tr><td>' + esc(r.time) + '</td><td><b>' + esc(r.name) + '</b><br><span class="muted">' + esc(r.pcs) + ' ثوب · ' + esc(r.total) + (r.by ? ' · ' + esc(r.by) : '') + '</span></td><td>' + st +
                (canDel ? '<br><button class="x" style="margin-top:6px;background:#fde8e7;color:#b3261e;padding:5px 10px;font-size:14px" data-del="' + esc(r.id) +
-                         '" data-name="' + esc(r.name) + '" data-no="' + esc(r.order_no) + '">🗑 حذف / Delete</button>' : '') + '</td></tr>';
+                         '" data-name="' + esc(r.name) + '" data-no="' + esc(brNo(r.order_no)) + '">🗑 حذف / Delete</button>' : '') + '</td></tr>';
       }).join('') + '</table>';
       el.querySelectorAll('button[data-del]').forEach(function (b) {
         b.addEventListener('click', function () { delOrder(b.getAttribute('data-del'), b.getAttribute('data-name'), b.getAttribute('data-no')); });
@@ -793,9 +811,9 @@
         if (!r || !r.ok) { showMsg((r && r.msg) || 'لم يتم الحذف – not deleted', true); return; }
         showMsg(no ? 'تم طلب الحذف – the shop PC deletes it at its next sync' : 'تم حذف الطلب ✔ – deleted', false);
         showMine(r.list);
-      }).withFailureHandler(function (e) { showMsg('خطأ – ' + (e && e.message || e), true); }).oDelete(KEY, PIN, id, $('by').value.trim());
+      }).withFailureHandler(function (e) { showMsg('خطأ – ' + (e && e.message || e), true); }).oDelete(KEY, PIN, id, $('by').value.trim(), BRANCH);
     }
-    function loadMine() { if (META) google.script.run.withSuccessHandler(showMine).oMine(KEY, PIN); }
+    function loadMine() { if (META) google.script.run.withSuccessHandler(showMine).oMine(KEY, PIN, BRANCH); }
     setInterval(function () { if (!document.hidden) loadMine(); }, 30000);
 
     if (NEEDPIN) {

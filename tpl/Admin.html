@@ -27,6 +27,13 @@
   .lang { display: inline-flex; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; overflow: hidden; margin-inline-end: 8px; flex: none; }
   .lang button { background: transparent; color: #c9ced8; border: 0; padding: 7px 10px; font-size: 13px; font-weight: 700; cursor: pointer; width: auto; border-radius: 0; }
   .lang button.on { background: var(--gold); color: var(--ink); }
+  .brsel { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; padding: 0 4px 0 10px; margin-inline-end: 8px; flex: none; color: #c9ced8; }
+  .brsel svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+  .brsel select { background: transparent; color: #fff; border: 0; font-weight: 700; font-size: 13px; padding: 6px 4px; width: auto; max-width: 150px; margin: 0; height: auto; box-shadow: none; }
+  .brsel select option { color: #0d1b2e; }
+  .brsel.on { background: var(--gold); border-color: var(--gold); color: var(--ink); } .brsel.on select { color: var(--ink); }
+  .bpill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; background: #e9f0fa; color: #1d4f91; margin-inline-start: 6px; vertical-align: 1px; white-space: nowrap; }
+  @media (max-width: 560px) { .brsel { padding-inline-start: 7px; } .brsel select { max-width: 92px; font-size: 12px; } }
   @media (max-width: 560px) { .lang button { padding: 7px 8px; font-size: 12px; } }
   /* tab bar */
   .nav { background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 6; }
@@ -259,6 +266,12 @@
   /* shop online tabs */
   #shopFrame { display: block; width: 100%; height: calc(100vh - 150px); height: calc(100dvh - 150px); min-height: 480px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
 
+  /* Branches */
+  .brhow { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height: 1.6; color: var(--ink); } .brhow small { font-size: inherit; margin-inline-start: .35em; }
+  #brTab input, #brTab select { margin: 0; height: 36px; font-size: 14px; padding: 4px 8px; min-width: 0; }
+  #brTab .cd input { width: 80px; text-transform: uppercase; font-weight: 700; } #brTab .nm2 input { width: 100%; min-width: 120px; }
+  #brTab td { padding: 8px 10px; } #brTab .x { border: 1px solid var(--line); background: #fff; border-radius: 7px; width: 34px; height: 34px; cursor: pointer; color: var(--bad); }
+  #brTab tr.main td { background: #f7f8fa; }
   /* Deliveries */
   .dv { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
   .dvh { padding: 16px 18px !important; }
@@ -327,6 +340,7 @@
     <div class="wrapx">
       <img src="/img/logo-240.png" alt="">
       <div class="nm"><h1><?= shop ?></h1><div class="sub">لوحة الإدارة · Admin <span id="state"></span></div></div>
+      <label class="brsel" title="الفرع · Branch"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8"/></svg><select id="brSel" aria-label="Branch"><option value="*">الكل · All</option></select></label>
       <div class="lang" id="langSw" data-nol="1" role="group" aria-label="Language"><button type="button" data-l="ar">ع</button><button type="button" data-l="en">EN</button><button type="button" data-l="both">ع+EN</button></div>
       <button class="bell" id="enable" onclick="enableAlerts()" title="Turn on sound &amp; alerts"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> <span>التنبيهات</span></button>
     </div>
@@ -352,6 +366,7 @@
         <button id="t11" onclick="tab(11)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>سجل العمل<small>Work log</small></button>
         <button id="t12" onclick="tab(12)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="6" width="14" height="11" rx="1.5"/><path d="M15 10h4l3 3v4h-7M5.5 20.5a2 2 0 1 0 0-.01M18.5 20.5a2 2 0 1 0 0-.01"/></svg>التسليمات<small>Deliveries</small></button>
         <button id="t4" onclick="tab(4)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></svg>الأسعار<small>Rates</small></button>
+        <button id="t13" onclick="tab(13)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8M10 21v-5h4v5"/></svg>الفروع<small>Branches</small></button>
         <span class="sep"></span>
         <button id="t6" onclick="tab(6)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>جميل<small>Jameel</small></button>
         <button id="t7" onclick="tab(7)"><svg class="ni" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>InvProject<small>الطلبات</small></button>
@@ -490,6 +505,35 @@
         </div>
         <div id="dvSum"></div>
         <div id="dvTab"></div>
+      </div>
+    </div>
+
+    <div id="p13" style="display:none">
+      <div class="dv">
+        <div class="card dvh">
+          <div class="dvtop">
+            <div><h3 style="margin:0">الفروع والمصنع<small>Branches &amp; factory</small></h3>
+              <div class="muted dvsub"><span>كل الفروع تحجز في نفس نظام جميل – طلب الفرع يظهر برمز الفرع مثل B2-1250<small>All branches book into the same Jameel – a branch order shows with its code, like B2-1250</small></span></div></div>
+            <button type="button" id="brSave" class="dvbtn"><span>حفظ<small>Save</small></span></button>
+          </div>
+          <div id="brMsg" class="muted" style="margin-top:8px;font-size:13px"></div>
+        </div>
+        <div class="dvday">
+          <div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt" id="brTab"></table></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line)">
+            <button type="button" class="dvbtn" id="brAddS" style="background:#fff;color:#0d1b2e;border:1px solid var(--line)"><span>+ فرع<small>Add shop</small></span></button>
+            <button type="button" class="dvbtn" id="brAddF" style="background:#fff;color:#0d1b2e;border:1px solid var(--line)"><span>+ مصنع<small>Add factory</small></span></button>
+          </div>
+        </div>
+        <div class="card dvh">
+          <h3 style="margin:0 0 8px">كيف يحجز الفرع؟<small>How does a branch book an order?</small></h3>
+          <ol class="brhow">
+            <li><span>أضف الفرع هنا برمز قصير (مثل B2) واحفظ.<small>Add the branch here with a short code (like B2) and Save.</small></span></li>
+            <li><span>من لوحة المحل ← More ← Online links انسخ رابط "طلب جديد" الخاص بالفرع وافتحه في جهاز الفرع.<small>Dashboard → More → Online links: copy the branch's own "New order" link and open it on the branch PC.</small></span></li>
+            <li><span>الطلب يُحفظ في جميل الرئيسي، والرقم يظهر برمز الفرع في كل الصفحات والطباعة.<small>The order is saved in the main Jameel; its number shows with the branch code on every page and print.</small></span></li>
+            <li><span>من الأعلى (رمز المتجر) اختر الفرع لترى طلباته فقط: اليوم، الطلبات، التسليمات.<small>At the top (shop icon) choose a branch to see only its orders: Today, Orders, Deliveries.</small></span></li>
+          </ol>
+        </div>
       </div>
     </div>
 
@@ -633,7 +677,7 @@
 
     function tab(n) {
       CUR_TAB = n;
-      for (var i = 1; i <= 12; i++) { var p = $('p' + i); if (p) p.style.display = (i === n || (i === 5 && n > 5 && n <= 10)) ? '' : 'none'; var t = $('t' + i); if (t) t.className = i === n ? 'on' : ''; }
+      for (var i = 1; i <= 13; i++) { var p = $('p' + i); if (p) p.style.display = (i === n || (i === 5 && n > 5 && n <= 10)) ? '' : 'none'; var t = $('t' + i); if (t) t.className = i === n ? 'on' : ''; }
       window.scrollTo(0, 0);
       if (n === 2) loadOrders();
       if (n === 3) loadWorkers();
@@ -641,6 +685,7 @@
       if (n >= 5 && n <= 10) shopTab(n);
       if (n === 11) { loadWorkLog(); loadWorkTime(); }
       if (n === 12) { if (!$('dvF').value && !$('dvT').value) dvDay(0); loadPrio(); renderDeliv(); loadOrders(); }
+      if (n === 13) loadBranches();
     }
     // ---- deliveries of one day (Deliveries tab): name, order no, pieces – from the orders list ----
     function dvDate(n) { return new Date(Date.now() + 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
@@ -673,6 +718,62 @@
         return { d: d, list: list, pcs: pcs, done: done, rdy: rdy, rp: rp, dp: dp, left: Math.max(0, pcs - rp - dp) };
       });
     }
+    // ---- Branches tab
+    var BR_EDIT = [], BR_CNT = {};
+    function loadBranches() {
+      $('brMsg').textContent = '';
+      google.script.run.withSuccessHandler(function (r) { if (!r) return; BR_EDIT = (r.list || []).map(function (b) { return { c: b.c, n: b.n, ar: b.ar, k: b.k, on: b.on }; }); BR_CNT = r.count || {}; drawBranches(); }).aBranches(KEY, PIN);
+    }
+    function drawBranches() {
+      var t = '<thead><tr><th>' + LB('الرمز', 'Code') + '</th><th>' + LB('الاسم', 'Name') + '</th><th>' + LB('الاسم بالعربي', 'Arabic name') + '</th><th>' + LB('النوع', 'Type') + '</th><th class="c">' + LB('يعمل', 'Active') + '</th><th class="c">' + LB('طلبات', 'Orders') + '</th><th></th></tr></thead><tbody>' +
+        '<tr class="main"><td class="cd"><b>—</b></td><td><b>Main shop</b></td><td><b dir="rtl">المحل الرئيسي</b></td><td>' + LB('محل', 'Shop') + '</td><td class="c">✔</td><td class="c">' + (BR_CNT[''] || 0) + '</td><td></td></tr>' +
+        BR_EDIT.map(function (b, i) {
+          return '<tr><td class="cd"><input data-bf="c" data-i="' + i + '" value="' + esc(b.c) + '" maxlength="5" placeholder="B2"></td>' +
+            '<td class="nm2"><input data-bf="n" data-i="' + i + '" value="' + esc(b.n) + '" maxlength="40" placeholder="Olaya"></td>' +
+            '<td class="nm2"><input data-bf="ar" data-i="' + i + '" value="' + esc(b.ar) + '" maxlength="40" dir="rtl" placeholder="العليا"></td>' +
+            '<td><select data-bf="k" data-i="' + i + '"><option value="shop"' + (b.k === 'shop' ? ' selected' : '') + '>محل · Shop</option><option value="factory"' + (b.k === 'factory' ? ' selected' : '') + '>مصنع · Factory</option></select></td>' +
+            '<td class="c"><input type="checkbox" data-bf="on" data-i="' + i + '"' + (b.on ? ' checked' : '') + ' style="width:20px;height:20px"></td>' +
+            '<td class="c">' + (b.k === 'shop' ? (BR_CNT[b.c] || 0) : '–') + '</td>' +
+            '<td><button type="button" class="x" data-bx="' + i + '" aria-label="Remove">✕</button></td></tr>';
+        }).join('') + '</tbody>';
+      $('brTab').innerHTML = t;
+    }
+    $('brTab').addEventListener('input', function (ev) {
+      var e = ev.target, i = Number(e.getAttribute('data-i')), f = e.getAttribute('data-bf'); if (!f || !BR_EDIT[i]) return;
+      if (f === 'c') { e.value = e.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); }
+      BR_EDIT[i][f] = f === 'on' ? e.checked : e.value;
+    });
+    $('brTab').addEventListener('change', function (ev) { var e = ev.target, i = Number(e.getAttribute('data-i')), f = e.getAttribute('data-bf'); if (f && BR_EDIT[i]) { BR_EDIT[i][f] = f === 'on' ? e.checked : e.value; if (f === 'k') drawBranches(); } });
+    $('brTab').addEventListener('click', function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-bx]'); if (!b) return;
+      var x = BR_EDIT[Number(b.getAttribute('data-bx'))]; if (!x) return;
+      if (BR_CNT[x.c] && !confirm('الفرع ' + x.c + ' له ' + BR_CNT[x.c] + ' طلب – الطلبات تبقى برمزه.\nBranch ' + x.c + ' has ' + BR_CNT[x.c] + ' orders – they keep its code. Better: untick Active.\n\nRemove anyway?')) return;
+      BR_EDIT.splice(Number(b.getAttribute('data-bx')), 1); drawBranches();
+    });
+    function brAdd(k) {
+      var n = 2, used = {}; BR_EDIT.forEach(function (b) { used[b.c] = 1; });
+      var c = k === 'factory' ? 'F' : 'B2'; while (used[c]) c = k === 'factory' ? 'F' + (n++) : 'B' + (++n);
+      BR_EDIT.push({ c: c, n: '', ar: '', k: k, on: true }); drawBranches();
+      var ins = $('brTab').querySelectorAll('input[data-bf="n"]'); if (ins.length) ins[ins.length - 1].focus();
+    }
+    $('brAddS').addEventListener('click', function () { brAdd('shop'); });
+    $('brAddF').addEventListener('click', function () { brAdd('factory'); });
+    $('brSave').addEventListener('click', function () {
+      var seen = {}, bad = '';
+      BR_EDIT.forEach(function (b) { b.c = String(b.c || '').toUpperCase(); if (!/^[A-Z][A-Z0-9]{0,4}$/.test(b.c)) bad = bad || 'Code "' + b.c + '": letter first, then letters/digits (max 5), e.g. B2'; else if (b.c === 'M') bad = bad || 'Code M is the main shop – use another code'; else if (seen[b.c]) bad = bad || 'Code ' + b.c + ' twice'; seen[b.c] = 1; if (!b.n && !b.ar) bad = bad || 'Branch ' + b.c + ': write its name'; });
+      if (bad) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc(bad) + '</span>'; return; }
+      $('brMsg').textContent = '…';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc((r && r.msg) || 'Not saved') + '</span>'; return; }
+        BR_EDIT = r.list; BRS = r.list; drawBranches(); brSelFill();
+        $('brMsg').innerHTML = '<span style="color:var(--ok)">✔ ' + LB('تم الحفظ', 'Saved') + '</span>';
+      }).withFailureHandler(function (e) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc(e && e.message || e) + '</span>'; }).aSetBranches(KEY, PIN, BR_EDIT);
+    });
+    $('brSel').addEventListener('change', function () {
+      BR = $('brSel').value; try { localStorage.setItem('jadm-br', BR); } catch (e) { }
+      $('brSel').parentNode.classList.toggle('on', BR !== '*');
+      brFilter(); renderTable(); shopToday(); if (CUR_TAB === 12) renderDeliv();
+    });
     // work order (↑ ↓): sys/prio – the cutting worker's list follows it
     var PRIO = [], PRIO_OK = false;
     function prioRank(o) { var i = PRIO.indexOf(String(o)); return i < 0 ? 1e6 + Number(o) : i; }
@@ -716,7 +817,7 @@
             return '<tr class="ro' + (dn ? ' dn' : '') + '" data-row="' + esc(r[0]) + '"><td class="pv"><span class="dvrk"><span class="n">' + (i + 1) + '</span>' +
                    '<button type="button" class="pmv" data-mv="-1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i ? '' : ' disabled') + ' aria-label="Up">▲</button>' +
                    '<button type="button" class="pmv" data-mv="1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i < x.list.length - 1 ? '' : ' disabled') + ' aria-label="Down">▼</button></span></td>' +
-                   '<td class="no">' + esc(r[0]) + '</td><td class="nm"><b dir="auto">' + esc(r[1]) + '</b><span class="mobi" dir="ltr">' + esc(r[2]) + '</span></td><td class="mob" dir="ltr">' + esc(r[2]) + '</td>' +
+                   '<td class="no">' + esc(ONO(r[0])) + '</td><td class="nm"><b dir="auto">' + esc(r[1]) + '</b><span class="mobi" dir="ltr">' + esc(r[2]) + '</span></td><td class="mob" dir="ltr">' + esc(r[2]) + '</td>' +
                    '<td class="c q"><b>' + q.P + '</b>' + dvBar(q) + '<em dir="ltr">' + note + '</em></td><td class="st2"><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td></tr>';
           }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">' + LB('المجموع', 'Total') + '</td><td class="mob"></td><td class="c">' + x.pcs + '</td><td class="st2"></td></tr></tfoot></table></div>' +
           '</section>';
@@ -740,7 +841,7 @@
         'td.x i{display:block;width:16px;height:16px;border:1.5px solid #333;margin:auto}tbody tr:nth-child(odd) td{background:#ffffff}tbody tr:nth-child(even) td{background:#e8eef7}tr.dn td{color:#888}tfoot td{background:#d6e0ee;font-weight:bold;border-top:2px solid #1f3a5f}tfoot td.big{font-size:19px}' +
         '.ft{margin-top:6px;display:flex;justify-content:space-between;color:#777;font-size:11px;border-top:1px solid #ccc;padding-top:5px}.sg{margin-top:28px;display:flex;justify-content:space-between;font-size:13px;color:#333}.sg div{width:30%;border-top:1px solid #333;padding-top:4px;text-align:center}' +
         '</style></head><body>' +
-        '<div class="hd"><div><div class="sh">JAMEEL AL HINDAM</div><div class="ar">جميل الهندام للخياطة الرجالية</div></div><div class="tt"><b>Delivery Schedule · جدول التسليم</b><span>' + esc(day(f)) + (f === l ? '' : ' → ' + esc(day(l))) + '</span></div></div><div class="gold"></div>' +
+        '<div class="hd"><div><div class="sh">JAMEEL AL HINDAM</div><div class="ar">جميل الهندام للخياطة الرجالية</div></div><div class="tt"><b>Delivery Schedule · جدول التسليم</b><span>' + (BR !== '*' ? '<b style="display:inline;font-size:15px">' + esc(brName(BR === 'M' ? '' : BR)) + ' · ' + esc(brNameAr(BR === 'M' ? '' : BR)) + '</b> · ' : '') + esc(day(f)) + (f === l ? '' : ' → ' + esc(day(l))) + '</span></div></div><div class="gold"></div>' +
         '<div class="ks">' + box('Days', G.length) + box('Orders', T.n) + box('Total Pcs', T.P) + box('Ready', T.rd, 'ok') + box('Remaining', T.left, 'bd') + box('Delivered', T.g) + '</div>' +
         G.map(function (x) {
           var wd = dvWd(x.d);
@@ -748,7 +849,7 @@
             '<table><thead><tr><th>#</th><th style="white-space:nowrap">Order No.</th><th style="text-align:right">Name</th><th style="text-align:center">Qty</th><th style="text-align:center">Ready</th><th style="text-align:center">Left</th><th style="text-align:center">✓</th></tr></thead><tbody>' +
             x.list.map(function (r, i) {
               var q = dvPcs(r), dn = q.P && q.g >= q.P;
-              return '<tr' + (dn ? ' class="dn"' : '') + '><td class="n">' + (i + 1) + '</td><td class="o">' + esc(r[0]) + '</td><td class="nm">' + esc(r[1]) + '</td><td class="c"><b>' + q.P + '</b></td>' +
+              return '<tr' + (dn ? ' class="dn"' : '') + '><td class="n">' + (i + 1) + '</td><td class="o">' + esc(ONO(r[0])) + '</td><td class="nm">' + esc(r[1]) + '</td><td class="c"><b>' + q.P + '</b></td>' +
                 '<td class="c ok">' + (dn ? '✔' : q.rd || '') + '</td><td class="c bd">' + (q.left || '') + '</td><td class="x">' + (dn ? '✔' : '<i></i>') + '</td></tr>';
             }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">Total Pcs</td><td class="c big">' + x.pcs + '</td><td class="c ok">' + x.rp + '</td><td class="c bd">' + x.left + '</td><td></td></tr></tfoot></table></div>';
         }).join('') +
@@ -898,6 +999,28 @@
 
     // ---- order status table ----
     var ALL = [], PEND = {}, FIT = {}, METHODS = ['Cash'], CUR = '';
+    // ---- branches: ALL_RAW = every order, ALL = the orders of the branch chosen at the top (All / Main / CODE)
+    var ALL_RAW = [], BRS = [], BR_OF = {}, BR = '*';
+    try { BR = localStorage.getItem('jadm-br') || '*'; } catch (e) { }
+    function brName(c) { if (!c) return 'Main'; var b = BRS.filter(function (x) { return x.c === c; })[0]; return b ? (b.n || b.ar || c) : c; }
+    function brNameAr(c) { if (!c) return 'الرئيسي'; var b = BRS.filter(function (x) { return x.c === c; })[0]; return b ? (b.ar || b.n || c) : c; }
+    function ONO(no) { var c = BR_OF[String(no)]; return c ? c + '-' + no : String(no); }
+    function brPill(no) { var c = BR_OF[String(no)]; return c ? '<span class="bpill" title="' + esc(brName(c)) + '">' + esc(c) + '</span>' : ''; }
+    function brFilter() {
+      BR_OF = {}; ALL_RAW.forEach(function (r) { if (r[16]) BR_OF[r[0]] = r[16]; });
+      ALL = BR === '*' ? ALL_RAW.slice() : ALL_RAW.filter(function (r) { return (r[16] || '') === (BR === 'M' ? '' : BR); });
+    }
+    function brSelFill() {
+      var sel = $('brSel'), shops = BRS.filter(function (b) { return b.k === 'shop'; });
+      var used = {}; ALL_RAW.forEach(function (r) { if (r[16]) used[r[16]] = 1; });
+      var opts = [['*', 'الكل · All']].concat(shops.length || Object.keys(used).length ? [['M', 'الرئيسي · Main']] : [])
+        .concat(shops.map(function (b) { return [b.c, (b.ar ? b.ar + ' · ' : '') + (b.n || b.c)]; }))
+        .concat(Object.keys(used).filter(function (c) { return !shops.some(function (b) { return b.c === c; }); }).map(function (c) { return [c, c]; }));
+      sel.innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+      if (!opts.some(function (o) { return o[0] === BR; })) BR = '*';
+      sel.value = BR; sel.parentNode.classList.toggle('on', BR !== '*');
+      sel.parentNode.style.display = opts.length > 1 ? '' : 'none';
+    }
     // orders booked today at the shop (from JAMEEL's order list)
     function riyToday() { return new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10); }
     function shopTodayList() { var t = riyToday(); return ALL.filter(function (r) { return String(r[3] || '').slice(0, 10) === t; }); }
@@ -909,7 +1032,7 @@
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
       google.script.run.withSuccessHandler(function (r) {
-        if (!r) return; ALL = r.rows || []; setTimeout(shopToday, 0); setTimeout(renderNow, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
+        if (!r) return; ALL_RAW = r.rows || []; BRS = r.branches || []; brFilter(); brSelFill(); setTimeout(shopToday, 0); setTimeout(renderNow, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk(); if (CUR_TAB === 12) renderDeliv();
         // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once
@@ -960,7 +1083,7 @@
           var r = x.r, fit = x.t === 'sample', a = '\'' + esc(r[0]) + '\', \'' + x.t + '\'';
           return '<div class="ri' + (fit ? ' fit' : '') + '">' +
             '<button class="rx2" type="button" title="لا تسأل مرة أخرى – don\'t ask again" onclick="readyNo(' + a + ')">✕</button>' +
-            '<div class="rt"><b>' + esc(r[0]) + '</b> ' + (fit ? '🧵 بروفة · Fitting' : '✅ جاهز · Ready ' + esc(r[5])) + '<br>' +
+            '<div class="rt"><b>' + esc(ONO(r[0])) + '</b> ' + (fit ? '🧵 بروفة · Fitting' : '✅ جاهز · Ready ' + esc(r[5])) + '<br>' +
             '<span class="muted">' + esc(r[1]) + ' · <span dir="ltr">' + esc(r[2]) + '</span></span></div>' +
             '<button class="act wa" type="button" onclick="readySend(' + a + ', this)">📲</button></div>';
         }).join('') + '</div>';
@@ -977,7 +1100,7 @@
     function ordRows(list) {
       return list.length ? '<table>' + list.map(function (x) {
         var r = x[0];
-        return '<tr data-o="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td><b>' + esc(r[1]) + '</b><br><span class="muted" dir="ltr">' + esc(r[2]) + '</span></td>' +
+        return '<tr data-o="' + esc(r[0]) + '"><td><b>' + esc(ONO(r[0])) + '</b></td><td><b>' + esc(r[1]) + '</b><br><span class="muted" dir="ltr">' + esc(r[2]) + '</span></td>' +
                '<td>' + x[1].split('<br>').map(esc).join('<br>') + '<br><span class="muted">التسليم <span dir="ltr">' + esc(day(r[4])) + '</span></span></td></tr>';
       }).join('') + '</table>' : '<span class="muted">لا يوجد – none</span>';
     }
@@ -1312,7 +1435,7 @@
     function popOpen(no) {
       openAct(no); $('dlg').style.display = 'none';
       var r = ALL.filter(function (x) { return x[0] === String(no); })[0];
-      $('pH').innerHTML = 'Order ' + esc(D.no) + ' &nbsp;(' + esc(r[15] || '') + ') &nbsp; <span dir="ltr">' + esc(r[2] || '') + '</span> &nbsp; ' + esc(D.name) + ' <span id="pInv"></span>';
+      $('pH').innerHTML = 'Order ' + esc(ONO(D.no)) + ' &nbsp;(' + esc(r[15] || '') + ') &nbsp; <span dir="ltr">' + esc(r[2] || '') + '</span> &nbsp; ' + esc(D.name) + ' <span id="pInv"></span>';
       document.title = 'Order ' + D.no + ' – ' + D.name;
       $('pMethod').innerHTML = $('dMethod').innerHTML;
       $('pAmt').value = $('dAmt').value; $('pQty').value = Math.max(0, D.pcs - D.given) || 0;
@@ -1462,7 +1585,7 @@
         if (hg > 0) left += ' · زرار ' + hg; if (em > 0) left += ' · تطريز ' + em;
         var when = n < 0 ? '<span class="dl lt">متأخر ' + (-n) + ' يوم<br>Late ' + (-n) + 'd</span>' : n === 0 ? '<span class="dl lt">اليوم<br>Today</span>'
                  : '<span class="dl sn">' + (n === 1 ? 'غداً<br>Tomorrow' : 'بعد يومين<br>In 2 days') + '</span>';
-        return '<tr data-soon="' + esc(r[0]) + '"><td>' + when + '</td><td><b>' + esc(r[0]) + '</b> – ' + esc(r[1]) + '<br><span class="muted" dir="ltr">' + esc(day(r[4])) + '</span></td>' +
+        return '<tr data-soon="' + esc(r[0]) + '"><td>' + when + '</td><td><b>' + esc(ONO(r[0])) + '</b> – ' + esc(r[1]) + '<br><span class="muted" dir="ltr">' + esc(day(r[4])) + '</span></td>' +
                '<td>' + P + ' ثوب<br><span class="muted">' + left + '</span></td></tr>';
       }).join('') + '</table>' : '<span class="muted">✔ لا يوجد – nothing due soon</span>';
     }
@@ -1502,7 +1625,7 @@
         var late = given < pcs && r[4] && r[4] < today && r[15] !== 'Delivered';
         var st = late ? ['c-late', 'Late'] : STAT[r[15]] || ['', r[15]];
         var due = Number(r[14]) || 0;
-        return '<tr class="ro" data-row="' + esc(r[0]) + '"><td><b>' + esc(r[0]) + '</b></td><td class="l">' + esc(r[1]) + (FIT[r[0]] ? ' <span class="sp c-part" title="بروفة – fitting">بروفة</span>' : '') + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
+        return '<tr class="ro" data-row="' + esc(r[0]) + '"><td><b>' + esc(ONO(r[0])) + '</b></td><td class="l">' + esc(r[1]) + (FIT[r[0]] ? ' <span class="sp c-part" title="بروفة – fitting">بروفة</span>' : '') + '</td><td dir="ltr">' + esc(r[2]) + '</td>' +
                '<td dir="ltr">' + esc(day(r[3])) + '</td><td dir="ltr" class="' + (late ? 'c-late' : '') + '">' + esc(day(r[4])) + '</td><td><b>' + pcs + '</b></td>' +
                cell(r[6], pcs, p.CUT) + cell(r[7], pcs, p.STITCH) + cell(r[9], r[8], p.HINGE) + cell(r[11], r[10], p.EMBROIDERY) + cell(given, pcs, 0) +
                '<td class="' + (due > 0.5 ? 'c-late' : 'c-no') + '">' + (due > 0.5 ? due.toFixed(2) : '–') + '</td>' +
@@ -1992,7 +2115,7 @@
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };
     function shopTab(n) {
       var f = $('shopFrame'), h = SHOP_HASH[n] || 'home';
-      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=13#' + h);
+      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=14#' + h);
       else try { f.contentWindow.location.hash = h + '-' + Date.now(); } catch (x) { }
       setTimeout(function () { $('p5').scrollIntoView({ block: 'start' }); }, 50);
     }

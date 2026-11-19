@@ -98,7 +98,7 @@ label.chk input{width:22px;height:22px;accent-color:var(--acc)}
 <div id="app"><p class="empty">…</p></div>
 <script type="module">
 // JAMEEL AL HINDAM worker app: /karigar/?k=TOKEN (link made in Admin → Workers). Cutting → Stitching → Hinge / Embroidery.
-import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, kReturn, PAST_KINDS } from '/js/jameel.js?v=37';
+import { kVars, kOpen, kStart, kDone, kFinish, kGiveBack, kWork, kPast, kDateFix, kReturn, PAST_KINDS } from '/js/jameel.js?v=38';
 import { db, workDay } from '/js/fb.js';
 import { getDocs, getDoc, doc, collection } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -268,8 +268,10 @@ function drawAdd(main) {
 }
 function orderLine(o) {
   const x = orders[String(o)] || {};
-  return [x.customer_name, x.pcs ? x.pcs + ' ' + L('قطعة', 'pcs') : ''].filter(Boolean).join(' · ');
+  return [x.branch ? '🏬 ' + x.branch : '', x.customer_name, x.pcs ? x.pcs + ' ' + L('قطعة', 'pcs') : ''].filter(Boolean).join(' · ');
 }
+// an order booked at a branch shows with the branch code (B2-1250); the number typed / sent stays the shop's number
+function oNo(o) { const x = orders[String(o)]; return x && x.branch ? x.branch + '-' + o : String(o); }
 function dueOf(o) { const x = orders[String(o)] || {}; return d10(x.delivery_date); }
 // only orders booked from 1 Oct 2026 on (older ones are not worked from the app); an order not in the shop data yet stays
 const FROM_BOOKING = '2026-10-01';
@@ -312,7 +314,7 @@ function drawFound(main) {
   const a = found, due = dueOf(a.o), late = due && due < today();
   main.appendChild(el('button', { class: 'btn line sm', type: 'button', style: 'margin-bottom:10px', text: (LANG === 'en' ? '← ' : '→ ') + L('كل الطلبات', 'All orders'), onclick: () => { found = null; findMsg = ''; draw(); } }));
   const c = el('div', { class: 'job new' });
-  c.appendChild(el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:20px', text: '#' + a.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: L('التسليم: ', 'Due: ') + dmy(due) }) : null]));
+  c.appendChild(el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:20px', text: '#' + oNo(a.o) }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: L('التسليم: ', 'Due: ') + dmy(due) }) : null]));
   const info = orderLine(a.o); if (info) c.appendChild(el('div', { style: 'margin-top:4px;font-weight:600', text: info }));
   c.appendChild(el('div', { style: 'margin-top:6px', text: kName(kind) + ' · ' + L('المتبقي ', 'left ') + a.left + '/' + a.total }));
   c.appendChild(progress(a));
@@ -368,7 +370,7 @@ function drawWait(main) {
   main.appendChild(el('div', { class: 'card okbox' }, [
     el('h3', null, ['✓ ' + L('انتهى – بانتظار المحل', 'Finished – waiting for the shop'), el('span', { class: 'n', text: String(wait.length) })]),
     el('div', { class: 'small muted', text: L('يُضاف إلى حسابك عندما يفتح المحل البرنامج.', 'Added to your account when the shop opens the program.') }),
-    el('div', { class: 'chips' }, wait.slice().sort((x, y) => x.o - y.o).map(w => el('span', { class: 'chip', text: '#' + w.o + ' × ' + w.q })))]));
+    el('div', { class: 'chips' }, wait.slice().sort((x, y) => x.o - y.o).map(w => el('span', { class: 'chip', text: '#' + oNo(w.o) + ' × ' + w.q })))]));
 }
 function drawMine(main) {
   if (!mine.length) return;
@@ -404,7 +406,7 @@ function drawOpen(main) {
   list.slice(0, 300).forEach(a => {
     const due = dueOf(a.o), late = due && due < td, info = orderLine(a.o);
     main.appendChild(el('button', { type: 'button', class: 'job' + (late ? ' late' : ''), onclick: () => { found = a; findMsg = ''; draw(); scrollTo(0, 0); } }, [
-      el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:17px', text: '#' + a.o }), el('span', { class: 'st ' + (a.avail ? '' : 'blue'), text: a.avail ? a.avail + ' ' + L('قطعة لك', 'pcs for you') : (a.wip ? '🔄 ' + L('قيد العمل', 'in work') : L('بالانتظار', 'waiting')) })]),
+      el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:17px', text: '#' + oNo(a.o) }), el('span', { class: 'st ' + (a.avail ? '' : 'blue'), text: a.avail ? a.avail + ' ' + L('قطعة لك', 'pcs for you') : (a.wip ? '🔄 ' + L('قيد العمل', 'in work') : L('بالانتظار', 'waiting')) })]),
       due ? el('div', { class: 'due' + (late ? ' late' : ''), style: 'margin-top:4px', text: L('التسليم: ', 'Due: ') + dmy(due) + (late ? ' (' + L('متأخر', 'late') + ')' : '') }) : null,
       info ? el('div', { class: 'small', style: 'margin-top:2px', text: info }) : null, progress(a)]));
   });

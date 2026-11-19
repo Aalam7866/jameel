@@ -466,6 +466,7 @@ async function root(kind, key, pin) {   // ok/{R} or ak/{R}: found only with the
 async function oInit(key, pin) {
   const r = await root('ok', key, pin);
   if (!r) return { ok: false };
+  const branches = (await branchList()).filter(b => b.k === 'shop' && b.on);
   const [items, emb] = await Promise.all([getDoc(doc(db, 'ok', r.id, 'd', 'items')), getDoc(doc(db, 'ok', r.id, 'd', 'emb'))]);
   const TH = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
   return {
@@ -473,6 +474,7 @@ async function oInit(key, pin) {
     emb: J(emb.exists() && emb.data().v, []).map(x => [Number(x[0]), String(x[1]), Number(x[2]) || 0, TH.test(String(x[3] || '')) ? String(x[3]) : '']),
     meta: J(r.meta, null), spec: J(r.spec, null),
     items: J(items.exists() && items.data().v, []).map(x => [Number(x[0]), String(x[1]), String(x[2]), String(x[3]), Number(x[4]) || 0, Number(x[5]) || 0]),
+    branches,
   };
 }
 async function oImage(key, pin) {
@@ -532,18 +534,20 @@ async function oCustomer(key, pin, no) {
                meas: String(c[4] || '').length > 2 ? J(String(c[4]), null) : null };
   return null;
 }
-async function mineList(r) {
+async function mineList(r, br) {
   const s = await getDocs(query(collection(db, 'ok', r.id, 'o'), orderBy('ts', 'desc'), limit(120)));
   const day = riyadh().slice(0, 10), out = [];
+  br = String(br || '');
   s.forEach(x => {
     const o = x.data(), t = tsStr(o.ts);
+    if (String(o.br || '') !== br) return;   // a branch sees its own orders, the main shop its own
     if (out.length >= 40 || (t.slice(0, 10) !== day && o.st !== 'new')) return;
     out.push({ id: x.id, time: t.slice(11, 16), status: o.st, order_no: String(o.order_no || ''), invoice_no: String(o.invoice_no || ''),
                note: String(o.note || ''), by: String(o.by || ''), name: String(o.name || ''), pcs: String(o.pcs), total: String(o.total) });
   });
   return out;
 }
-async function oMine(key, pin) { const r = await root('ok', key, pin); return r ? mineList(r) : null; }
+async function oMine(key, pin, br) { const r = await root('ok', key, pin); return r ? mineList(r, br) : null; }
 async function oSubmit(key, pin, order) {
   const r = await root('ok', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
@@ -554,13 +558,15 @@ async function oSubmit(key, pin, order) {
   const json = JSON.stringify(o);
   if (json.length > 45000) return { ok: false, msg: 'الطلب كبير جداً – order too big' };
   const pcs = lines.reduce((a, l) => a + Number(l.qty), 0);
-  await addDoc(collection(db, 'ok', r.id, 'o'), {
-    ts: serverTimestamp(), st: 'new', data: json, by: String(o.by || '').slice(0, 40), name: String(c.name || '').slice(0, 60),
-    pcs: Math.round(pcs * 100) / 100, total: Number(o.total) || 0,
-  });
-  return { ok: true, list: await mineList(r) };
+  let br = String(o.branch || '').trim().toUpperCase();
+  if (br && !(await branchList()).some(b => b.c === br && b.k === 'shop' && b.on)) return { ok: false, msg: 'الفرع غير موجود – branch ' + br + ' is not in Admin → Branches' };
+  const d = { ts: serverTimestamp(), st: 'new', data: json, by: String(o.by || '').slice(0, 40), name: String(c.name || '').slice(0, 60),
+              pcs: Math.round(pcs * 100) / 100, total: Number(o.total) || 0 };
+  if (br) d.br = br;
+  await addDoc(collection(db, 'ok', r.id, 'o'), d);
+  return { ok: true, list: await mineList(r, br) };
 }
-async function oDelete(key, pin, id, by) {
+async function oDelete(key, pin, id, by, br) {
   const r = await root('ok', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   const ref = doc(db, 'ok', r.id, 'o', String(id));
@@ -569,7 +575,7 @@ async function oDelete(key, pin, id, by) {
   const st = s.data().st;
   if (st === 'new' || st === 'error') await updateDoc(ref, { st: 'deleted' });
   else if (st === 'saved') await updateDoc(ref, { st: 'delreq', note: 'del:' + String(by || '').slice(0, 40) });
-  return { ok: true, list: await mineList(r) };
+  return { ok: true, list: await mineList(r, br) };
 }
 
 // ================================================================ admin alerts page (?a=KEY)
@@ -646,10 +652,11 @@ async function aOrders(key, pin) {
   // a balance only for orders with a Genix invoice – no invoice (free gift, not billed yet) → 0
   try {
     const noInv = new Set();
-    (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); if (!String(o.invoice_no ?? '').trim()) noInv.add(String(o.order_no)); });
-    for (const x of rows) if (x.length > 14 && noInv.has(String(x[0]))) x[14] = '0';
+    const br = {};
+    (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); if (!String(o.invoice_no ?? '').trim()) noInv.add(String(o.order_no)); if (o.branch) br[String(o.order_no)] = String(o.branch); });
+    for (const x of rows) { if (x.length > 14 && noInv.has(String(x[0]))) x[14] = '0'; while (x.length < 16) x.push(''); x[16] = br[String(x[0])] || ''; }
   } catch (e) { }
-  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent };
+  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent, branches: await branchList() };
 }
 async function aSearch(key, pin, q) {
   const all = await aOrders(key, pin);
@@ -1000,6 +1007,37 @@ async function aDuty(key, pin) {
   dutyCache = null;
   return { shifts: await dutyShifts() };
 }
+// ---- branches: the shops and the factory – sys/branches {list: '[{c, n, ar, k, on}]'}. The main shop has no code (its orders
+// have no branch); a branch's orders show as CODE-1250. Orders are booked on the order page opened with ?b=CODE.
+const BR_RX = /^[A-Z][A-Z0-9]{0,4}$/;
+function cleanBranches(list) {
+  const out = [], seen = new Set();
+  for (const b of Array.isArray(list) ? list : []) {
+    const c = String(b && b.c || '').trim().toUpperCase();
+    if (!BR_RX.test(c) || seen.has(c) || c === 'M') continue;
+    seen.add(c);
+    out.push({ c, n: String(b.n || '').trim().slice(0, 40), ar: String(b.ar || '').trim().slice(0, 40), k: b.k === 'factory' ? 'factory' : 'shop', on: b.on !== false });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+async function branchList() {
+  try { const s = await getDoc(doc(db, 'sys', 'branches')); return cleanBranches(J(s.exists() && s.data().list, [])); } catch (e) { return []; }
+}
+async function aBranches(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return null;
+  const list = await branchList(), n = {};
+  try { (await dsRows('j_orders')).forEach(o => { const b = String(o.branch || ''); n[b] = (n[b] || 0) + 1; }); } catch (e) { }
+  return { list, count: n };
+}
+async function aSetBranches(key, pin, list) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const v = cleanBranches(list);
+  await setDoc(doc(db, 'sys', 'branches'), { list: JSON.stringify(v), at: serverTimestamp() });
+  return { ok: true, list: v };
+}
 // Admin → Deliveries: the order in which orders are worked (↑ ↓), read by the worker app – sys/prio {o:'1242,1279,…'}
 async function aPrio(key, pin) {
   const r = await root('ak', key, pin);
@@ -1048,6 +1086,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aWorkTime,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };

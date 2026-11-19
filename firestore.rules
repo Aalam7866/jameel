@@ -95,7 +95,8 @@ service cloud.firestore {
       match /c/{id} { allow get, list: if true; allow write: if isPc(); }
       match /o/{id} {
         allow get, list: if true;
-        allow create: if request.resource.data.keys().hasOnly(['ts', 'st', 'data', 'by', 'name', 'pcs', 'total'])
+        allow create: if request.resource.data.keys().hasOnly(['ts', 'st', 'data', 'by', 'name', 'pcs', 'total', 'br'])
+          && request.resource.data.get('br', '') is string && request.resource.data.get('br', '').size() <= 6
           && request.resource.data.st == 'new' && request.resource.data.ts == request.time
           && request.resource.data.data is string && request.resource.data.data.size() < 45000
           && request.resource.data.by is string && request.resource.data.by.size() <= 40
@@ -145,6 +146,9 @@ service cloud.firestore {
       // Admin → Rates: the duty time (shifts, JSON text)
       allow create, update: if id == 'duty' && request.resource.data.keys().hasOnly(['shifts', 'at'])
         && request.resource.data.shifts is string && request.resource.data.shifts.size() <= 200 && request.resource.data.at == request.time;
+      // Admin → Branches: the shops and the factory (JSON text: [{c, n, ar, k, on}])
+      allow create, update: if id == 'branches' && request.resource.data.keys().hasOnly(['list', 'at'])
+        && request.resource.data.list is string && request.resource.data.list.size() <= 4000 && request.resource.data.at == request.time;
       // Admin → Deliveries: the order in which orders are worked (↑ ↓), comma-separated order numbers
       allow create, update: if id == 'prio' && request.resource.data.keys().hasOnly(['o', 'at'])
         && request.resource.data.o is string && request.resource.data.o.size() <= 6000 && request.resource.data.at == request.time;

@@ -584,7 +584,7 @@ function jStatus(o) {
 }
 const jOrderItem = (o) => {
   const due = oDue(o);
-  return `<div class="no">${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)}</div></div>
+  return `<div class="no">${o.branch ? `<span style="display:block;font-size:10.5px;font-weight:700;color:#1d4f91">${H(o.branch)}</span>` : ''}${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${H(o.booking_date)} → ${H(o.delivery_date)}</div></div>
   <div class="r"><div style="font-size:12.5px;font-weight:700;color:var(--muted)">${N(o.pcs)} pcs</div><div>${money(o.total)}</div>${due >= DUE_MIN ? `<div style="font-size:12px;color:var(--bad)">due ${money(due)}</div>` : ''}<div>${jStatus(o)}</div></div>`;
 };
 async function jameelView() {
@@ -1200,11 +1200,12 @@ async function moreView() {
   const [cur, b] = subTabs(m, 'more', [['links', 'Online links'], ['jobs', 'Jobs']].concat(EMBED ? [] : [['settings', 'Settings']]));
   if (cur === 'links') {
     const l = await links();
+    let brs = []; try { const bs = await getDoc(doc(db, 'sys', 'branches')); brs = bs.exists() ? JSON.parse(bs.data().list || '[]') : []; } catch (e) { }
     const base = 'https://saudithobe.best';
     const row = (title, sub, url) => `<div class="linkrow"><div class="main"><b>${H(title)}</b> <span class="muted">${H(sub)}</span><br><code>${H(url)}</code></div>
       <button class="btn ghost small" data-copy="${H(url)}">Copy</button><a class="btn ghost small" href="${H(url)}" target="_blank" rel="noopener">Open</a></div>`;
     b.innerHTML = `<p class="muted">Yeh JAMEEL ke online pages hain – ab apne domain par. Link secret hai: sirf usi ko bhejiye jiska hai.</p>
-    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد', base + '/o/' + l.OnlineOrderKey + '/') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>`;
+    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد · Main shop', base + '/o/' + l.OnlineOrderKey + '/?b=-') : ''}${l.OnlineOrderKey ? brs.filter(x => x.k === 'shop' && x.on).map(x => row('New order · ' + (x.n || x.c) + ' (' + x.c + ')', 'طلب جديد · فرع ' + (x.ar || x.n || x.c), base + '/o/' + l.OnlineOrderKey + '/?b=' + x.c)).join('') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>`;
     b.querySelectorAll('[data-copy]').forEach(el => el.onclick = async () => { try { await navigator.clipboard.writeText(el.dataset.copy); el.textContent = 'Copied ✓'; } catch (e) { prompt('Copy:', el.dataset.copy); } });
     return;
   }
