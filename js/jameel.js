@@ -656,8 +656,8 @@ async function aOrders(key, pin) {
     (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); if (!String(o.invoice_no ?? '').trim()) noInv.add(String(o.order_no)); if (o.branch) br[String(o.order_no)] = String(o.branch); });
     for (const x of rows) { if (x.length > 14 && noInv.has(String(x[0]))) x[14] = '0'; while (x.length < 16) x.push(''); x[16] = br[String(x[0])] || ''; }
   } catch (e) { }
-  const [branches, fx] = await Promise.all([branchList(), fxMap()]);
-  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent, branches, fx };
+  const [branches, fx, sw] = await Promise.all([branchList(), fxMap(), seasonMap(rows)]);
+  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent, branches, fx, sw };
 }
 async function aSearch(key, pin, q) {
   const all = await aOrders(key, pin);
@@ -763,6 +763,20 @@ async function aDelWorker(key, pin, token) {
 }
 
 // ---- admin: every worker (added here + the shop PC's) with phone / block / month work / deductions
+// summer / winter pieces of each order: the InvProject order's services (خياطة صيفي / خياطة شتوي …, ShopSync data set i_osrv)
+async function seasonMap(rows) {
+  const want = new Set(rows.map(x => String(x[0]))), m = {};
+  try {
+    (await dsRows('i_osrv')).forEach(v => {
+      const o = String(v.OrderId), q = Number(v.qty) || 0, n = String(v.name || '');
+      if (!want.has(o) || !q) return;
+      const k = /صيف|summer/i.test(n) ? 0 : /شت|winter/i.test(n) ? 1 : -1;
+      if (k < 0) return;
+      (m[o] = m[o] || [0, 0])[k] += q;
+    });
+  } catch (e) { }
+  return m;
+}
 async function dsRows(name) {
   const s = await getDocs(collection(db, 'ds', name, 'c'));
   let all = []; s.forEach(x => { try { all = all.concat(JSON.parse(x.data().v)); } catch (e) { } });
