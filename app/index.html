@@ -612,7 +612,7 @@ async function jameelView() {
 // ---------------------------------------------------------------- JAMEEL daily sheet (TailorShop → Daily report: the same rows, columns, totals and picture)
 const dailyOverlay = { add: new Set(), clear: new Set() };   // removed / put back here, until the shop PC's copy shows it
 async function dailySheet(day) {
-  const [jo, jp, jr, jh, jl] = await Promise.all(['j_orders', 'j_payments', 'j_returns', 'j_hidden', 'j_links'].map(n => loadDs(n).catch(() => ({ rows: [] }))));
+  const [jo, jp, jr, jh, jl, gi, io] = await Promise.all(['j_orders', 'j_payments', 'j_returns', 'j_hidden', 'j_links', 'g_invoices', 'i_orders'].map(n => loadDs(n).catch(() => ({ rows: [] }))));
   const hid = new Set(jh.rows.filter(x => !(dailyOverlay.clear.has(String(x.day)))).map(x => String(x.key)));
   dailyOverlay.add.forEach(k => hid.add(k));
   const ord = {}; jo.rows.forEach(o => ord[o.order_no] = o);
@@ -637,6 +637,19 @@ async function dailySheet(day) {
     const deliver = st === 'DELIVER' || st === 'SAMPLE' ? true : N(p.delivered_qty) > 0;
     lines.push({ inv: S(o.invoice_no), order: S(p.order_no), name: S(o.customer_name), total: null, down: null, due: a, method, sell: st.length > 0 ? st : 'PAY', type: deliver ? 'DELIVER' : 'PAY', src: a === 0 ? '' : 'PAY', no: p.order_no });
   }
+  // GENIX ONLY: invoices made straight in Genix that day – no InvProject order and no Jameel order has their number
+  const iv = x => String(x ?? '').trim().replace(/\.0+$/, '');
+  const linked = new Set();
+  io.rows.forEach(o => { const v = iv(o.GenixInvNo); if (v && v !== '0') linked.add(v); });
+  jo.rows.forEach(o => { const v = iv(o.invoice_no); if (v && v !== '0') linked.add(v); });
+  const gOnly = gi.rows.filter(v => S(v.date).slice(0, 10) === day && !linked.has(iv(v.id))).sort((a, b) => N(a.id) - N(b.id));
+  const gPay = [];
+  for (const v of gOnly) {
+    const paidG = N(v.paid_all), net = Math.min(paidG, N(v.network_part)), cash = Math.max(0, paidG - net);
+    const m = [net > 0 ? 'SPAN' : '', cash > 0 ? 'CASH' : ''].filter(Boolean).join('+');
+    lines.push({ inv: S(v.id), order: '—', name: S(v.name), total: N(v.tot_net), down: paidG ? paidG : null, due: 0, method: m, sell: 'GENIX', type: 'SELL', src: 'GENIX', no: '', g: v });
+    if (net > 0) gPay.push(['SPAN', net]); if (cash > 0) gPay.push(['CASH', cash]);
+  }
   // RETURN
   const rets = jr.rows.filter(r => S(r.date) === day && !hid.has('R:' + r.return_no)).sort((a, b) => N(a.return_no) - N(b.return_no));
   for (const r of rets)
@@ -653,6 +666,7 @@ async function dailySheet(day) {
     if (i < 0) { methods.push([g, 0, 0]); i = methods.length - 1; }
     methods[i][1] += N(p.amount); methods[i][2] += 1;
   }
+  for (const [g, a] of gPay) { const i = methods.findIndex(x => x[0] === g); methods[i][1] += a; methods[i][2] += 1; }
   const paid = (m) => methods.filter(x => x[0] === m).reduce((a, x) => a + x[1], 0);
   // the lines TailorShop's Daily report lets you remove (its grid): payments, orders without a down payment, returns
   const anyDown = new Set(jp.rows.filter(p => p.kind === 'DOWN').map(p => String(p.order_no)));
@@ -828,7 +842,7 @@ async function dailyTableView(b) {
   let t = `<div class="dsheet"><div class="dsh"><b>Daily sheet ${H(dmy)}</b></div><div class="dsw"><table class="dst"><thead><tr><th>S.No</th><th>Invoice.No</th><th>Order NO</th><th>Name</th><th>Total</th><th>Down<br>Payment</th><th>Pay Due<br>Amount</th><th>Mathod</th><th>Sell / deliver</th><th class="dm">Total Mathod</th><th class="dm">Total Paid</th><th class="dm">Paid<br>Customer</th><th>Type</th><th>Source</th></tr></thead><tbody>`;
   for (let i = 0; i < rowsN; i++) {
     const l = r.lines[i], m = r.methods[i];
-    t += `<tr${l ? ` data-o="${H(l.no)}" class="tap"` : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? (l.inv ? n0(l.total) : '0') : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
+    t += `<tr${l ? (l.g ? ` data-g="${i}" class="tap"` : ` data-o="${H(l.no)}" class="tap"`) : ''}>` + (l ? `<td>${i + 1}</td><td>${H(l.inv)}</td><td>${H(l.order)}</td><td class="ar">${H(l.name)}</td><td class="n">${l.total ? (l.inv ? n0(l.total) : '0') : ''}</td><td class="n">${l.down != null ? n0(l.down) : ''}</td><td class="n"${l.due < 0 ? ' style="color:#8b0000"' : ''}>${l.due != null ? n0(l.due) : ''}</td><td>${H(l.method)}</td><td>${H(l.sell)}</td>` : '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>')
       + (m ? `<td class="dm dmn">${H(m[0])}</td><td class="dm n">${m[1] === 0 ? '-' : m[1].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="dm n">${m[2] ? m[2] : '-'}</td>` : '<td class="dm"></td><td class="dm"></td><td class="dm"></td>')
       + (l ? `<td class="dty dty-${H(l.type.toLowerCase())}">${H(l.type)}</td><td>${H(l.src)}</td>` : '<td></td><td></td>') + '</tr>';
   }
@@ -839,6 +853,7 @@ async function dailyTableView(b) {
     ${r.lines.length ? '' : '<p class="muted center">Is din ka koi kaam nahin</p>'}</div>`;
   $('#dr', b).innerHTML = t;
   $('#dr', b).querySelectorAll('tr[data-o]').forEach(el => el.onclick = () => jOrderByNo(el.dataset.o));
+  $('#dr', b).querySelectorAll('tr[data-g]').forEach(el => el.onclick = () => gInvoice(r.lines[Number(el.dataset.g)].g));
 }
 async function jOrderByNo(no) {
   const r = await rows('j_orders', { f: ['order_no:' + no], limit: 1 });
