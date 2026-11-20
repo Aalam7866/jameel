@@ -77,6 +77,11 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .bhead{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0d1b2e;color:#fff}.bhead img{width:44px;height:44px;border-radius:10px;background:#fff}
 .bhead h1{margin:0;font-size:18px;color:#fff}.bhead div{font-size:13px;color:#cfae6a}
 .bmain{max-width:860px;margin:0 auto;padding:14px 14px 90px}.bhead .bcode{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;border:1px solid #cfae6a;color:#e6cf9a;border-radius:6px;padding:1px 6px;vertical-align:2px}.bgo{width:100%;font-size:18px;padding:16px;margin-top:10px}
+nav.many{overflow-x:auto;scrollbar-width:none}nav.many button{flex:1 0 50px;font-size:10.5px;padding:8px 0 7px}nav.many button svg{width:20px;height:20px}
+.nw td,.nw th{white-space:nowrap}
+.mseg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.mseg button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:7px 13px;font-weight:600;cursor:pointer;color:var(--ink)}.mseg button.on{background:#0d1b2e;color:#fff;border-color:#0d1b2e}
+.brole{display:inline-block;font-size:11px;font-weight:700;background:#cfae6a;color:#0d1b2e;border-radius:6px;padding:1px 7px;vertical-align:2px;margin-inline-start:4px}
+.tst{margin-top:10px;border-radius:9px;padding:10px 12px;font-weight:600}.tst.w{background:#eef1f5}.tst.ok{background:var(--okbg);color:var(--ok)}.tst.bad{background:var(--badbg);color:var(--bad)}
 .bsec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:16px 0 6px;padding:7px 12px;border-radius:9px;font-weight:700}
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--bg);width:100%;max-width:860px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px 24px}
@@ -1299,15 +1304,23 @@ async function adminOk() {
 const BQ = new URLSearchParams(location.search);
 let BR_MODE = null;
 (function () {
-  let k = (BQ.get('k') || '').trim(), b = (BQ.get('b') || '').trim().toUpperCase(), f = (BQ.get('f') || '').trim().toUpperCase();
+  let k = (BQ.get('k') || '').trim(), b = (BQ.get('b') || '').trim().toUpperCase(), f = (BQ.get('f') || '').trim().toUpperCase(), r = (BQ.get('r') || 'm').trim().toLowerCase();
   try {
-    if (k && (b || f)) localStorage.setItem('jbranch', JSON.stringify({ k, b, f }));
+    if (k && (b || f)) localStorage.setItem('jbranch', JSON.stringify({ k, b, f, r }));
     else if (BQ.has('owner')) localStorage.removeItem('jbranch');
-    else { const x = JSON.parse(localStorage.getItem('jbranch') || 'null'); if (x && !EMBED) { k = x.k; b = x.b || ''; f = x.f || ''; } }
+    else { const x = JSON.parse(localStorage.getItem('jbranch') || 'null'); if (x && !EMBED) { k = x.k; b = x.b || ''; f = x.f || ''; r = x.r || 'm'; } }
   } catch (e) { }
-  if (k && (b || f) && !EMBED) BR_MODE = { k, b: f ? '' : b, f, code: f || b, fac: !!f };
+  if (!/^[moc]$/.test(r) || f) r = 'm';
+  if (k && (b || f) && !EMBED) BR_MODE = { k, b: f ? '' : b, f, code: f || b, fac: !!f, r };
 })();
-const pinKey = () => 'jbpin-' + BR_MODE.code;
+const pinKey = () => 'jbpin-' + BR_MODE.code + (BR_MODE.r !== 'm' ? '-' + BR_MODE.r : '');
+// who uses the link (like Saudi Thobe's logins): the manager sees everything, the order taker books orders (no cash), the cashier works the till
+const ROLE = { m: ['Manager', 'مدير الفرع'], o: ['Order taker', 'المقاسات'], c: ['Cashier', 'الكاشير'] };
+const ROLE_TABS = {
+  m: [['home', 'Home'], ['new', 'New order'], ['orders', 'Orders'], ['till', 'Till'], ['due', 'Delivery'], ['alt', 'Alteration'], ['fac', 'Factory'], ['rep', 'Report']],
+  o: [['orders', 'Orders'], ['new', 'New order'], ['due', 'Delivery'], ['alt', 'Alteration']],
+  c: [['till', 'Till'], ['orders', 'Orders'], ['due', 'Delivery'], ['rep', 'Report']],
+};
 // ---- language of the branch / factory pages: Hinglish (as written) · English · Arabic – translated on the page itself
 let BLANG = 'hi'; try { BLANG = localStorage.getItem('jbranch-lang') || 'hi'; } catch (e) { }
 const LANG_PH = [
@@ -1339,6 +1352,17 @@ const LANG_PH = [
   ['Loading…', 'Loading…', 'جاري التحميل…'], ['PIN galat hai', 'Wrong PIN', 'الرقم السري غير صحيح'], ['Pehle apna naam likhiye – اسمك', 'Write your name first', 'اكتب اسمك أولاً'],
   ['اسمك – Your name (yaad rahega)', 'Your name (kept on this device)', 'اسمك (يُحفظ في هذا الجهاز)'], ['اسمك – Your name', 'Your name', 'اسمك'], ['Save nahin hua: ', 'Not saved: ', 'لم يُحفظ: '],
   ['Koi alteration baaki nahin', 'No alteration left', 'لا توجد تعديلات متبقية'], ['Delivered (last ', 'Delivered (last ', 'سُلّم (آخر '], ['booked', 'booked', 'الحجز'],
+  ['Manager', 'Manager', 'مدير الفرع'], ['Order taker', 'Order taker', 'المقاسات'], ['Cashier', 'Cashier', 'الكاشير'],
+  ['Till', 'Till', 'الصندوق'], ['Report', 'Report', 'التقرير'], ['Aaj wasooli SAR', "Today's received SAR", 'المحصّل اليوم ر.س'], ['Aaj diye (thobe)', 'Handed over today (thobes)', 'سُلّم اليوم (ثوب)'],
+  ['Ready / baaki paisa', 'Ready / money due', 'جاهز / مبالغ متبقية'], ['Aaj ke till kaam', "Today's till work", 'عمليات الصندوق اليوم'], ['Paid', 'Paid', 'المدفوع'], ['Thobe baaki', 'Thobes left', 'ثياب متبقية'],
+  ['Wasooli Jameel ke payments se – shop PC sync ke baad (1–2 min) yahan aati hai.', 'Money received comes from Jameel payments – it shows here after the shop PC syncs (1–2 min).', 'المحصّل من مدفوعات جميل – يظهر هنا بعد مزامنة جهاز المحل (١–٢ دقيقة).'],
+  ['💵 Payment lo – استلام دفعة', '💵 Take payment', '💵 استلام دفعة'], ['✔ Thobe de diye – تسليم', '✔ Hand over thobes', '✔ تسليم الثياب'], ['Upar ka amount bhi isi ke saath save hoga.', 'The amount above is saved with it.', 'يُحفظ المبلغ أعلاه مع التسليم.'],
+  ['Sab thobe de diye gaye.', 'All thobes handed over.', 'تم تسليم كل الثياب.'], ['⏳ Shop PC par bhej rahe…', '⏳ Sending to the shop PC…', '⏳ جاري الإرسال لجهاز المحل…'], ['⏳ Jameel mein save ho raha hai…', '⏳ Saving in Jameel…', '⏳ جاري الحفظ في جميل…'],
+  ['PC se abhi jawab nahin – Till ki list mein status dekhiye.', 'No answer from the PC yet – see the status in the Till list.', 'لا رد من الجهاز بعد – راجع الحالة في قائمة الصندوق.'], ['Amount likhiye', 'Write the amount', 'اكتب المبلغ'],
+  ['Payment', 'Payment', 'دفعة'], ['⏳ Jameel', '⏳ Jameel', '⏳ جميل'], ['⏳ Shop PC…', '⏳ Shop PC…', '⏳ جهاز المحل…'], ['💵 Till – payment / hand over', '💵 Till – payment / hand over', '💵 الصندوق – دفعة / تسليم'], ['🖨 Receipt', '🖨 Receipt', '🖨 السند'],
+  ['Aaj', 'Today', 'اليوم'], ['Kal', 'Yesterday', 'أمس'], ['7 din', '7 days', '٧ أيام'], ['30 din', '30 days', '٣٠ يوم'], ['From', 'From', 'من'], ['To', 'To', 'إلى'], ['🖨 Print', '🖨 Print', '🖨 طباعة'],
+  ['Booked amount SAR', 'Booked amount SAR', 'مبلغ الحجز ر.س'], ['Received SAR', 'Received SAR', 'المحصّل ر.س'], ['Balance due (all)', 'Balance due (all)', 'المتبقي على العملاء (الكل)'], ['Thobe still to give', 'Thobes still to hand over', 'ثياب لم تُسلّم بعد'],
+  ['Payment methods', 'Payment methods', 'طرق الدفع'], ['Date', 'Date', 'التاريخ'], ['Receipt', 'Receipt', 'السند'], ['Order', 'Order', 'الطلب'], ['Customer', 'Customer', 'العميل'], ['Method', 'Method', 'الطريقة'], ['Amount', 'Amount', 'المبلغ'], ['By', 'By', 'بواسطة'],
   ['Naap – المقاسات', 'Measurements', 'المقاسات'], ['Thobe – الثياب', 'Thobes', 'الثياب'], ['فاتورة جينكس', 'Genix invoice', 'فاتورة جينكس'], ['Thobe – عدد', 'Thobes', 'عدد الثياب'], ['Save – حفظ', 'Save', 'حفظ'], ['Order save karein – حفظ', 'Save the order', 'حفظ الطلب'],
 ];
 const LANG_RX = [
@@ -1348,6 +1372,11 @@ const LANG_RX = [
   [/^Alteration A(\d+) save ho gaya ✓$/, 'Alteration A$1 saved ✓', 'تم حفظ التعديل A$1 ✓'], [/^(.*) save ho gaya ✓$/, '$1 saved ✓', 'تم حفظ $1 ✓'], [/^(\d+) order factory bhejein\?$/, 'Send $1 orders to the factory?', 'إرسال $1 طلب للمصنع؟'],
   [/^Alteration A(\d+) customer ko de diya\?$/, 'Alteration A$1 handed to the customer?', 'هل سُلّم التعديل A$1 للعميل؟'], [/^Genix invoice (\d+) PDF$/, 'Genix invoice $1 PDF', 'فاتورة جينكس $1 PDF'], [/^Genix (\d+)$/, 'Genix $1', 'جينكس $1'],
   [/^(.*)InvProject order save karein\?$/, '$1Save the InvProject order?', '$1حفظ أمر التشغيل؟'],
+  [/^Orders booked \((\d+) pcs\)$/, 'Orders booked ($1 pcs)', 'طلبات محجوزة ($1 قطعة)'], [/^Thobe handed over \((\d+) orders\)$/, 'Thobes handed over ($1 orders)', 'ثياب مسلّمة ($1 طلب)'], [/^Receipts \((\d+)\)$/, 'Receipts ($1)', 'السندات ($1)'],
+  [/^Orders booked \((\d+)\)$/, 'Orders booked ($1)', 'الطلبات المحجوزة ($1)'], [/^Customer par (.+) SAR baaki rahega – phir bhi thobe de dein\?$/, 'The customer will still owe $1 SAR – hand over anyway?', 'سيبقى على العميل $1 ر.س – تسليم الثياب رغم ذلك؟'],
+  [/^Amount balance \((.+)\) se zyada hai$/, 'The amount is more than the balance ($1)', 'المبلغ أكثر من الباقي ($1)'], [/^Thobe ginti 1–(\d+)$/, 'Thobes: 1–$1', 'عدد الثياب ١–$1'],
+  [/^Payment ([\d.,]+) (.*) – ([A-Z0-9]+-\d+)\?$/, 'Take payment $1 $2 – $3?', 'استلام دفعة $1 $2 – $3؟'], [/^(\d+) thobe hand over(.*) – ([A-Z0-9]+-\d+)\?$/, 'Hand over $1 thobes$2 – $3?', 'تسليم $1 ثوب$2 – $3؟'],
+  [/^(\d+) thobe hand over$/, 'Hand over $1 thobes', 'تسليم $1 ثوب'], [/^✔ Saved · Receipt (\S*)(.*)$/, '✔ Saved · Receipt $1$2', '✔ تم الحفظ · سند $1$2'],
 ];
 // words inside longer lines (thobe · delivery …), Arabic only
 const LANG_W = [[/\bthobe\b/g, 'ثوب'], [/\bdelivery\b/g, 'التسليم'], [/\bready\b/g, 'جاهز'], [/\bsent back\b/g, 'أُرجع'], [/\bsent\b/g, 'أُرسل'], [/\bcame\b/g, 'وصل'], [/\bback\b/g, 'رجع'], [/\bpcs\b/g, 'قطعة'], [/\borders\b/g, 'طلبات'], [/\border\b/g, 'طلب'], [/\bdate\b/g, 'التاريخ'], [/\bFault\b/g, 'الخطأ']];
@@ -1410,7 +1439,11 @@ async function branchStart(pinTry) {
     const br = list.find(x => x.c === B.code);
     if (!br || br.k !== (B.fac ? 'factory' : 'shop') || br.on === false) throw new Error((B.fac ? 'Factory ' : 'Branch ') + B.code + ' Admin → Branches mein nahin hai (ya band hai)');
     let pin = pinTry != null ? pinTry : (localStorage.getItem(pinKey()) || '');
-    if (br.pin) {   // the branch's own PIN
+    const rp = B.fac ? '' : B.r === 'o' ? br.po : B.r === 'c' ? br.pc : '';
+    if (rp) {       // the role's own PIN (order taker / cashier)
+      if (!pin) return branchPin();
+      if ((await sha256('tsbranch:' + br.c + ':' + B.r + ':' + pin)) !== rp) { localStorage.removeItem(pinKey()); return branchPin('PIN galat hai'); }
+    } else if (br.pin) {   // the branch's own PIN
       if (!pin) return branchPin();
       if ((await sha256('tsbranch:' + br.c + ':' + pin)) !== br.pin) { localStorage.removeItem(pinKey()); return branchPin('PIN galat hai'); }
     } else {        // no branch PIN: the order link's PIN, if it has one
@@ -1421,16 +1454,16 @@ async function branchStart(pinTry) {
     if (pin) localStorage.setItem(pinKey(), pin);
     B.name = br.n || br.ar || br.c; B.ar = br.ar || br.n || br.c; B.all = list;
     document.title = 'Jameel · ' + B.name;
-    if (B.fac) factoryHome(); else branchHome('home');
+    if (B.fac) factoryHome(); else branchHome();
   } catch (e) { app.innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Jameel Al Hindam</h1><div class="err">${H(e.message)}</div></div>`; }
 }
 function branchPin(err) {
-  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>${BR_MODE.fac ? 'Factory' : 'Branch'} ${H(BR_MODE.code)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>${langBar()}
+  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>${BR_MODE.fac ? 'Factory' : 'Branch'} ${H(BR_MODE.code)}</h1>${BR_MODE.fac ? '' : `<p class="muted" style="margin:0 0 6px">${H(ROLE[BR_MODE.r][1])} · ${H(ROLE[BR_MODE.r][0])}</p>`}<p class="ar">جميل الهندام للخياطة الرجالية</p>${langBar()}
   <form id="bp" class="card"><input id="bpin" type="password" inputmode="numeric" placeholder="PIN" autofocus>${err ? `<div class="err" style="margin-top:10px">${H(err)}</div>` : ''}<button class="btn" style="width:100%;margin-top:10px">OK</button></form></div>`;
   $('#bp').onsubmit = (e) => { e.preventDefault(); branchStart($('#bpin').value.trim()); };
 }
 // ---- shared bits
-const BICON = { alt: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', home: ICON.home, new: '<path d="M12 5v14M5 12h14"/>', orders: ICON.inv, due: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', fac: '<path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/>' };
+const BICON = { alt: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', home: ICON.home, new: '<path d="M12 5v14M5 12h14"/>', orders: ICON.inv, due: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', fac: '<path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/>', till: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>', rep: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>' };
 const dmy = (d) => String(d || '').slice(0, 10).split('-').reverse().join('-');
 const dm = (t) => t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : '';
 async function fxNow() {
@@ -1448,25 +1481,33 @@ async function fxPut(nos, st, who, brOf) {
 const bWho = () => { try { return localStorage.getItem('jbranch-by') || ''; } catch (e) { return ''; } };
 function bShell(tabs, cur, go) {
   const B = BR_MODE;
-  $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1;min-width:0"><h1>${B.fac ? '🏭' : '🏬'} ${H(B.ar)}${B.ar !== B.name ? ' · ' + H(B.name) : ''} <span class="bcode">${H(B.code)}</span></h1><div>جميل الهندام · Jameel Al Hindam${bWho() ? ' · ' + H(bWho()) : ''}</div></div>
+  $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1;min-width:0"><h1>${B.fac ? '🏭' : '🏬'} ${H(B.ar)}${B.ar !== B.name ? ' · ' + H(B.name) : ''} <span class="bcode">${H(B.code)}</span>${!B.fac && B.r !== 'm' ? `<span class="brole">${H(ROLE[B.r][0])}</span>` : ''}</h1><div>جميل الهندام · Jameel Al Hindam${bWho() ? ' · ' + H(bWho()) : ''}</div></div>
     ${langBar()}<button class="btn ghost small" id="bwho" style="color:#fff;border-color:rgba(255,255,255,.3)">👤</button></div>
   <main class="bmain" id="bm"></main>
-  <nav>${tabs.map(([k, l]) => `<button data-bt="${k}" class="${k === cur ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${BICON[k]}</svg>${l}</button>`).join('')}</nav>`;
+  <nav class="${tabs.length > 5 ? 'many' : ''}">${tabs.map(([k, l]) => `<button data-bt="${k}" class="${k === cur ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${BICON[k]}</svg>${l}</button>`).join('')}</nav>`;
   document.querySelectorAll('[data-bt]').forEach(b => b.onclick = () => go(b.dataset.bt));
   $('#bwho').onclick = () => { const n = prompt('اسمك – Your name', bWho()); if (n != null) { try { localStorage.setItem('jbranch-by', n.trim()); } catch (e) { } go(cur); } };
   return $('#bm');
 }
 const needWho = () => { if (bWho()) return true; const n = prompt('اسمك – Your name (yaad rahega)', ''); if (!n || !n.trim()) return false; try { localStorage.setItem('jbranch-by', n.trim()); } catch (e) { } return true; };
 // ---- a shop branch
-let bTab = 'home';
+let bTab = '';
 function branchHome(t) {
-  bTab = t || bTab;
-  const B = BR_MODE, tabs = [['home', 'Home'], ['new', 'New order'], ['orders', 'Orders'], ['due', 'Delivery'], ['alt', 'Alteration'], ['fac', 'Factory']];
-  if (bTab === 'new') { if (!needWho()) bTab = 'home'; else { const m = bShell(tabs, 'new', branchHome); m.innerHTML = '<p class="muted center">…</p>'; newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: bWho(), done: () => branchHome('home') }); return; } }
+  const B = BR_MODE, tabs = ROLE_TABS[B.r] || ROLE_TABS.m, first = tabs[0][0];
+  bTab = t || bTab || first;
+  if (!tabs.some(x => x[0] === bTab)) bTab = first;
+  if (bTab === 'new') { if (!needWho()) bTab = first === 'new' ? 'orders' : first; else { const m = bShell(tabs, 'new', branchHome); m.innerHTML = '<p class="muted center">…</p>'; newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: bWho(), done: () => branchHome(first) }); return; } }
   const m = bShell(tabs, bTab, branchHome);
   m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
-  ({ home: bHomeView, orders: bOrdersView, due: bDueView, fac: bFacView, alt: (x) => altView(x, { br: B.b, fac: false, back: () => branchHome('alt') }) }[bTab] || bHomeView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
-  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet') && (bTab === 'home' || bTab === 'fac' || bTab === 'due' || bTab === 'alt')) branchHome(bTab); }, 90000);
+  ({ home: bHomeView, orders: bOrdersView, due: bDueView, fac: bFacView, till: bTillView, rep: bRepView, alt: (x) => altView(x, { br: B.b, fac: false, back: () => branchHome('alt') }) }[bTab] || bOrdersView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet') && ['home', 'fac', 'due', 'alt', 'till'].includes(bTab)) branchHome(bTab); }, 90000);
+}
+// jobs of today (a query on the time only – no extra index), this shop's
+async function bJobsToday(kind) {
+  const B = BR_MODE, from = new Date(riyadh().slice(0, 10) + 'T00:00:00+03:00');
+  const L = [], s = await getDocs(query(collection(db, 'jobs'), where('ts', '>=', from))).catch(() => null);
+  if (s) s.forEach(x => { const d = x.data(); if (String(d.br || '') === B.b && (!kind || d.kind === kind)) L.push({ id: x.id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date(0) }); });
+  return L.sort((a, b) => b.t - a.t);
 }
 async function bData() {
   DSC.j_orders = null;
@@ -1485,11 +1526,12 @@ function bOrder(o, F) {
   openSheet(`<h2 style="margin:4px 0">${H(bNo(o))} · <span class="ar">${H(o.customer_name)}</span></h2>
     <div class="muted">${H(o.mobile)} · booked ${H(dmy(o.booking_date))} · delivery ${H(dmy(o.delivery_date))}</div>
     <div class="grid" style="margin-top:10px"><div class="stat"><b>${N(o.pcs)}</b><span>Thobe</span></div><div class="stat"><b>${N(o.delivered_qty)}</b><span>Delivered</span></div>
-      <div class="stat"><b>${money(o.total)}</b><span>Total</span></div><div class="stat"><b style="color:${oDue(o) >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(oDue(o))}</b><span>Balance</span></div></div>
+      ${BR_MODE.r === 'o' ? '' : `<div class="stat"><b>${money(o.total)}</b><span>Total</span></div><div class="stat"><b style="color:${oDue(o) >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(oDue(o))}</b><span>Balance</span></div>`}</div>
+    ${BR_MODE.r !== 'o' && ROLE_TABS[BR_MODE.r].some(x => x[0] === 'till') ? `<button class="btn" id="btill" style="width:100%;margin:6px 0">💵 Till – payment / hand over</button>` : ''}
     <div class="row" style="gap:6px;flex-wrap:wrap">${jStatus(o)} ${fxTag(F, o)}</div>
     ${o.invoice_no ? `<div class="row" style="margin-top:10px"><button class="btn small" id="bpdf">Genix invoice ${H(o.invoice_no)} PDF</button></div><div id="bpst"></div>` : ''}
     ${o.mobile ? `<div class="row" style="margin-top:8px;gap:6px"><a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a></div>` : ''}`,
-    (s) => { if (o.invoice_no) $('#bpdf', s).onclick = () => pdfJob(o.invoice_no, $('#bpst', s)); });
+    (s) => { if (o.invoice_no) $('#bpdf', s).onclick = () => pdfJob(o.invoice_no, $('#bpst', s)); const t = $('#btill', s); if (t) t.onclick = () => { s.remove(); tillSheet(o, F); }; });
 }
 function openSheet(html, after) {
   const s = document.createElement('div'); s.className = 'sheet';
@@ -1499,13 +1541,11 @@ function openSheet(html, after) {
 }
 async function bHomeView(m) {
   const B = BR_MODE, day = riyadh().slice(0, 10), soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
-  const [{ mine, F, open }, js] = await Promise.all([bData(), getDocs(query(collection(db, 'jobs'), where('br', '==', B.b), limit(80))).catch(() => null)]);
+  const [{ mine, F, open }, L] = await Promise.all([bData(), bJobsToday('inv_order')]);
   const td = mine.filter(o => String(o.booking_date || '').slice(0, 10) === day);
   const dueSoon = open.filter(o => String(o.delivery_date || '').slice(0, 10) <= soon), late = open.filter(o => String(o.delivery_date || '').slice(0, 10) < day);
   const ready = open.filter(o => N(o.ready) === 1), atF = open.filter(o => F[o.order_no] && F[o.order_no].st === 'sent');
-  const L = []; if (js) js.forEach(x => { const d = x.data(); if (d.kind === 'inv_order') L.push({ id: x.id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date(0) }); });
-  L.sort((a, b) => b.t - a.t);
-  const Lt = L.filter(x => riyadh(x.t).slice(0, 10) === day || x.st === 'new' || x.st === 'running');
+  const Lt = L;
   m.innerHTML = `<button class="btn bgo" id="bnew" style="margin:0 0 12px">+ أمر تشغيل جديد · New InvProject order</button>
     <div class="grid"><div class="stat"><b>${td.length}</b><span>Aaj ke orders (${td.reduce((a, o) => a + N(o.pcs), 0)} pcs)</span></div><div class="stat"><b>${money(td.reduce((a, o) => a + N(o.total), 0))}</b><span>Aaj ka amount SAR</span></div>
       <div class="stat tap" data-g="due"><b>${dueSoon.length}</b><span>Delivery ≤ 2 din</span></div><div class="stat tap" data-g="due"><b style="color:var(--ok)">${ready.length}</b><span>Ready – dene ke liye</span></div>
@@ -1647,6 +1687,188 @@ function altForm(opt) {
       $('#ars', s).innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>Alteration A${H(j.result.alt)} save ho gaya ✓</b></div>`; go.hidden = true;
     } catch (e) { go.disabled = false; $('#ars', s).innerHTML = `<div class="err">${H(e.message)}</div>`; }
   };
+}
+// ---- the till (manager / cashier): take a payment, hand over thobes. Sent to the shop PC (job br_act) and saved in Jameel exactly like
+// a payment on the admin alerts page (receipt no., balance, "customer still owes" check); today's money from Jameel's payments
+const bBal = (o) => Math.round((N(o.total) - N(o.paid)) * 100) / 100;
+const bLeft = (o) => Math.max(0, N(o.pcs) - N(o.delivered_qty));
+let TILL_M = null;
+function tillMethods(rows) {   // the methods the shop really uses (Jameel's payments of the last 120 days), most used first
+  const cnt = {}, d120 = riyadh(new Date(Date.now() - 120 * 864e5)).slice(0, 10);
+  rows.forEach(p => { const m = String(p.method || '').trim(); if (m && N(p.amount) > 0 && String(p.date || '') >= d120) { const k = m.toLowerCase(); (cnt[k] = cnt[k] || [m, 0])[1]++; } });
+  TILL_M = Object.values(cnt).sort((a, b) => b[1] - a[1]).map(x => x[0]).filter(m => !/gift/i.test(m)).slice(0, 7);
+  if (!TILL_M.length) TILL_M = ['Cash', 'Span', 'Bank Transfer'];
+  return TILL_M;
+}
+async function bPays(mine) {
+  DSC.j_payments = null;
+  const jp = await loadDs('j_payments').catch(() => ({ rows: [] }));
+  tillMethods(jp.rows);
+  const set = new Set(mine.map(o => String(o.order_no)));
+  return jp.rows.filter(p => set.has(String(p.order_no)));
+}
+function tillState(d) {
+  if (d.st === 'error' || d.st === 'cancelled') return { c: 'bad', h: '✖ ' + H(d.error || d.st), end: true };
+  if (d.act_st === 'saved') return { c: 'ok', h: '✔ Saved · Receipt ' + H(d.act_receipt || '') + (d.act_note ? ' · ' + H(d.act_note) : ''), end: true };
+  if (d.act_st === 'error') return { c: 'bad', h: '✖ ' + H(d.act_note || 'error'), end: true };
+  if (d.st === 'done') return { c: 'w', h: '⏳ Jameel mein save ho raha hai…' };
+  return { c: 'w', h: '⏳ Shop PC par bhej rahe…' };
+}
+function tillRow(j) {
+  const S = tillState(j), what = j.akind === 'DELIVER' ? `${N(j.qty)} thobe hand over` : 'Payment';
+  return `<tr><td class="muted">${H(riyadh(j.t).slice(11, 16))}</td><td><b>${H(BR_MODE.b + '-' + (j.order || ''))}</b><div class="muted ar">${H(j.who || '')}</div></td>
+    <td>${H(what)}${N(j.amount) > 0 ? `<div><b>${money(j.amount)}</b> <span class="muted">${H(j.method || '')}</span></div>` : ''}${j.by ? `<div class="muted">${H(j.by)}</div>` : ''}</td>
+    <td>${S.c === 'ok' ? `<span class="pill" style="background:var(--okbg);color:var(--ok)">✔ ${H(j.act_receipt || '')}</span> <button class="btn ghost small" data-tp="${H(j.id)}">🖨</button>`
+      : S.c === 'bad' ? `<span class="err" style="display:inline-block;padding:4px 8px">${S.h}</span>` : `<span class="pill">${j.st === 'done' ? '⏳ Jameel' : '⏳ Shop PC…'}</span>`}</td></tr>`;
+}
+async function bTillView(m) {
+  const B = BR_MODE, day = riyadh().slice(0, 10);
+  const [{ mine, F }, L] = await Promise.all([bData(), bJobsToday('br_act')]);
+  const pays = await bPays(mine), tp = pays.filter(p => String(p.date || '').slice(0, 10) === day);
+  const byM = {}; let tot = 0, pcs = 0;
+  tp.forEach(p => { const a = N(p.amount); if (a) { const k = String(p.method || '').trim() || '—'; byM[k] = (byM[k] || 0) + a; tot += a; } if (String(p.status) === 'DELIVER') pcs += N(p.delivered_qty); });
+  const ready = mine.filter(o => bLeft(o) > 0 && N(o.ready) === 1);
+  m.innerHTML = `<div class="grid"><div class="stat"><b style="color:var(--ok)">${money(tot)}</b><span>Aaj wasooli SAR</span></div>${Object.keys(byM).sort().map(k => `<div class="stat"><b>${money(byM[k])}</b><span>${H(k)}</span></div>`).join('')}
+      <div class="stat"><b>${pcs}</b><span>Aaj diye (thobe)</span></div><div class="stat"><b>${ready.length}</b><span>Ready – dene ke liye</span></div></div>
+    <input id="tq" placeholder="Search: order no, name, mobile" style="margin:4px 0 10px"><div id="tl"></div>
+    ${L.length ? `<h2>Aaj ke till kaam</h2><div class="card" style="overflow-x:auto"><table>${L.map(tillRow).join('')}</table></div>` : ''}
+    <p class="muted" style="font-size:12.5px">Wasooli Jameel ke payments se – shop PC sync ke baad (1–2 min) yahan aati hai.</p>`;
+  const draw = () => {
+    const q = $('#tq', m).value.trim().toLowerCase().replace(new RegExp('^' + B.b.toLowerCase() + '-'), ''), ws = q.split(/\s+/).filter(Boolean);
+    const r = ws.length ? mine.filter(o => ws.every(w => o._s.includes(w))).sort((a, b) => cmpv(b.order_no, a.order_no)).slice(0, 60)
+      : mine.filter(o => bLeft(o) > 0 && (N(o.ready) === 1 || bBal(o) >= 1)).sort((a, b) => (N(b.ready) - N(a.ready)) || cmpv(a.delivery_date, b.delivery_date)).slice(0, 80);
+    $('#tl', m).innerHTML = (ws.length ? '' : `<div class="bsec" style="background:#e3f4ea"><span>Ready / baaki paisa</span><span>${r.length}</span></div>`) +
+      `<div class="card list">${r.map((o, i) => `<div class="it" data-i="${i}"><div class="no">${H(bNo(o))}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${bLeft(o)}/${N(o.pcs)} thobe · delivery ${H(dmy(o.delivery_date))}</div></div>
+        <div class="r">${N(o.ready) === 1 && bLeft(o) > 0 ? '<span class="pill" style="background:var(--okbg);color:var(--ok)">Ready</span>' : ''}<div style="font-weight:700;color:${bBal(o) >= 1 ? 'var(--bad)' : 'var(--ok)'}">${money(bBal(o))}</div></div></div>`).join('') || '<p class="muted center">Kuch nahin mila</p>'}</div>`;
+    $('#tl', m).querySelectorAll('.it').forEach(el => el.onclick = () => tillSheet(r[+el.dataset.i], F));
+  };
+  $('#tq', m).oninput = draw; draw();
+  m.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const j = L.find(x => x.id === b.dataset.tp); if (j) tillSlip(j, mine.find(o => String(o.order_no) === String(j.order))); });
+}
+function tillSheet(o, F) {
+  const B = BR_MODE, b0 = bBal(o), left = bLeft(o);
+  openSheet(`<h2 style="margin:4px 0">💵 ${H(bNo(o))} · <span class="ar">${H(o.customer_name)}</span></h2>
+    <div class="muted">${H(o.mobile)} · delivery ${H(dmy(o.delivery_date))}${o.invoice_no ? ' · Genix ' + H(o.invoice_no) : ''}</div>
+    <div class="grid" style="margin-top:10px"><div class="stat"><b>${money(o.total)}</b><span>Total</span></div><div class="stat"><b>${money(o.paid)}</b><span>Paid</span></div>
+      <div class="stat"><b style="color:${b0 >= 1 ? 'var(--bad)' : 'var(--ok)'}">${money(b0)}</b><span>Balance</span></div><div class="stat"><b>${left}/${N(o.pcs)}</b><span>Thobe baaki</span></div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">${jStatus(o)} ${fxTag(F || {}, o)}</div>
+    <label class="muted">Amount – المبلغ (SAR)</label><input id="ta" type="number" min="0" step="0.01" inputmode="decimal" value="${b0 > 0 ? b0 : ''}" placeholder="0">
+    <div class="mseg" id="tm"></div>
+    <button class="btn" id="tpay" style="width:100%">💵 Payment lo – استلام دفعة</button>
+    ${left > 0 ? `<div class="row" style="margin-top:14px;gap:8px;align-items:flex-end"><div style="flex:0 0 100px"><label class="muted">Thobe – عدد</label><input id="tqn" type="number" min="1" max="${left}" value="${left}" inputmode="numeric"></div>
+      <button class="btn bgo" id="tdl" style="flex:1;margin:0;font-size:16px;padding:13px">✔ Thobe de diye – تسليم</button></div>
+      <div class="muted" style="font-size:12.5px;margin-top:4px">Upar ka amount bhi isi ke saath save hoga.</div>` : '<div class="muted" style="margin-top:10px">Sab thobe de diye gaye.</div>'}
+    <div id="tst"></div>`, (s) => {
+    let meth = '';
+    const seg = () => { const L = TILL_M || ['Cash']; if (!L.includes(meth)) meth = L[0];
+      $('#tm', s).innerHTML = L.map(x => `<button type="button" data-m="${H(x)}" class="${x === meth ? 'on' : ''}">${H(x)}</button>`).join('');
+      $('#tm', s).querySelectorAll('[data-m]').forEach(b => b.onclick = () => { meth = b.dataset.m; seg(); }); };
+    seg(); if (!TILL_M) loadDs('j_payments').then(x => { tillMethods(x.rows); seg(); }).catch(() => { });
+    const btns = () => s.querySelectorAll('#tpay,#tdl');
+    const send = async (akind) => {
+      if (!needWho()) return;
+      const amt = Math.round((Number($('#ta', s).value) || 0) * 100) / 100, qty = akind === 'DELIVER' ? Math.floor(Number($('#tqn', s).value) || 0) : 0;
+      if (amt < 0 || amt > b0 + 0.01) return alert('Amount balance (' + money(b0) + ') se zyada hai');
+      if (akind === 'PAY' && !(amt > 0)) return alert('Amount likhiye');
+      if (akind === 'DELIVER' && !(qty >= 1 && qty <= left)) return alert('Thobe ginti 1–' + left);
+      let force = false;
+      if (akind === 'DELIVER' && b0 - amt > 0.5) { if (!confirm('Customer par ' + money(b0 - amt) + ' SAR baaki rahega – phir bhi thobe de dein?')) return; force = true; }
+      if (!confirm((akind === 'PAY' ? 'Payment ' + money(amt) + ' ' + meth : qty + ' thobe hand over' + (amt > 0 ? ' + ' + money(amt) + ' ' + meth : '')) + ' – ' + bNo(o) + '?')) return;
+      btns().forEach(b => b.disabled = true);
+      const st = $('#tst', s);
+      try {
+        const j = await jobNew('br_act', { order: Number(o.order_no), akind, amount: amt, method: amt > 0 ? meth : '', qty, force, by: bWho(), br: B.b, who: String(o.customer_name || '').slice(0, 60) });
+        tillWait(j.id, st, o);
+      } catch (e) { btns().forEach(b => b.disabled = false); st.className = 'tst bad'; st.textContent = '✖ ' + e.message; }
+    };
+    $('#tpay', s).onclick = () => send('PAY');
+    if ($('#tdl', s)) $('#tdl', s).onclick = () => send('DELIVER');
+  });
+}
+async function tillWait(id, el, o) {
+  for (let i = 0; i < 80; i++) {
+    const d = (await jobGet(id).catch(() => ({ result: {} }))).result || {}, S = tillState(d);
+    el.className = 'tst ' + S.c; el.innerHTML = S.h;
+    if (S.end) {
+      if (S.c === 'ok') { DSC.j_orders = null; DSC.j_payments = null;
+        el.insertAdjacentHTML('beforeend', ' <button class="btn small" style="margin-inline-start:8px">🖨 Receipt</button>');
+        el.querySelector('button').onclick = () => tillSlip({ id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date() }, o); }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 2500));
+  }
+  el.className = 'tst w'; el.textContent = 'PC se abhi jawab nahin – Till ki list mein status dekhiye.';
+}
+function printHtml(html) {
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(f);
+  const d = f.contentDocument; d.open(); d.write(html); d.close();
+  setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { } setTimeout(() => f.remove(), 60000); }, 400);
+}
+function tillSlip(j, o) {   // 80 mm receipt
+  const B = BR_MODE, m = String(j.act_note || '').match(/balance\s+(-?[\d.,]+)/i);
+  printHtml(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${H(j.act_receipt || '')}</title><style>@page{size:80mm auto;margin:4mm}body{font:13px/1.5 system-ui,Arial,sans-serif;margin:0;color:#000}
+    h1{font-size:16px;margin:0;text-align:center}.c{text-align:center}.r{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #999;padding:4px 0}.big{font-size:19px;font-weight:800}hr{border:0;border-top:2px solid #000}</style></head><body>
+    <h1>جميل الهندام للخياطة الرجالية</h1><div class="c"><b>JAMEEL AL HINDAM</b></div><div class="c">${H(B.ar)} · ${H(B.name)} (${H(B.b)})</div><div class="c">${H(riyadh(j.t || new Date()).slice(0, 16))}</div><hr>
+    <div class="r"><span>Receipt · سند</span><b>${H(j.act_receipt || '')}</b></div><div class="r"><span>Order · طلب</span><b>${H(B.b + '-' + (j.order || ''))}</b></div>
+    <div class="r"><span>Customer · العميل</span><b>${H(o ? o.customer_name : j.who || '')}</b></div>
+    ${N(j.amount) > 0 ? `<div class="r"><span>Paid · المدفوع<br><small>${H(j.method || '')}</small></span><span class="big">${money(j.amount)} SAR</span></div>` : ''}
+    ${N(j.qty) > 0 ? `<div class="r"><span>Thobes handed · ثياب مسلّمة</span><b>${N(j.qty)}</b></div>` : ''}
+    ${m ? `<div class="r"><span>Balance · الباقي</span><b>${H(m[1])} SAR</b></div>` : ''}
+    <div class="c" style="margin-top:8px">${H(j.by || '')}</div><div class="c">شكراً لكم · Thank you</div></body></html>`);
+}
+// ---- branch report (manager / cashier): orders booked, money received by method, thobes handed over – any dates, print for the day's closing
+let REP = null;
+async function bRepView(m) {
+  const B = BR_MODE, day = riyadh().slice(0, 10);
+  const { mine } = await bData(), pays = await bPays(mine), om = new Map(mine.map(o => [String(o.order_no), o]));
+  REP = REP || { f: day, t: day };
+  m.innerHTML = `<div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end"><div><label class="muted">From</label><input type="date" id="rf" value="${REP.f}"></div><div><label class="muted">To</label><input type="date" id="rt" value="${REP.t}"></div>
+    <button class="btn ghost small" data-rq="0">Aaj</button><button class="btn ghost small" data-rq="1">Kal</button><button class="btn ghost small" data-rq="7">7 din</button><button class="btn ghost small" data-rq="30">30 din</button><button class="btn small" id="rpr">🖨 Print</button></div><div id="rb" style="margin-top:12px"></div>`;
+  const calc = () => {
+    const f = REP.f, t = REP.t, inR = (d) => { d = String(d || '').slice(0, 10); return d >= f && d <= t; };
+    const bk = mine.filter(o => inR(o.booking_date)).sort((a, b) => cmpv(a.order_no, b.order_no)), ps = pays.filter(p => inR(p.date)).sort((a, b) => cmpv(a.id, b.id));
+    const byM = {}; let rec = 0, dq = 0; const dOrd = new Set();
+    ps.forEach(p => { const a = N(p.amount); if (a) { const k = String(p.method || '').trim() || '—'; byM[k] = (byM[k] || 0) + a; rec += a; } if (String(p.status) === 'DELIVER' && N(p.delivered_qty) > 0) { dq += N(p.delivered_qty); dOrd.add(String(p.order_no)); } });
+    const open = mine.filter(o => bLeft(o) > 0);
+    return { f, t, bk, ps, byM, rec, dq, dOrd, left: open.reduce((a, o) => a + bLeft(o), 0), owed: mine.reduce((a, o) => a + Math.max(0, oDue(o)), 0),
+             bkPcs: bk.reduce((a, o) => a + N(o.pcs), 0), bkAmt: bk.reduce((a, o) => a + N(o.total), 0) };
+  };
+  const draw = () => {
+    const R = calc();
+    $('#rb', m).innerHTML = `<div class="grid"><div class="stat"><b>${R.bk.length}</b><span>Orders booked (${R.bkPcs} pcs)</span></div><div class="stat"><b>${money(R.bkAmt)}</b><span>Booked amount SAR</span></div>
+        <div class="stat"><b style="color:var(--ok)">${money(R.rec)}</b><span>Received SAR</span></div><div class="stat"><b>${R.dq}</b><span>Thobe handed over (${R.dOrd.size} orders)</span></div>
+        <div class="stat"><b style="color:var(--bad)">${money(R.owed)}</b><span>Balance due (all)</span></div><div class="stat"><b>${R.left}</b><span>Thobe still to give</span></div></div>
+      <h2>Payment methods</h2><div class="card"><table>${Object.keys(R.byM).sort().map(k => `<tr><td>${H(k)}</td><td class="n"><b>${money(R.byM[k])}</b></td></tr>`).join('')}<tr><td><b>Total</b></td><td class="n"><b>${money(R.rec)}</b></td></tr></table></div>
+      <h2>Receipts (${R.ps.length})</h2><div class="card" style="overflow-x:auto"><table class="nw"><tr><th>Date</th><th>Receipt</th><th>Order</th><th>Customer</th><th>Method</th><th class="n">Amount</th><th class="n">Thobe</th><th>By</th></tr>
+        ${R.ps.map(p => { const o = om.get(String(p.order_no)); return `<tr><td>${H(dmy(p.date))}</td><td>${H(p.receipt_no)}</td><td>${H(B.b + '-' + p.order_no)}</td><td class="ar">${H(o ? o.customer_name : '')}</td><td>${H(p.method)}</td><td class="n">${N(p.amount) ? money(p.amount) : ''}</td><td class="n">${N(p.delivered_qty) || ''}</td><td class="muted">${H(p.created_by || '')}</td></tr>`; }).join('') || '<tr><td colspan="8" class="muted">—</td></tr>'}</table></div>
+      <h2>Orders booked (${R.bk.length})</h2><div class="card" style="overflow-x:auto"><table class="nw"><tr><th>Order</th><th>Customer</th><th class="n">Thobe</th><th class="n">Total</th><th class="n">Paid</th><th>Delivery</th></tr>
+        ${R.bk.map(o => `<tr><td>${H(bNo(o))}</td><td class="ar">${H(o.customer_name)}</td><td class="n">${N(o.pcs)}</td><td class="n">${money(o.total)}</td><td class="n">${money(o.paid)}</td><td>${H(dmy(o.delivery_date))}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">—</td></tr>'}</table></div>`;
+    return R;
+  };
+  const set = (f, t) => { REP = { f, t }; $('#rf', m).value = f; $('#rt', m).value = t; draw(); };
+  $('#rf', m).onchange = () => set($('#rf', m).value || day, $('#rt', m).value < $('#rf', m).value ? $('#rf', m).value : $('#rt', m).value || day);
+  $('#rt', m).onchange = () => set($('#rf', m).value > $('#rt', m).value ? $('#rt', m).value : $('#rf', m).value || day, $('#rt', m).value || day);
+  m.querySelectorAll('[data-rq]').forEach(b => b.onclick = () => { const n = +b.dataset.rq, d = (k) => riyadh(new Date(Date.now() - k * 864e5)).slice(0, 10); set(n === 1 ? d(1) : n ? d(n - 1) : day, n === 1 ? d(1) : day); });
+  $('#rpr', m).onclick = () => repPrint(calc(), om);
+  draw();
+}
+function repPrint(R, om) {
+  const B = BR_MODE, th = (a) => `<tr>${a.map(x => `<th${x[1] ? ' class="n"' : ''}>${x[0]}</th>`).join('')}</tr>`;
+  const per = R.f === R.t ? dmy(R.f) : dmy(R.f) + ' → ' + dmy(R.t);
+  printHtml(`<!doctype html><html><head><meta charset="utf-8"><title>${H(B.b)} report ${H(per)}</title><style>@page{size:A4;margin:12mm}body{font:13px/1.45 system-ui,Arial,sans-serif;color:#111;margin:0}
+    .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}.hd .ar{font-size:16px;font-weight:700}
+    .ks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.k{border:1px solid #c9d3e3;border-radius:6px;padding:8px 10px}.k b{display:block;font-size:20px}.k span{font-size:11.5px;color:#444}
+    h2{font-size:14px;margin:14px 0 6px;color:#1f3a5f}table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff;font-size:12px;text-align:left;padding:6px}td{padding:5px 6px;border-bottom:1px solid #d6e0ee;font-size:12.5px}
+    tr:nth-child(even) td{background:#e8eef7}.n{text-align:right;font-variant-numeric:tabular-nums}tfoot td{background:#d6e0ee!important;font-weight:700}.sg{display:flex;gap:40px;margin-top:40px}.sg div{flex:1;border-top:1px solid #333;padding-top:4px;text-align:center;font-size:12px}</style></head><body>
+    <div class="hd"><div><h1>JAMEEL AL HINDAM</h1><div class="ar">جميل الهندام للخياطة الرجالية</div></div><div style="text-align:right"><b>${H(B.ar)} · ${H(B.name)} (${H(B.b)})</b><div>Branch report · تقرير الفرع</div><div><b>${H(per)}</b></div></div></div>
+    <div class="ks"><div class="k"><b>${R.bk.length}</b><span>Orders booked · طلبات (${R.bkPcs} pcs)</span></div><div class="k"><b>${money(R.bkAmt)}</b><span>Booked amount SAR · مبلغ الحجز</span></div><div class="k"><b>${money(R.rec)}</b><span>Received SAR · المحصّل</span></div>
+      <div class="k"><b>${R.dq}</b><span>Thobes handed over · مسلّمة (${R.dOrd.size} orders)</span></div><div class="k"><b>${money(R.owed)}</b><span>Balance due (all) · المتبقي</span></div><div class="k"><b>${R.left}</b><span>Thobes still to give · لم تُسلّم</span></div></div>
+    <h2>Payment methods · طرق الدفع</h2><table>${th([['Method'], ['Amount SAR', 1]])}${Object.keys(R.byM).sort().map(k => `<tr><td>${H(k)}</td><td class="n">${money(R.byM[k])}</td></tr>`).join('')}<tfoot><tr><td>Total</td><td class="n">${money(R.rec)}</td></tr></tfoot></table>
+    <h2>Receipts · السندات (${R.ps.length})</h2><table>${th([['Date'], ['Receipt'], ['Order'], ['Customer'], ['Method'], ['Amount', 1], ['Thobe', 1], ['By']])}${R.ps.map(p => { const o = om.get(String(p.order_no)); return `<tr><td>${H(dmy(p.date))}</td><td>${H(p.receipt_no)}</td><td>${H(B.b + '-' + p.order_no)}</td><td>${H(o ? o.customer_name : '')}</td><td>${H(p.method)}</td><td class="n">${N(p.amount) ? money(p.amount) : ''}</td><td class="n">${N(p.delivered_qty) || ''}</td><td>${H(p.created_by || '')}</td></tr>`; }).join('')}
+      <tfoot><tr><td colspan="5">Total</td><td class="n">${money(R.rec)}</td><td class="n">${R.dq}</td><td></td></tr></tfoot></table>
+    <h2>Orders booked · الطلبات المحجوزة (${R.bk.length})</h2><table>${th([['Order'], ['Customer'], ['Thobe', 1], ['Total', 1], ['Paid', 1], ['Delivery']])}${R.bk.map(o => `<tr><td>${H(bNo(o))}</td><td>${H(o.customer_name)}</td><td class="n">${N(o.pcs)}</td><td class="n">${money(o.total)}</td><td class="n">${money(o.paid)}</td><td>${H(dmy(o.delivery_date))}</td></tr>`).join('')}
+      <tfoot><tr><td colspan="2">Total</td><td class="n">${R.bkPcs}</td><td class="n">${money(R.bkAmt)}</td><td colspan="2"></td></tr></tfoot></table>
+    <div class="sg"><div>Cashier · الكاشير</div><div>Manager · المدير</div></div></body></html>`);
 }
 // ---- the factory
 let fTab = 'fac';

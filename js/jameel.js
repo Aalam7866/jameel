@@ -1019,7 +1019,9 @@ function cleanBranches(list) {
     seen.add(c);
     out.push({ c, n: String(b.n || '').trim().slice(0, 40), ar: String(b.ar || '').trim().slice(0, 40), k: b.k === 'factory' ? 'factory' : 'shop', on: b.on !== false,
                ph: String(b.ph || '').trim().slice(0, 20), ad: String(b.ad || '').trim().slice(0, 80), hr: String(b.hr || '').trim().slice(0, 50),
-               cap: Math.max(0, Math.min(5000, Math.round(Number(b.cap) || 0))), pin: /^[0-9a-f]{64}$/.test(String(b.pin || '')) ? String(b.pin) : '' });
+               cap: Math.max(0, Math.min(5000, Math.round(Number(b.cap) || 0))), pin: /^[0-9a-f]{64}$/.test(String(b.pin || '')) ? String(b.pin) : '',
+               // the order taker's and the cashier's own PINs (their links ?r=o / ?r=c); without one they use the branch PIN
+               po: /^[0-9a-f]{64}$/.test(String(b.po || '')) ? String(b.po) : '', pc: /^[0-9a-f]{64}$/.test(String(b.pc || '')) ? String(b.pc) : '' });
     if (out.length >= 20) break;
   }
   return out;
@@ -1067,6 +1069,12 @@ async function aSetBranches(key, pin, list) {
     if (b && b.pinClear) b.pin = '';
     else if (b && /^[0-9]{4,8}$/.test(String(b.pinNew || ''))) b.pin = await sha256('tsbranch:' + c + ':' + String(b.pinNew));
     else { const o = old.find(x => x.c === c); b.pin = o ? o.pin : ''; }
+    for (const r of ['o', 'c']) {   // role PINs: pinNewO / pinNewC, pinClearO / pinClearC
+      const R = r.toUpperCase(), f = 'p' + r;
+      if (b && b['pinClear' + R]) b[f] = '';
+      else if (b && /^[0-9]{4,8}$/.test(String(b['pinNew' + R] || ''))) b[f] = await sha256('tsbranch:' + c + ':' + r + ':' + String(b['pinNew' + R]));
+      else if (b) { const o = old.find(x => x.c === c); b[f] = o ? o[f] : ''; }
+    }
   }
   const v = cleanBranches(list);
   await setDoc(doc(db, 'sys', 'branches'), { list: JSON.stringify(v), at: serverTimestamp() });

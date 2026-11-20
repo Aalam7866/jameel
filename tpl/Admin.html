@@ -802,7 +802,9 @@
     function brForm(code, kind) {
       var b = code ? BRS.filter(function (x) { return x.c === code; })[0] : null, F = b ? b.k === 'factory' : kind === 'factory', used = {};
       BRS.forEach(function (x) { used[x.c] = 1; }); var sug = F ? 'F' : 'B2', n = 2; while (!b && used[sug]) sug = F ? 'F' + (n++) : 'B' + (++n);
-      var e = b || { c: sug, n: '', ar: '', k: F ? 'factory' : 'shop', on: true, ph: '', ad: '', hr: F ? '7:00 – 17:00' : '9:00 – 12:00 · 16:00 – 23:00', cap: 0, pin: '' };
+      var e = b || { c: sug, n: '', ar: '', k: F ? 'factory' : 'shop', on: true, ph: '', ad: '', hr: F ? '7:00 – 17:00' : '9:00 – 12:00 · 16:00 – 23:00', cap: 0, pin: '', po: '', pc: '' };
+      var rpin = function (id, ar, en, set) { return '<label data-so>' + LB(ar, en) + '<input id="' + id + '" type="password" inputmode="numeric" maxlength="8" placeholder="' + (set ? '•••• (set – type to change)' : 'empty = branch PIN') + '"></label>' +
+        (set ? '<label data-so style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="' + id + 'X" style="width:18px;height:18px"> ' + LB('حذف', 'Remove') + ' – ' + en + '</label>' : ''); };
       var cnt = b && BRD ? (BRD.count[b.c] || 0) : 0;
       brDlg('<div class="hd"><b>' + (b ? LB('تعديل ', 'Edit ') + esc(b.n || b.ar || b.c) : F ? LB('مصنع جديد', 'Add the factory') : LB('فرع جديد', 'Add a branch')) + '</b><button type="button" class="bbtn" data-bx="1">✕</button></div><div class="bd">' +
         '<label>' + LB('الاسم', 'Name') + '<input id="bfN" value="' + esc(e.n) + '" placeholder="' + (F ? 'Factory' : 'Olaya') + '" maxlength="40"></label>' +
@@ -813,12 +815,13 @@
         '<label>' + LB('الدوام', 'Hours') + '<input id="bfH" value="' + esc(e.hr) + '"></label>' +
         '<label class="w">' + LB('العنوان', 'Address') + '<input id="bfD" value="' + esc(e.ad) + '" placeholder="Street, district"></label>' +
         '<label data-fo>' + LB('الطاقة (قطعة/يوم)', 'Capacity (pcs / day)') + '<input id="bfQ" type="number" min="0" value="' + (e.cap || '') + '"></label>' +
-        '<label>' + LB('رقم سري للرابط', 'PIN for its link') + '<input id="bfPin" type="password" inputmode="numeric" maxlength="8" placeholder="' + (e.pin ? '•••• (set – type to change)' : '4–8 digits (optional)') + '"></label>' +
+        '<label>' + LB('رقم سري المدير / الرابط', 'Manager / link PIN') + '<input id="bfPin" type="password" inputmode="numeric" maxlength="8" placeholder="' + (e.pin ? '•••• (set – type to change)' : '4–8 digits (optional)') + '"></label>' +
         (e.pin ? '<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="bfPinX" style="width:18px;height:18px"> ' + LB('حذف الرقم السري', 'Remove PIN') + '</label>' : '') +
+        rpin('bfPinO', 'رقم سري المقاسات', 'Order taker PIN', e.po) + rpin('bfPinC', 'رقم سري الكاشير', 'Cashier PIN', e.pc) +
         '<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="bfOn"' + (e.on ? ' checked' : '') + ' style="width:18px;height:18px"> ' + LB('يعمل', 'Active') + '</label>' +
         '<div class="note" id="bfHelp"></div><div id="bfErr" class="w" style="grid-column:1/-1;color:var(--bad);font-size:13px"></div></div>' +
         '<div class="ft">' + (b && !cnt ? '<button type="button" class="bbtn" id="bfDel" style="margin-inline-end:auto;color:var(--bad)">' + LB('حذف', 'Delete') + '</button>' : '') + '<button type="button" class="bbtn" data-bx="1">' + LB('إلغاء', 'Cancel') + '</button><button type="button" class="bbtn pri" id="bfSave">' + LB('حفظ', 'Save') + '</button></div>');
-      var sync = function () { var f = $('bfK').value === 'factory'; document.querySelectorAll('[data-fo]').forEach(function (x) { x.style.display = f ? '' : 'none'; });
+      var sync = function () { var f = $('bfK').value === 'factory'; document.querySelectorAll('[data-fo]').forEach(function (x) { x.style.display = f ? '' : 'none'; }); document.querySelectorAll('[data-so]').forEach(function (x) { x.style.display = f ? 'none' : ''; });
         $('bfHelp').innerHTML = f ? LB('المصنع يخيط طلبات كل المحلات. المحل يرسل الطلب للمصنع، والمصنع يرجعه جاهزاً.', 'The factory stitches the orders of all shops: a shop sends the order to the factory, the factory sends it back ready. Its link shows what is at the factory, from which shop, and marks orders sent back.')
                                   : LB('الفرع يحجز أمر التشغيل (عميل، قماش، مقاس، فاتورة جينكس) في نفس InvProject وجميل. رقم الطلب يظهر برمز الفرع.', 'The branch books its InvProject order (customer, fabric, measurements, Genix invoice) into the same InvProject and Jameel. Its order numbers show with the branch code. Customers and measurements are shared by all branches.'); };
       $('bfK').onchange = sync; sync();
@@ -830,10 +833,12 @@
         else if (c === 'M' || c === 'MAIN') err = 'This code is the main shop – use another';
         else if (BRS.some(function (x) { return x.c === c && (!b || x.c !== b.c); })) err = 'Code ' + c + ' is already used';
         else if (!nm && !ar) err = 'Write the name';
-        else if (pin && !/^[0-9]{4,8}$/.test(pin)) err = 'PIN: 4–8 digits';
+        else if ([pin, $('bfPinO').value.trim(), $('bfPinC').value.trim()].some(function (x) { return x && !/^[0-9]{4,8}$/.test(x); })) err = 'PIN: 4–8 digits';
         if (err) { $('bfErr').textContent = '⚠ ' + err; return; }
-        var v = { c: c, n: nm, ar: ar, k: $('bfK').value, on: $('bfOn').checked, ph: $('bfP').value.trim(), ad: $('bfD').value.trim(), hr: $('bfH').value.trim(), cap: Number($('bfQ').value) || 0, pin: b ? b.pin : '' };
+        var v = { c: c, n: nm, ar: ar, k: $('bfK').value, on: $('bfOn').checked, ph: $('bfP').value.trim(), ad: $('bfD').value.trim(), hr: $('bfH').value.trim(), cap: Number($('bfQ').value) || 0, pin: b ? b.pin : '', po: b ? b.po : '', pc: b ? b.pc : '' };
         if (pin) v.pinNew = pin; if ($('bfPinX') && $('bfPinX').checked) v.pinClear = 1;
+        if ($('bfPinO').value.trim()) v.pinNewO = $('bfPinO').value.trim(); if ($('bfPinOX') && $('bfPinOX').checked) v.pinClearO = 1;
+        if ($('bfPinC').value.trim()) v.pinNewC = $('bfPinC').value.trim(); if ($('bfPinCX') && $('bfPinCX').checked) v.pinClearC = 1;
         var list = BRS.map(function (x) { return x; }); if (b) list[list.indexOf(b)] = v; else list.push(v);
         brSave(list, b ? '' : c);
       };
@@ -848,18 +853,26 @@
     }
     function brLinks(code, fresh) {
       var b = BRS.filter(function (x) { return x.c === code; })[0]; if (!b) return;
-      var key = BRD && BRD.okey, F = b.k === 'factory', url = key ? location.origin + '/app/?k=' + key + '&' + (F ? 'f' : 'b') + '=' + b.c : '';
-      var msg = 'السلام عليكم\\nرابط ' + (F ? 'المصنع' : 'فرع') + ' ' + (b.ar || b.n) + ' – جميل الهندام:\\n' + url + (b.pin ? '\\n(الرقم السري عند المدير)' : '') + '\\n\\nOpen it in Chrome on the ' + (F ? 'factory' : 'branch') + ' PC, then ⋮ → Install app (an icon like an .exe).';
-      brDlg('<div class="hd"><b>' + (fresh ? '✔ ' : '') + esc(b.n || b.ar) + ' · ' + LB('الرابط', 'Link') + '</b><button type="button" class="bbtn" data-bx="1">✕</button></div><div class="bd">' +
-        (url ? '<div class="blink"><b>' + (F ? LB('صفحة المصنع', 'Factory page') : LB('صفحة الفرع', 'Branch page')) + '</b><span class="muted" style="font-size:12.5px">' +
-          (F ? LB('ما في المصنع من كل فرع، والإرجاع للفرع', 'What is at the factory from each shop · send back to the shop') : LB('أمر تشغيل جديد · طلبات الفرع · التسليم · المصنع', 'New InvProject order · its orders · deliveries · factory')) + '</span><code id="blU">' + esc(url) + '</code>' +
-          '<div class="row2"><button type="button" class="bbtn pri" id="blCp">' + LB('نسخ الرابط', 'Copy link') + '</button><button type="button" class="bbtn" id="blWa">' + LB('رسالة واتساب', 'WhatsApp message') + '</button><a class="bbtn" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none">' + LB('فتح', 'Open') + ' ↗</a></div></div>'
-          : '<div class="note">' + LB('رابط الطلبات لم يصل من جهاز المحل بعد', 'The order link has not come from the shop PC yet (Jameel → online order page must be on).') + '</div>') +
-        '<div class="note">' + (b.pin ? LB('الرابط محمي برقم سري – أعطه للموظف فقط.', 'The link asks for the branch PIN – give it only to the staff.') : LB('بدون رقم سري: من معه الرابط يفتح الصفحة. يمكنك وضع رقم سري من تعديل.', 'No PIN: anyone with the link opens the page. You can set a PIN in Edit.')) + '</div></div>' +
+      var key = BRD && BRD.okey, F = b.k === 'factory', base = key ? location.origin + '/app/?k=' + key + '&' + (F ? 'f' : 'b') + '=' + b.c : '';
+      // like Saudi Thobe: one link per job – manager (everything), order taker (orders, no cash), cashier (till) – each can have its own PIN
+      var roles = F ? [['m', 'صفحة المصنع', 'Factory page', LB('ما في المصنع من كل فرع، والإرجاع للفرع', 'What is at the factory from each shop · send back to the shop'), b.pin]]
+        : [['m', 'مدير الفرع', 'Branch manager', LB('كل شيء: طلب جديد، الطلبات، الصندوق، التسليم، التعديل، المصنع، التقرير', 'Everything: new order · orders · till · delivery · alteration · factory · report'), b.pin],
+           ['o', 'المقاسات / الطلبات', 'Order taker', LB('أمر تشغيل جديد، الطلبات، مواعيد التسليم، التعديل – بدون مبالغ', 'New InvProject order · orders · delivery dates · alteration – no money'), b.po || b.pin],
+           ['c', 'الكاشير', 'Cashier', LB('الصندوق: استلام دفعة، تسليم الثياب، سند، مجموع اليوم · التقرير', 'Till: take payment · hand over thobes · receipt · today\'s total · report'), b.pc || b.pin]];
+      var url = function (r) { return base + (r === 'm' ? '' : '&r=' + r); };
+      var msg = function (r, ar, en, pin) { return 'السلام عليكم\\n' + (F ? 'رابط المصنع' : 'رابط ' + ar + ' – فرع ' + (b.ar || b.n)) + ' – جميل الهندام:\\n' + url(r) + (pin ? '\\n(الرقم السري عند المدير)' : '') + '\\n\\n' + (F ? 'Factory' : en + ' · ' + (b.n || b.ar)) + ': open it in Chrome, then ⋮ → Install app (an icon like an .exe).'; };
+      brDlg('<div class="hd"><b>' + (fresh ? '✔ ' : '') + esc(b.n || b.ar) + ' · ' + LB('الروابط', 'Links') + '</b><button type="button" class="bbtn" data-bx="1">✕</button></div><div class="bd">' +
+        (base ? roles.map(function (x) {
+          return '<div class="blink"><b>' + LB(x[1], x[2]) + (x[4] ? ' 🔒' : '') + '</b><span class="muted" style="font-size:12.5px">' + x[3] + '</span><code>' + esc(url(x[0])) + '</code>' +
+            '<div class="row2"><button type="button" class="bbtn pri" data-lc="' + x[0] + '">' + LB('نسخ الرابط', 'Copy link') + '</button><button type="button" class="bbtn" data-lw="' + x[0] + '">' + LB('رسالة واتساب', 'WhatsApp message') + '</button><a class="bbtn" href="' + esc(url(x[0])) + '" target="_blank" rel="noopener" style="text-decoration:none">' + LB('فتح', 'Open') + ' ↗</a></div></div>';
+        }).join('') : '<div class="note">' + LB('رابط الطلبات لم يصل من جهاز المحل بعد', 'The order link has not come from the shop PC yet (Jameel → online order page must be on).') + '</div>') +
+        '<div class="note">' + (F ? (b.pin ? LB('الرابط محمي برقم سري – أعطه للموظف فقط.', 'The link asks for the PIN – give it only to the staff.') : LB('بدون رقم سري: من معه الرابط يفتح الصفحة. يمكنك وضع رقم سري من تعديل.', 'No PIN: anyone with the link opens the page. You can set a PIN in Edit.'))
+          : LB('كل رابط له رقمه السري (تعديل). إن لم يوجد يُستعمل رقم المدير. 🔒 = محمي.', 'Each link can have its own PIN (Edit): without one it uses the manager PIN. 🔒 = asks for a PIN. Without any PIN anyone with the link opens it.')) + '</div></div>' +
         '<div class="ft"><button type="button" class="bbtn" data-bx="1">' + LB('تم', 'Done') + '</button></div>');
       var cp = function (t, ok) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('brMsg').textContent = ok; }, function () { prompt('Copy:', t); }); };
-      if ($('blCp')) $('blCp').onclick = function () { cp(url, '✔ Link copied'); this.textContent = '✔'; };
-      if ($('blWa')) $('blWa').onclick = function () { window.open('https://wa.me/?text=' + encodeURIComponent(msg.replace(/\\n/g, '\n')), '_blank'); };
+      var R = function (r) { return roles.filter(function (x) { return x[0] === r; })[0]; };
+      document.querySelectorAll('[data-lc]').forEach(function (el) { el.onclick = function () { cp(url(el.getAttribute('data-lc')), '✔ Link copied'); el.textContent = '✔'; }; });
+      document.querySelectorAll('[data-lw]').forEach(function (el) { el.onclick = function () { var x = R(el.getAttribute('data-lw')); window.open('https://wa.me/?text=' + encodeURIComponent(msg(x[0], x[1], x[2], x[4]).replace(/\\n/g, '\n')), '_blank'); }; });
     }
     $('p13').addEventListener('click', function (ev) {
       var t = ev.target.closest && ev.target.closest('[data-bo],[data-be],[data-bl],[data-ba]'); if (!t) return;
@@ -2243,7 +2256,7 @@
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };
     function shopTab(n) {
       var f = $('shopFrame'), h = SHOP_HASH[n] || 'home';
-      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=22#' + h);
+      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=23#' + h);
       else try { f.contentWindow.location.hash = h + '-' + Date.now(); } catch (x) { }
       setTimeout(function () { $('p5').scrollIntoView({ block: 'start' }); }, 50);
     }
