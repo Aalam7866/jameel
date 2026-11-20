@@ -69,6 +69,13 @@ service cloud.firestore {
         && request.resource.data.get('sb', '') is string && request.resource.data.get('sb', '').size() <= 40
         && request.resource.data.get('bb', '') is string && request.resource.data.get('bb', '').size() <= 40;
     }
+    // cutting master: how many summer / winter thobes of an order are cut (worker app, after "Cutting done")
+    match /jcut/{id} {
+      allow read: if true;
+      allow create, update: if id.matches('^[0-9]{1,9}$') && request.resource.data.keys().hasOnly(['s', 'w', 'at'])
+        && request.resource.data.s is int && request.resource.data.s >= 0 && request.resource.data.s <= 999
+        && request.resource.data.w is int && request.resource.data.w >= 0 && request.resource.data.w <= 999 && request.resource.data.at == request.time;
+    }
     // finished work not taken by TailorShop yet (opens the next work while the shop PC is off)
     match /jdone/{id} { allow read, write: if true; }
     // how long a piece of work took (worker app: Start → Finish, duty hours only) – Admin → Work log
