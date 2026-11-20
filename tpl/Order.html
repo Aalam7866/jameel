@@ -826,8 +826,8 @@
       var el = $('fx'); if (!list) { el.innerHTML = ''; return; }
       var shop = list.filter(function (o) { return !o.fx; }), fac = list.filter(function (o) { return o.fx && o.fx.st === 'sent'; }), back = list.filter(function (o) { return o.fx && o.fx.st === 'back'; });
       var row = function (o, btn) {
-        return '<tr><td><b>' + esc(brNo(o.no)) + '</b></td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + o.pcs + ' ثوب · التسليم ' + esc(o.due.split('-').reverse().join('-')) +
-               (o.fx && o.fx.st === 'sent' ? ' · أُرسل ' + esc(fxD(o.fx.s)) : o.fx && o.fx.st === 'back' ? ' · وصل ' + esc(fxD(o.fx.b)) : '') + '</span></td><td style="text-align:end">' + btn + '</td></tr>';
+        return '<tr><td style="white-space:nowrap;vertical-align:top;padding:6px 0"><b>' + esc(brNo(o.no)) + '</b></td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + o.pcs + ' ثوب · التسليم <span dir="ltr">' + esc(o.due.split('-').reverse().join('-')) + '</span>' +
+               (o.fx && o.fx.st === 'sent' ? ' · أُرسل <span dir="ltr">' + esc(fxD(o.fx.s)) + '</span>' : o.fx && o.fx.st === 'back' ? ' · وصل <span dir="ltr">' + esc(fxD(o.fx.b)) + '</span>' : '') + '</span></td><td style="text-align:end">' + btn + '</td></tr>';
       };
       var sec = function (t, n, color, extra) { return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 6px;padding:6px 10px;border-radius:8px;background:' + color + '"><b>' + t + ' (' + n + ')</b>' + (extra || '') + '</div>'; };
       var bt = function (o, st, txt, bg) { return '<button type="button" data-fx="' + st + '" data-no="' + esc(o.no) + '" style="width:auto;margin:0;padding:6px 10px;font-size:14px;background:' + bg + '">' + txt + '</button>'; };
