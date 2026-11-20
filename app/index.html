@@ -647,7 +647,7 @@ async function dailySheet(day) {
   for (const v of gOnly) {
     const paidG = N(v.paid_all), net = Math.min(paidG, N(v.network_part)), cash = Math.max(0, paidG - net);
     const m = [net > 0 ? 'SPAN' : '', cash > 0 ? 'CASH' : ''].filter(Boolean).join('+');
-    lines.push({ inv: S(v.id), order: '—', name: S(v.name), total: N(v.tot_net), down: paidG ? paidG : null, due: 0, method: m, sell: 'GENIX', type: 'SELL', src: 'GENIX', no: '', g: v });
+    lines.push({ inv: S(v.id), order: '—', name: S(v.name), total: N(v.tot_net), down: paidG ? paidG : null, due: 0, method: m, sell: 'SELL', type: 'SELL', src: 'GENIX', no: '', g: v });
     if (net > 0) gPay.push(['SPAN', net]); if (cash > 0) gPay.push(['CASH', cash]);
   }
   // RETURN
