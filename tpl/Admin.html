@@ -1132,7 +1132,7 @@
     var ALL = [], PEND = {}, FIT = {}, METHODS = ['Cash'], CUR = '';
     // ---- branches: ALL_RAW = every order, ALL = the orders of the branch chosen at the top (All / Main / CODE)
     var ALL_RAW = [], BRS = [], BR_OF = {}, BR = '*', FX = {}, SW = {};
-    // Deliveries: the factory column on / off (this device), summer / winter pieces of each order (InvProject services)
+    // Deliveries: the factory column on / off (this device), summer / winter pieces of each order (صيفي / شتوي of its fabric lines in the InvProject order window)
     var FXON = true; try { FXON = localStorage.getItem('jadm-fxon') !== '0'; } catch (e) { }
     function swOf(no) { var v = SW[no]; return v ? { s: Number(v[0]) || 0, w: Number(v[1]) || 0 } : null; }
     function swCell(no) { var v = swOf(no); if (!v || !(v.s + v.w)) return '<span class="swn">—</span>';

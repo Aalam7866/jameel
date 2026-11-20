@@ -763,12 +763,12 @@ async function aDelWorker(key, pin, token) {
 }
 
 // ---- admin: every worker (added here + the shop PC's) with phone / block / month work / deductions
-// summer / winter pieces of each order: the InvProject order's services (خياطة صيفي / خياطة شتوي …, ShopSync data set i_osrv)
+// summer / winter pieces of each order: the صيفي / شتوي of its fabric lines in the InvProject order window (ShopSync data set i_osrv)
 async function seasonMap(rows) {
   const want = new Set(rows.map(x => String(x[0]))), m = {};
   try {
     (await dsRows('i_osrv')).forEach(v => {
-      const o = String(v.OrderId), q = Number(v.qty) || 0, n = String(v.name || '');
+      const o = String(v.OrderId), q = Number(v.qty) || 0, n = String(v.season ?? v.name ?? '');
       if (!want.has(o) || !q) return;
       const k = /صيف|summer/i.test(n) ? 0 : /شت|winter/i.test(n) ? 1 : -1;
       if (k < 0) return;
