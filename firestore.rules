@@ -155,9 +155,9 @@ service cloud.firestore {
       // Admin → Rates: the duty time (shifts, JSON text)
       allow create, update: if id == 'duty' && request.resource.data.keys().hasOnly(['shifts', 'at'])
         && request.resource.data.shifts is string && request.resource.data.shifts.size() <= 200 && request.resource.data.at == request.time;
-      // Admin → Branches: the shops and the factory (JSON text: [{c, n, ar, k, on}])
+      // Admin → Branches: the shops and the factory (JSON text: [{c, n, ar, k, on, ph, ad, hr, cap, pin}])
       allow create, update: if id == 'branches' && request.resource.data.keys().hasOnly(['list', 'at'])
-        && request.resource.data.list is string && request.resource.data.list.size() <= 4000 && request.resource.data.at == request.time;
+        && request.resource.data.list is string && request.resource.data.list.size() <= 12000 && request.resource.data.at == request.time;
       // Admin → Deliveries: the order in which orders are worked (↑ ↓), comma-separated order numbers
       allow create, update: if id == 'prio' && request.resource.data.keys().hasOnly(['o', 'at'])
         && request.resource.data.o is string && request.resource.data.o.size() <= 6000 && request.resource.data.at == request.time;

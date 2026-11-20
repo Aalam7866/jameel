@@ -73,7 +73,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .brtag{background:#0d1b2e;color:#fff;font-weight:700;border-radius:10px;padding:9px 12px;margin:6px 0 10px}
 .bhead{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0d1b2e;color:#fff}.bhead img{width:44px;height:44px;border-radius:10px;background:#fff}
 .bhead h1{margin:0;font-size:18px;color:#fff}.bhead div{font-size:13px;color:#cfae6a}
-.bmain{max-width:860px;margin:0 auto;padding:14px 14px 40px}.bgo{width:100%;font-size:18px;padding:16px;margin-top:10px}
+.bmain{max-width:860px;margin:0 auto;padding:14px 14px 90px}.bhead .bcode{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;border:1px solid #cfae6a;color:#e6cf9a;border-radius:6px;padding:1px 6px;vertical-align:2px}.bgo{width:100%;font-size:18px;padding:16px;margin-top:10px}
 .bsec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:16px 0 6px;padding:7px 12px;border-radius:9px;font-weight:700}
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--bg);width:100%;max-width:860px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px 24px}
@@ -1289,97 +1289,218 @@ async function adminOk() {
     return (await getDoc(doc(db, 'ak', await sha256('ak:' + key + ':' + ph)))).exists();
   } catch (e) { return false; }
 }
-// ---------------------------------------------------------------- branch page (/app/?k=ORDERKEY&b=CODE): no owner login –
-// the order link's key (+ PIN) and the branch code; only: new InvProject order for this branch, its orders, factory
+// ---------------------------------------------------------------- branch / factory pages (no owner login)
+//   /app/?k=ORDERKEY&b=CODE  a shop branch: Home · New order (InvProject) · Orders · Deliveries · Factory
+//   /app/?k=ORDERKEY&f=CODE  the factory: what is at the factory from every shop, received, sent back
+// The order link's key must be real (okk); the branch's own PIN (Admin → Branches) or else the order link's PIN.
 const BQ = new URLSearchParams(location.search);
 let BR_MODE = null;
 (function () {
-  let k = (BQ.get('k') || '').trim(), b = (BQ.get('b') || '').trim().toUpperCase();
-  try { if (k && b) localStorage.setItem('jbranch', JSON.stringify({ k, b })); else if (BQ.has('owner')) localStorage.removeItem('jbranch'); else { const x = JSON.parse(localStorage.getItem('jbranch') || 'null'); if (x && !EMBED) { k = x.k; b = x.b; } } } catch (e) { }
-  if (k && b && !EMBED) BR_MODE = { k, b };
+  let k = (BQ.get('k') || '').trim(), b = (BQ.get('b') || '').trim().toUpperCase(), f = (BQ.get('f') || '').trim().toUpperCase();
+  try {
+    if (k && (b || f)) localStorage.setItem('jbranch', JSON.stringify({ k, b, f }));
+    else if (BQ.has('owner')) localStorage.removeItem('jbranch');
+    else { const x = JSON.parse(localStorage.getItem('jbranch') || 'null'); if (x && !EMBED) { k = x.k; b = x.b || ''; f = x.f || ''; } }
+  } catch (e) { }
+  if (k && (b || f) && !EMBED) BR_MODE = { k, b: f ? '' : b, f, code: f || b, fac: !!f };
 })();
+const pinKey = () => 'jbpin-' + BR_MODE.code;
 async function branchStart(pinTry) {
   const B = BR_MODE, app = $('#app');
   app.innerHTML = '<p class="muted center" style="margin-top:40px"><span class="spin"></span> Loading…</p>';
   try {
     if (!/^[0-9a-f]{32}$/.test(B.k)) throw new Error('Link galat hai');
-    const g = await getDoc(doc(db, 'okk', B.k));
-    if (!g.exists()) throw new Error('Link galat hai – Shop Online → More → Online links se naya link lijiye');
-    let pin = pinTry != null ? pinTry : (sessionStorage.getItem('jbpin') || '');
-    if (g.data().pin && !pin) return branchPin();
-    const ph = g.data().pin ? await sha256('tsorder:' + pin) : '';
-    if (!(await getDoc(doc(db, 'ok', await sha256('ok:' + B.k + ':' + ph)))).exists()) { sessionStorage.removeItem('jbpin'); return branchPin(g.data().pin ? 'PIN galat hai' : 'Link galat hai'); }
-    if (g.data().pin) sessionStorage.setItem('jbpin', pin);
-    const bs = await getDoc(doc(db, 'sys', 'branches'));
+    const [g, bs] = await Promise.all([getDoc(doc(db, 'okk', B.k)), getDoc(doc(db, 'sys', 'branches'))]);
+    if (!g.exists()) throw new Error('Link galat hai – Admin → Branches → Link se naya link lijiye');
     const list = bs.exists() ? JSON.parse(bs.data().list || '[]') : [];
-    const br = list.find(x => x.c === B.b);
-    if (!br || br.k !== 'shop' || br.on === false) throw new Error('Branch ' + B.b + ' Admin → Branches mein nahin hai (ya band hai)');
-    B.name = br.n || br.ar || br.c; B.ar = br.ar || br.n || br.c;
+    const br = list.find(x => x.c === B.code);
+    if (!br || br.k !== (B.fac ? 'factory' : 'shop') || br.on === false) throw new Error((B.fac ? 'Factory ' : 'Branch ') + B.code + ' Admin → Branches mein nahin hai (ya band hai)');
+    let pin = pinTry != null ? pinTry : (localStorage.getItem(pinKey()) || '');
+    if (br.pin) {   // the branch's own PIN
+      if (!pin) return branchPin();
+      if ((await sha256('tsbranch:' + br.c + ':' + pin)) !== br.pin) { localStorage.removeItem(pinKey()); return branchPin('PIN galat hai'); }
+    } else {        // no branch PIN: the order link's PIN, if it has one
+      if (g.data().pin && !pin) return branchPin();
+      const ph = g.data().pin ? await sha256('tsorder:' + pin) : '';
+      if (!(await getDoc(doc(db, 'ok', await sha256('ok:' + B.k + ':' + ph)))).exists()) { localStorage.removeItem(pinKey()); return branchPin(g.data().pin ? 'PIN galat hai' : 'Link galat hai'); }
+    }
+    if (pin) localStorage.setItem(pinKey(), pin);
+    B.name = br.n || br.ar || br.c; B.ar = br.ar || br.n || br.c; B.all = list;
     document.title = 'Jameel · ' + B.name;
-    branchHome();
+    if (B.fac) factoryHome(); else branchHome('home');
   } catch (e) { app.innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Jameel Al Hindam</h1><div class="err">${H(e.message)}</div></div>`; }
 }
 function branchPin(err) {
-  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Branch ${H(BR_MODE.b)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>
+  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>${BR_MODE.fac ? 'Factory' : 'Branch'} ${H(BR_MODE.code)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>
   <form id="bp" class="card"><input id="bpin" type="password" inputmode="numeric" placeholder="PIN" autofocus>${err ? `<div class="err" style="margin-top:10px">${H(err)}</div>` : ''}<button class="btn" style="width:100%;margin-top:10px">OK</button></form></div>`;
   $('#bp').onsubmit = (e) => { e.preventDefault(); branchStart($('#bpin').value.trim()); };
 }
-function branchHome() {
-  const B = BR_MODE;
-  let by = ''; try { by = localStorage.getItem('jbranch-by') || ''; } catch (e) { }
-  $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1"><h1>🏬 ${H(B.ar)} · ${H(B.name)} (${H(B.b)})</h1><div>جميل الهندام · Jameel Al Hindam</div></div></div>
-  <div class="bmain"><div class="card"><label class="muted">اسمك – Your name</label><input id="bby" value="${H(by)}" placeholder="اسم الموظف">
-    <button class="btn bgo" id="bnew">+ أمر تشغيل جديد · New order</button>
-    <div class="muted" style="font-size:13px;margin-top:8px">Order main shop ke InvProject mein banega (kapda, naap, Genix invoice, Jameel) – number ${H(B.b)}-1234 jaisa dikhega.</div></div>
-  <h2>Orders – اليوم</h2><div id="bjobs" class="card"><p class="muted"><span class="spin"></span></p></div>
-  <h2>المصنع · Factory</h2><div id="bfx"><p class="muted"><span class="spin"></span></p></div></div>`;
-  $('#bby').oninput = () => { try { localStorage.setItem('jbranch-by', $('#bby').value.trim()); } catch (e) { } };
-  $('#bnew').onclick = () => {
-    const who = $('#bby').value.trim(); if (!who) { $('#bby').focus(); return alert('Pehle apna naam likhiye – اسمك'); }
-    newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: who, done: branchLists });
-  };
-  branchLists();
-  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet')) branchLists(); }, 60000);
+// ---- shared bits
+const BICON = { home: ICON.home, new: '<path d="M12 5v14M5 12h14"/>', orders: ICON.inv, due: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', fac: '<path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/>' };
+const dmy = (d) => String(d || '').slice(0, 10).split('-').reverse().join('-');
+const dm = (t) => t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : '';
+async function fxNow() {
+  const fx = await getDocs(query(collection(db, 'jfx'), where('at', '>=', new Date(Date.now() - 120 * 864e5))));
+  const F = {}; fx.forEach(x => { const d = x.data(); if (d.st === 'sent' || d.st === 'back') F[x.id] = { st: d.st, s: d.s && d.s.toDate ? riyadh(d.s.toDate()) : '', b: d.b && d.b.toDate ? riyadh(d.b.toDate()) : '', sb: d.sb || '', bb: d.bb || '' }; });
+  return F;
 }
-async function branchLists() {
-  const B = BR_MODE; if (!$('#bjobs')) return;
-  // this branch's InvProject orders (jobs), newest first
-  try {
-    const js = await getDocs(query(collection(db, 'jobs'), where('br', '==', B.b), limit(80)));
-    const L = []; js.forEach(x => { const d = x.data(); if (d.kind === 'inv_order') L.push({ id: x.id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date(0) }); });
-    L.sort((a, b) => b.t - a.t);
-    const day = riyadh().slice(0, 10), Ls = L.filter(x => riyadh(x.t).slice(0, 10) === day || x.st === 'new' || x.st === 'running');
-    $('#bjobs').innerHTML = Ls.length ? `<table>${Ls.map(x => `<tr><td class="muted">${H(riyadh(x.t).slice(11, 16))}</td><td><b class="ar">${H(x.who || '')}</b>${x.by ? `<div class="muted">${H(x.by)}</div>` : ''}</td>
+async function fxPut(nos, st, who, brOf) {
+  for (const no of nos) {
+    const d = { st, at: serverTimestamp(), br: String(brOf(no) || '') };
+    if (st === 'sent') { d.s = serverTimestamp(); d.sb = who.slice(0, 40); d.bb = ''; } else { d.b = serverTimestamp(); d.bb = who.slice(0, 40); }
+    await setDoc(doc(db, 'jfx', String(no)), d, { merge: true });
+  }
+}
+const bWho = () => { try { return localStorage.getItem('jbranch-by') || ''; } catch (e) { return ''; } };
+function bShell(tabs, cur, go) {
+  const B = BR_MODE;
+  $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1;min-width:0"><h1>${B.fac ? '🏭' : '🏬'} ${H(B.ar)}${B.ar !== B.name ? ' · ' + H(B.name) : ''} <span class="bcode">${H(B.code)}</span></h1><div>جميل الهندام · Jameel Al Hindam${bWho() ? ' · ' + H(bWho()) : ''}</div></div>
+    <button class="btn ghost small" id="bwho" style="color:#fff;border-color:rgba(255,255,255,.3)">👤</button></div>
+  <main class="bmain" id="bm"></main>
+  <nav>${tabs.map(([k, l]) => `<button data-bt="${k}" class="${k === cur ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${BICON[k]}</svg>${l}</button>`).join('')}</nav>`;
+  document.querySelectorAll('[data-bt]').forEach(b => b.onclick = () => go(b.dataset.bt));
+  $('#bwho').onclick = () => { const n = prompt('اسمك – Your name', bWho()); if (n != null) { try { localStorage.setItem('jbranch-by', n.trim()); } catch (e) { } go(cur); } };
+  return $('#bm');
+}
+const needWho = () => { if (bWho()) return true; const n = prompt('اسمك – Your name (yaad rahega)', ''); if (!n || !n.trim()) return false; try { localStorage.setItem('jbranch-by', n.trim()); } catch (e) { } return true; };
+// ---- a shop branch
+let bTab = 'home';
+function branchHome(t) {
+  bTab = t || bTab;
+  const B = BR_MODE, tabs = [['home', 'Home'], ['new', 'New order'], ['orders', 'Orders'], ['due', 'Delivery'], ['fac', 'Factory']];
+  if (bTab === 'new') { if (!needWho()) bTab = 'home'; else { const m = bShell(tabs, 'new', branchHome); m.innerHTML = '<p class="muted center">…</p>'; newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: bWho(), done: () => branchHome('home') }); return; } }
+  const m = bShell(tabs, bTab, branchHome);
+  m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
+  ({ home: bHomeView, orders: bOrdersView, due: bDueView, fac: bFacView }[bTab] || bHomeView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet') && (bTab === 'home' || bTab === 'fac' || bTab === 'due')) branchHome(bTab); }, 90000);
+}
+async function bData() {
+  DSC.j_orders = null;
+  const B = BR_MODE, [jo, F] = await Promise.all([loadDs('j_orders'), fxNow()]);
+  const mine = jo.rows.filter(o => String(o.branch || '') === B.b);
+  return { mine, F, open: mine.filter(o => N(o.delivered_qty) < N(o.pcs)) };
+}
+const bNo = (o) => BR_MODE.b + '-' + o.order_no;
+const fxTag = (F, o) => { const f = F[o.order_no]; return f ? (f.st === 'sent' ? '<span class="pill" style="background:#fff1db;color:#8a5a00">🏭 factory</span>' : '<span class="pill" style="background:var(--okbg);color:var(--ok)">✔ back</span>') : ''; };
+function bItem(o, F) {
+  const late = N(o.delivered_qty) < N(o.pcs) && o.delivery_date && String(o.delivery_date).slice(0, 10) < riyadh().slice(0, 10);
+  return `<div class="no">${H(bNo(o))}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${H(o.mobile)} · ${N(o.pcs)} thobe · delivery <span${late ? ' style="color:var(--bad)"' : ''}>${H(dmy(o.delivery_date))}</span></div></div>
+    <div class="r">${N(o.ready) === 1 && N(o.delivered_qty) < N(o.pcs) ? '<span class="pill" style="background:var(--okbg);color:var(--ok)">Ready</span>' : ''}${fxTag(F, o)}${N(o.delivered_qty) >= N(o.pcs) && N(o.pcs) ? '<span class="pill">Delivered</span>' : ''}</div>`;
+}
+function bOrder(o, F) {
+  openSheet(`<h2 style="margin:4px 0">${H(bNo(o))} · <span class="ar">${H(o.customer_name)}</span></h2>
+    <div class="muted">${H(o.mobile)} · booked ${H(dmy(o.booking_date))} · delivery ${H(dmy(o.delivery_date))}</div>
+    <div class="grid" style="margin-top:10px"><div class="stat"><b>${N(o.pcs)}</b><span>Thobe</span></div><div class="stat"><b>${N(o.delivered_qty)}</b><span>Delivered</span></div>
+      <div class="stat"><b>${money(o.total)}</b><span>Total</span></div><div class="stat"><b style="color:${oDue(o) >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(oDue(o))}</b><span>Balance</span></div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${jStatus(o)} ${fxTag(F, o)}</div>
+    ${o.invoice_no ? `<div class="row" style="margin-top:10px"><button class="btn small" id="bpdf">Genix invoice ${H(o.invoice_no)} PDF</button></div><div id="bpst"></div>` : ''}
+    ${o.mobile ? `<div class="row" style="margin-top:8px;gap:6px"><a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a></div>` : ''}`,
+    (s) => { if (o.invoice_no) $('#bpdf', s).onclick = () => pdfJob(o.invoice_no, $('#bpst', s)); });
+}
+function openSheet(html, after) {
+  const s = document.createElement('div'); s.className = 'sheet';
+  s.innerHTML = `<div class="box"><div class="row" style="justify-content:flex-end"><button class="x" id="cl">×</button></div>${html}</div>`;
+  document.body.appendChild(s); $('#cl', s).onclick = () => s.remove(); s.onclick = (e) => { if (e.target === s) s.remove(); };
+  if (after) after(s);
+}
+async function bHomeView(m) {
+  const B = BR_MODE, day = riyadh().slice(0, 10), soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
+  const [{ mine, F, open }, js] = await Promise.all([bData(), getDocs(query(collection(db, 'jobs'), where('br', '==', B.b), limit(80))).catch(() => null)]);
+  const td = mine.filter(o => String(o.booking_date || '').slice(0, 10) === day);
+  const dueSoon = open.filter(o => String(o.delivery_date || '').slice(0, 10) <= soon), late = open.filter(o => String(o.delivery_date || '').slice(0, 10) < day);
+  const ready = open.filter(o => N(o.ready) === 1), atF = open.filter(o => F[o.order_no] && F[o.order_no].st === 'sent');
+  const L = []; if (js) js.forEach(x => { const d = x.data(); if (d.kind === 'inv_order') L.push({ id: x.id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date(0) }); });
+  L.sort((a, b) => b.t - a.t);
+  const Lt = L.filter(x => riyadh(x.t).slice(0, 10) === day || x.st === 'new' || x.st === 'running');
+  m.innerHTML = `<button class="btn bgo" id="bnew" style="margin:0 0 12px">+ أمر تشغيل جديد · New InvProject order</button>
+    <div class="grid"><div class="stat"><b>${td.length}</b><span>Aaj ke orders (${td.reduce((a, o) => a + N(o.pcs), 0)} pcs)</span></div><div class="stat"><b>${money(td.reduce((a, o) => a + N(o.total), 0))}</b><span>Aaj ka amount SAR</span></div>
+      <div class="stat tap" data-g="due"><b>${dueSoon.length}</b><span>Delivery ≤ 2 din</span></div><div class="stat tap" data-g="due"><b style="color:var(--ok)">${ready.length}</b><span>Ready – dene ke liye</span></div>
+      <div class="stat tap" data-g="fac"><b>${atF.reduce((a, o) => a + N(o.pcs) - N(o.delivered_qty), 0)}</b><span>Factory mein (pcs)</span></div><div class="stat tap" data-g="due"><b style="color:${late.length ? 'var(--bad)' : 'inherit'}">${late.length}</b><span>Late</span></div></div>
+    <h2>Aaj ke InvProject orders</h2><div class="card">${Lt.length ? `<table>${Lt.map(x => `<tr><td class="muted">${H(riyadh(x.t).slice(11, 16))}</td><td><b class="ar">${H(x.who || '')}</b>${x.by ? `<div class="muted">${H(x.by)}</div>` : ''}</td>
       <td>${x.st === 'done' ? `<span class="pill" style="background:var(--okbg);color:var(--ok)">✔ ${H(B.b + '-' + (x.order || ''))}</span>${x.no ? `<div class="muted">Genix ${H(x.no)}</div>` : ''}${x.file ? fileBtn(x.file, 'PDF') : ''}`
-        : x.st === 'error' ? `<span class="err" style="display:inline-block;padding:4px 8px">✖ ${H(x.error || 'error')}</span>` : x.st === 'cancelled' ? '<span class="muted">cancelled</span>' : '<span class="pill">⏳ Shop PC…</span>'}</td></tr>`).join('')}</table>`
-      : '<p class="muted">Aaj abhi koi order nahin</p>';
-  } catch (e) { $('#bjobs').innerHTML = `<div class="err">${H(e.message)}</div>`; }
-  // factory: this branch's open orders – at the shop → at the factory → back
-  try {
-    DSC.j_orders = null;
-    const [jo, fx] = await Promise.all([loadDs('j_orders'), getDocs(query(collection(db, 'jfx'), where('at', '>=', new Date(Date.now() - 120 * 864e5))))]);
-    const F = {}; fx.forEach(x => { const d = x.data(); if (d.st === 'sent' || d.st === 'back') F[x.id] = { st: d.st, s: d.s && d.s.toDate ? riyadh(d.s.toDate()) : '', b: d.b && d.b.toDate ? riyadh(d.b.toDate()) : '' }; });
-    const os = jo.rows.filter(o => String(o.branch || '') === B.b && N(o.delivered_qty) < N(o.pcs)).sort((a, b) => cmpv(a.delivery_date, b.delivery_date) || cmpv(a.order_no, b.order_no));
-    const g = { shop: os.filter(o => !F[o.order_no]), fac: os.filter(o => F[o.order_no] && F[o.order_no].st === 'sent'), back: os.filter(o => F[o.order_no] && F[o.order_no].st === 'back') };
-    const dm = (t) => t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : '';
-    const row = (o, st, lbl, cls) => `<div class="it"><div class="no">${H(B.b)}-${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${N(o.pcs)} thobe · delivery ${H(String(o.delivery_date || '').slice(0, 10).split('-').reverse().join('-'))}${F[o.order_no] ? ' · ' + (F[o.order_no].st === 'sent' ? 'sent ' + dm(F[o.order_no].s) : 'back ' + dm(F[o.order_no].b)) : ''}</div></div>
-      <div class="r"><button class="btn small ${cls || ''}" data-fx="${st}" data-o="${H(o.order_no)}">${lbl}</button></div></div>`;
-    const sec = (t, n, bg, x) => `<div class="bsec" style="background:${bg}"><span>${t} (${n})</span>${x || ''}</div>`;
-    $('#bfx').innerHTML = sec('🏬 في المحل – At the shop', g.shop.length, '#eef1f5', g.shop.length ? `<button class="btn small" id="fxall">إرسال الكل → Send all</button>` : '') +
-      `<div class="card list">${g.shop.map(o => row(o, 'sent', '→ المصنع / Factory')).join('') || '<p class="muted">—</p>'}</div>` +
-      sec('🏭 في المصنع – At the factory', g.fac.length, '#fff1db') + `<div class="card list">${g.fac.map(o => row(o, 'back', '✔ وصل / Received')).join('') || '<p class="muted">—</p>'}</div>` +
-      sec('✔ رجع للمحل – Back at the shop', g.back.length, '#e3f4ea') + `<div class="card list">${g.back.map(o => row(o, 'sent', '↺', 'ghost')).join('') || '<p class="muted">—</p>'}</div>`;
-    const set = async (nos, st, btn) => {
-      if (btn) btn.disabled = true;
-      const who = ($('#bby') && $('#bby').value.trim()) || ('Branch ' + B.b);
-      try {
-        for (const no of nos) { const d = { st, at: serverTimestamp(), br: B.b }; if (st === 'sent') { d.s = serverTimestamp(); d.sb = who.slice(0, 40); d.bb = ''; } else { d.b = serverTimestamp(); d.bb = who.slice(0, 40); } await setDoc(doc(db, 'jfx', String(no)), d, { merge: true }); }
-        branchLists();
-      } catch (e) { if (btn) btn.disabled = false; alert('Save nahin hua: ' + e.message); }
-    };
-    $('#bfx').querySelectorAll('[data-fx]').forEach(b => b.onclick = () => set([b.dataset.o], b.dataset.fx, b));
-    const all = $('#fxall'); if (all) all.onclick = () => { if (confirm(`${g.shop.length} order factory bhejein?`)) set(g.shop.map(o => o.order_no), 'sent', all); };
-  } catch (e) { $('#bfx').innerHTML = `<div class="err">${H(e.message)}</div>`; }
+        : x.st === 'error' ? `<span class="err" style="display:inline-block;padding:4px 8px">✖ ${H(x.error || 'error')}</span>` : x.st === 'cancelled' ? '<span class="muted">cancelled</span>' : '<span class="pill">⏳ Shop PC…</span>'}</td></tr>`).join('')}</table>` : '<p class="muted">Aaj abhi koi order nahin</p>'}</div>`;
+  $('#bnew', m).onclick = () => branchHome('new');
+  m.querySelectorAll('[data-g]').forEach(el => el.onclick = () => branchHome(el.dataset.g));
+}
+async function bOrdersView(m) {
+  const { mine, F } = await bData();
+  const all = mine.slice().sort((a, b) => cmpv(b.order_no, a.order_no));
+  m.innerHTML = `<input id="bq" placeholder="Search: order no, name, mobile" style="margin-bottom:10px"><div class="muted" id="bn" style="margin-bottom:6px"></div><div class="card list" id="bl"></div>`;
+  const draw = () => {
+    const q = $('#bq', m).value.trim().toLowerCase().replace(new RegExp('^' + BR_MODE.b.toLowerCase() + '-'), ''), ws = q.split(/\s+/).filter(Boolean);
+    const r = ws.length ? all.filter(o => ws.every(w => o._s.includes(w))) : all;
+    $('#bn', m).textContent = r.length + ' orders';
+    $('#bl', m).innerHTML = r.slice(0, 200).map((o, i) => `<div class="it" data-i="${i}">${bItem(o, F)}</div>`).join('') || '<p class="muted center">Kuch nahin</p>';
+    $('#bl', m).querySelectorAll('.it').forEach(el => el.onclick = () => bOrder(r[+el.dataset.i], F));
+  };
+  $('#bq', m).oninput = draw; draw();
+}
+async function bDueView(m) {
+  const { open, F } = await bData(), day = riyadh().slice(0, 10);
+  const g = {}; open.forEach(o => { const d = String(o.delivery_date || '').slice(0, 10) || '—'; (g[d] = g[d] || []).push(o); });
+  const days = Object.keys(g).sort();
+  m.innerHTML = days.length ? days.map(d => `<div class="bsec" style="background:${d < day ? 'var(--badbg)' : d === day ? '#fff1db' : '#eef1f5'}"><span>${d === day ? 'Aaj · ' : d < day ? 'Late · ' : ''}${H(dmy(d))}</span><span>${g[d].length} orders · ${g[d].reduce((a, o) => a + N(o.pcs) - N(o.delivered_qty), 0)} pcs</span></div>
+    <div class="card list">${g[d].map(o => `<div class="it" data-o="${H(o.order_no)}">${bItem(o, F)}</div>`).join('')}</div>`).join('') : '<p class="muted center">Koi order baaki nahin</p>';
+  m.querySelectorAll('[data-o]').forEach(el => el.onclick = () => bOrder(open.find(o => String(o.order_no) === el.dataset.o), F));
+}
+async function bFacView(m) {
+  const B = BR_MODE, { open, F } = await bData();
+  const g = { shop: open.filter(o => !F[o.order_no]), fac: open.filter(o => F[o.order_no] && F[o.order_no].st === 'sent'), back: open.filter(o => F[o.order_no] && F[o.order_no].st === 'back') };
+  const row = (o, st, lbl, cls) => `<div class="it"><div class="no">${H(bNo(o))}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${N(o.pcs)} thobe · delivery ${H(dmy(o.delivery_date))}${F[o.order_no] ? ' · ' + (F[o.order_no].st === 'sent' ? 'sent ' + dm(F[o.order_no].s) : 'back ' + dm(F[o.order_no].b)) : ''}</div></div>
+    <div class="r"><button class="btn small ${cls || ''}" data-fx="${st}" data-o="${H(o.order_no)}">${lbl}</button></div></div>`;
+  const sec = (t, n, bg, x) => `<div class="bsec" style="background:${bg}"><span>${t} (${n})</span>${x || ''}</div>`;
+  m.innerHTML = sec('🏬 في المحل – At the shop', g.shop.length, '#eef1f5', g.shop.length ? `<button class="btn small" id="fxall">إرسال الكل → Send all</button>` : '') +
+    `<div class="card list">${g.shop.map(o => row(o, 'sent', '→ المصنع / Factory')).join('') || '<p class="muted">—</p>'}</div>` +
+    sec('🏭 في المصنع – At the factory', g.fac.length, '#fff1db') + `<div class="card list">${g.fac.map(o => row(o, 'back', '✔ وصل / Received')).join('') || '<p class="muted">—</p>'}</div>` +
+    sec('✔ رجع للمحل – Back at the shop', g.back.length, '#e3f4ea') + `<div class="card list">${g.back.map(o => row(o, 'sent', '↺', 'ghost')).join('') || '<p class="muted">—</p>'}</div>`;
+  const set = async (nos, st, btn) => {
+    if (!needWho()) return; if (btn) btn.disabled = true;
+    try { await fxPut(nos, st, bWho() || ('Branch ' + B.b), () => B.b); branchHome('fac'); } catch (e) { if (btn) btn.disabled = false; alert('Save nahin hua: ' + e.message); }
+  };
+  m.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => set([b.dataset.o], b.dataset.fx, b));
+  const all = $('#fxall', m); if (all) all.onclick = () => { if (confirm(`${g.shop.length} order factory bhejein?`)) set(g.shop.map(o => o.order_no), 'sent', all); };
+}
+// ---- the factory
+let fTab = 'fac';
+function factoryHome(t) {
+  fTab = t || fTab;
+  const m = bShell([['fac', 'Factory'], ['due', 'Coming']], fTab, factoryHome);
+  m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
+  (fTab === 'due' ? fComingView : fFacView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet')) factoryHome(fTab); }, 90000);
+}
+async function fData() {
+  DSC.j_orders = null;
+  const [jo, F] = await Promise.all([loadDs('j_orders'), fxNow()]);
+  const open = jo.rows.filter(o => N(o.delivered_qty) < N(o.pcs));
+  const shops = [{ c: '', n: 'Main shop', ar: 'المحل الرئيسي' }].concat((BR_MODE.all || []).filter(x => x.k === 'shop'));
+  return { open, F, shops };
+}
+const fNo = (o) => (o.branch ? o.branch + '-' : '') + o.order_no;
+async function fFacView(m) {
+  const { open, F, shops } = await fData(), day = riyadh().slice(0, 10);
+  const at = open.filter(o => F[o.order_no] && F[o.order_no].st === 'sent');
+  const backToday = open.filter(o => F[o.order_no] && F[o.order_no].st === 'back' && F[o.order_no].b.slice(0, 10) === day);
+  const inToday = at.filter(o => F[o.order_no].s.slice(0, 10) === day);
+  const pcs = (L) => L.reduce((a, o) => a + N(o.pcs) - N(o.delivered_qty), 0);
+  const row = (o, st, lbl, cls) => `<div class="it"><div class="no">${H(fNo(o))}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${N(o.pcs)} thobe · delivery <span${String(o.delivery_date || '').slice(0, 10) < day ? ' style="color:var(--bad)"' : ''}>${H(dmy(o.delivery_date))}</span> · ${st === 'back' ? 'came ' + dm(F[o.order_no].s) : 'sent back ' + dm(F[o.order_no].b)}</div></div>
+    <div class="r">${N(o.ready) === 1 ? '<span class="pill" style="background:var(--okbg);color:var(--ok)">Ready</span>' : ''}<button class="btn small ${cls || ''}" data-fx="${st}" data-o="${H(o.order_no)}">${lbl}</button></div></div>`;
+  m.innerHTML = `<div class="grid"><div class="stat"><b>${pcs(at)}</b><span>Factory mein (pcs)</span></div><div class="stat"><b>${pcs(inToday)}</b><span>Aaj aaye</span></div><div class="stat"><b style="color:var(--ok)">${pcs(backToday)}</b><span>Aaj wapas bheje</span></div></div>` +
+    shops.map(sh => { const L = at.filter(o => String(o.branch || '') === sh.c).sort((a, b) => cmpv(a.delivery_date, b.delivery_date)); return L.length ? `<div class="bsec" style="background:#fff1db"><span>🏬 ${H(sh.ar || sh.n)} · ${H(sh.n || sh.ar)}${sh.c ? ' (' + H(sh.c) + ')' : ''}</span><span>${L.length} orders · ${pcs(L)} pcs</span></div>
+      <div class="card list">${L.map(o => row(o, 'back', '✔ جاهز → الفرع / Send back')).join('')}</div>` : ''; }).join('') +
+    (at.length ? '' : '<p class="muted center">Factory mein abhi kuch nahin</p>') +
+    (backToday.length ? `<div class="bsec" style="background:#e3f4ea"><span>✔ Aaj wapas bheje</span><span>${pcs(backToday)} pcs</span></div><div class="card list">${backToday.map(o => row(o, 'sent', '↺', 'ghost')).join('')}</div>` : '');
+  const brOf = (no) => { const o = open.find(x => String(x.order_no) === String(no)); return o ? o.branch || '' : ''; };
+  m.querySelectorAll('[data-fx]').forEach(b => b.onclick = async () => { if (!needWho()) return; b.disabled = true; try { await fxPut([b.dataset.o], b.dataset.fx, bWho() || 'Factory', brOf); factoryHome('fac'); } catch (e) { b.disabled = false; alert(e.message); } });
+}
+async function fComingView(m) {
+  const { open, F, shops } = await fData();
+  const not = open.filter(o => !F[o.order_no]);
+  const pcs = (L) => L.reduce((a, o) => a + N(o.pcs) - N(o.delivered_qty), 0);
+  m.innerHTML = '<div class="note">Shops ke orders jo abhi factory nahin aaye. Kapda aa jaye to "Received" dabaiye.</div>' + shops.map(sh => { const L = not.filter(o => String(o.branch || '') === sh.c).sort((a, b) => cmpv(a.delivery_date, b.delivery_date)); return L.length ? `<div class="bsec" style="background:#eef1f5"><span>🏬 ${H(sh.ar || sh.n)}${sh.c ? ' (' + H(sh.c) + ')' : ''}</span><span>${L.length} orders · ${pcs(L)} pcs</span></div>
+    <div class="card list">${L.map(o => `<div class="it"><div class="no">${H(fNo(o))}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${N(o.pcs)} thobe · delivery ${H(dmy(o.delivery_date))}</div></div><div class="r"><button class="btn small" data-fx="sent" data-o="${H(o.order_no)}">✔ وصل / Received</button></div></div>`).join('')}</div>` : ''; }).join('') || '<p class="muted center">Sab orders factory mein hain</p>';
+  const brOf = (no) => { const o = open.find(x => String(x.order_no) === String(no)); return o ? o.branch || '' : ''; };
+  m.querySelectorAll('[data-fx]').forEach(b => b.onclick = async () => { if (!needWho()) return; b.disabled = true; try { await fxPut([b.dataset.o], 'sent', bWho() || 'Factory', brOf); factoryHome('due'); } catch (e) { b.disabled = false; alert(e.message); } });
 }
 let started = false;
 if (BR_MODE) branchStart();

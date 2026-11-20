@@ -277,11 +277,40 @@
   .fxday:empty { display: none; }
   @media (max-width: 720px) { .fxc .fxp { display: block; margin-bottom: 4px; width: max-content; } .fxc .fxb { margin: 0; } .fxday { justify-content: flex-start; } }
   /* Branches */
-  .brhow { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height: 1.6; color: var(--ink); } .brhow small { font-size: inherit; margin-inline-start: .35em; }
-  #brTab input, #brTab select { margin: 0; height: 36px; font-size: 14px; padding: 4px 8px; min-width: 0; }
-  #brTab .cd input { width: 80px; text-transform: uppercase; font-weight: 700; } #brTab .nm2 input { width: 100%; min-width: 120px; }
-  #brTab td { padding: 8px 10px; } #brTab .x { border: 1px solid var(--line); background: #fff; border-radius: 7px; width: 34px; height: 34px; cursor: pointer; color: var(--bad); }
-  #brTab tr.main td { background: #f7f8fa; }
+  .bsech { display: flex; align-items: center; gap: 8px; margin: 10px 2px -2px; font-size: 15px; color: #0d1b2e; } .bsech small { font-size: inherit; margin-inline-start: .35em; }
+  .bsech i { font-style: normal; font-size: 12px; color: var(--mute); background: #eef1f5; border-radius: 99px; padding: 1px 8px; }
+  .bcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .bcard { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--p-sh1); display: flex; flex-direction: column; }
+  .bcard .bh { background: #0d1b2e; color: #fff; padding: 14px 16px; position: relative; } .bcard.fac .bh { background: #22324a; } .bcard.off { opacity: .6; }
+  .bcard .bh h3 { margin: 8px 0 2px; font-size: 17px; color: #fff; } .bcard .bh p { margin: 0; font-size: 12.5px; color: #b9c3d1; }
+  .bcode { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; border: 1px solid #cfae6a; color: #e6cf9a; border-radius: 6px; padding: 1px 7px; margin-inline-end: 4px; }
+  .bcode.g { border-color: #8a93a3; color: #cfd5de; }
+  .bcard .bs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+  .bcard .bs div { padding: 10px 12px; text-align: center; border-inline-start: 1px solid var(--line); } .bcard .bs div:first-child { border-inline-start: 0; }
+  .bcard .bs span { display: block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); } .bcard .bs b { font-size: 22px; color: #0d1b2e; }
+  .bcard .bs small, .bcard .bm small, .bcard .bf small { font-size: inherit; margin-inline-start: .3em; }
+  .bcard .bm { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; flex: 1; }
+  .bcard .bm > div { display: flex; justify-content: space-between; gap: 10px; align-items: center; } .bcard .bm .muted { font-size: 12.5px; }
+  .bspark { display: flex; align-items: flex-end; gap: 3px; height: 34px; } .bspark i { flex: 1; background: #cfae6a; border-radius: 2px 2px 0 0; min-height: 3px; }
+  .bload { height: 8px; background: #eef1f5; border-radius: 99px; overflow: hidden; width: 100%; } .bload i { display: block; height: 100%; background: #137a4b; } .bload i.hi { background: var(--bad); }
+  .bcard .bf { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
+  .bbtn { border: 1px solid var(--line); background: #fff; color: #0d1b2e; border-radius: 8px; padding: 6px 11px; font-size: 13px; font-weight: 600; cursor: pointer; width: auto; margin: 0; }
+  .bbtn.pri { background: #0d1b2e; color: #fff; border-color: #0d1b2e; } .bbtn:hover { border-color: #0d1b2e; }
+  .bcard.add { border: 2px dashed var(--line); background: transparent; box-shadow: none; align-items: center; justify-content: center; min-height: 160px; cursor: pointer; color: var(--mute); gap: 6px; text-align: center; padding: 16px; font: inherit; }
+  .bcard.add b { color: #0d1b2e; font-size: 15px; } .bcard.add:hover { border-color: #0d1b2e; }
+  .bdlg { position: fixed; inset: 0; z-index: 60; background: rgba(13, 27, 46, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .bdlg[hidden] { display: none; }
+  .bdbox { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 92vh; overflow: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+  .bdbox .hd { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); } .bdbox .hd b { font-size: 16px; color: #0d1b2e; }
+  .bdbox .bd { padding: 16px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .bdbox .ft { padding: 12px 18px 16px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--line); }
+  .bdbox label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--mute); } .bdbox label.w { grid-column: 1 / -1; }
+  .bdbox label small { font-size: inherit; margin-inline-start: .3em; } .bdbox input, .bdbox select { margin: 0; font-size: 15px; height: 40px; }
+  .bdbox .note { grid-column: 1 / -1; font-size: 12.5px; color: var(--mute); background: #f7f8fa; border-radius: 8px; padding: 9px 11px; line-height: 1.55; }
+  .blink { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .blink b { color: #0d1b2e; } .blink code { font-size: 12px; word-break: break-all; background: #f7f8fa; border-radius: 6px; padding: 6px 8px; direction: ltr; text-align: left; }
+  .blink .row2 { display: flex; gap: 6px; flex-wrap: wrap; }
+  #p13 small { margin-inline-start: .35em; }
+  @media (max-width: 560px) { .bcards { grid-template-columns: 1fr; } .bdbox .bd { grid-template-columns: 1fr; } }
   /* Deliveries */
   .dv { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
   .dvh { padding: 16px 18px !important; }
@@ -523,28 +552,20 @@
         <div class="card dvh">
           <div class="dvtop">
             <div><h3 style="margin:0">الفروع والمصنع<small>Branches &amp; factory</small></h3>
-              <div class="muted dvsub"><span>كل الفروع تحجز في نفس نظام جميل – طلب الفرع يظهر برمز الفرع مثل B2-1250<small>All branches book into the same Jameel – a branch order shows with its code, like B2-1250</small></span></div></div>
-            <button type="button" id="brSave" class="dvbtn"><span>حفظ<small>Save</small></span></button>
+              <div class="muted dvsub"><span>كل فرع يحجز أمر التشغيل في نفس InvProject وجميل – رقم الطلب برمز الفرع مثل B2-1250<small>Every branch books its InvProject order into the same InvProject and Jameel – the order shows with the branch code, like B2-1250</small></span></div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="brAddS" class="dvbtn"><span>+ فرع<small>Add branch</small></span></button>
+              <button type="button" id="brAddF" class="dvbtn" style="background:#fff;color:#0d1b2e;border:1px solid var(--line)"><span>+ مصنع<small>Add factory</small></span></button></div>
           </div>
           <div id="brMsg" class="muted" style="margin-top:8px;font-size:13px"></div>
         </div>
-        <div class="dvday">
-          <div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt" id="brTab"></table></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line)">
-            <button type="button" class="dvbtn" id="brAddS" style="background:#fff;color:#0d1b2e;border:1px solid var(--line)"><span>+ فرع<small>Add shop</small></span></button>
-            <button type="button" class="dvbtn" id="brAddF" style="background:#fff;color:#0d1b2e;border:1px solid var(--line)"><span>+ مصنع<small>Add factory</small></span></button>
-          </div>
-        </div>
-        <div class="card dvh">
-          <h3 style="margin:0 0 8px">كيف يحجز الفرع؟<small>How does a branch book an order?</small></h3>
-          <ol class="brhow">
-            <li><span>أضف الفرع هنا برمز قصير (مثل B2) واحفظ.<small>Add the branch here with a short code (like B2) and Save.</small></span></li>
-            <li><span>من لوحة المحل ← More ← Online links انسخ رابط "طلب جديد" الخاص بالفرع وافتحه في جهاز الفرع.<small>Dashboard → More → Online links: copy the branch's own "New order" link and open it on the branch PC.</small></span></li>
-            <li><span>الطلب يُحفظ في جميل الرئيسي، والرقم يظهر برمز الفرع في كل الصفحات والطباعة.<small>The order is saved in the main Jameel; its number shows with the branch code on every page and print.</small></span></li>
-            <li><span>من الأعلى (رمز المتجر) اختر الفرع لترى طلباته فقط: اليوم، الطلبات، التسليمات.<small>At the top (shop icon) choose a branch to see only its orders: Today, Orders, Deliveries.</small></span></li>
-          </ol>
-        </div>
+        <h4 class="bsech"><span>المحلات<small>Shop branches</small></span> <i id="brNS"></i></h4>
+        <div class="bcards" id="brShops"></div>
+        <h4 class="bsech"><span>مصنع الخياطة<small>Tailoring factory</small></span> <i id="brNF"></i></h4>
+        <div class="bcards" id="brFacs"></div>
+        <div class="dvday"><div class="dvdh"><div class="dvdt"><b><span>مقارنة الفروع<small>Branch comparison</small></span></b><div><span>آخر 30 يوم<small>Last 30 days</small></span></div></div></div>
+          <div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt" id="brCmp"></table></div></div>
       </div>
+      <div class="bdlg" id="brDlg" hidden><div class="bdbox" id="brDlgBox"></div></div>
     </div>
 
     <div id="p4" style="display:none">
@@ -728,57 +749,126 @@
         return { d: d, list: list, pcs: pcs, done: done, rdy: rdy, rp: rp, dp: dp, left: Math.max(0, pcs - rp - dp) };
       });
     }
-    // ---- Branches tab
-    var BR_EDIT = [], BR_CNT = {};
+    // ---- Branches tab: shop cards, factory cards, comparison, add / edit, links
+    var BRD = null;
     function loadBranches() {
       $('brMsg').textContent = '';
-      google.script.run.withSuccessHandler(function (r) { if (!r) return; BR_EDIT = (r.list || []).map(function (b) { return { c: b.c, n: b.n, ar: b.ar, k: b.k, on: b.on }; }); BR_CNT = r.count || {}; drawBranches(); }).aBranches(KEY, PIN);
+      if (!BRD) $('brShops').innerHTML = '<div class="dvnone">' + LB('جاري التحميل…', 'Loading…') + '</div>';
+      google.script.run.withSuccessHandler(function (r) { if (!r) return; BRD = r; BRS = r.list; brSelFill(); drawBranches(); }).aBranches(KEY, PIN);
+    }
+    function brSt(c) { return (BRD && BRD.stats[c]) || { act: 0, actPcs: 0, ready: 0, atF: 0, atFPcs: 0, today: 0, todayAmt: 0, todayPcs: 0, sales30: 0, orders30: 0, pcs30: 0, fac30: 0, due: 0, late: 0, spark: [] }; }
+    function sar(v) { return Math.round(Number(v) || 0).toLocaleString('en-US'); }
+    function shopCard(b) {
+      var c = b ? b.c : '', x = brSt(c), mx = Math.max.apply(null, (x.spark.length ? x.spark : [0]).concat([1]));
+      return '<div class="bcard' + (b && !b.on ? ' off' : '') + '"><div class="bh"><span class="bcode">' + esc(c || 'MAIN') + '</span>' + (b ? (b.on ? '' : '<span class="bcode g">' + LB('متوقف', 'Off') + '</span>') : '<span class="bcode g">' + LB('الرئيسي', 'Main') + '</span>') +
+        '<h3>' + (b ? esc(b.ar || b.n) + (b.ar && b.n ? ' · ' + esc(b.n) : '') : 'المحل الرئيسي · Main shop') + '</h3><p>' + esc(b ? [b.ad, b.ph].filter(Boolean).join(' · ') || '—' : 'Jameel PC · InvProject · Genix') + '</p></div>' +
+        '<div class="bs"><div><span>' + LB('طلبات مفتوحة', 'Active') + '</span><b>' + x.act + '</b></div><div><span>' + LB('جاهز', 'Ready') + '</span><b style="color:var(--ok)">' + x.ready + '</b></div><div><span>' + LB('في المصنع', 'At factory') + '</span><b>' + x.atFPcs + '</b></div></div>' +
+        '<div class="bm"><div><span class="muted">' + LB('اليوم', 'Today') + '</span><span><b>' + x.today + '</b> ' + LB('طلب', 'orders') + ' · ' + x.todayPcs + ' pcs · <b>' + sar(x.todayAmt) + '</b> SAR</span></div>' +
+        '<div><span class="muted">' + LB('مبيعات 30 يوم', 'Sales, 30 days') + '</span><b>' + sar(x.sales30) + ' SAR</b></div>' +
+        '<div class="bspark" title="Daily sales, last 14 days">' + x.spark.map(function (v) { return '<i style="height:' + Math.max(6, v / mx * 100) + '%"></i>'; }).join('') + '</div>' +
+        '<div><span class="muted">' + LB('قطع لم تُسلَّم', 'Pieces still to deliver') + '</span><span>' + x.actPcs + ' pcs</span></div>' +
+        '<div><span class="muted">' + LB('متأخر', 'Late') + '</span><span style="color:' + (x.late ? 'var(--bad)' : 'inherit') + '">' + x.late + '</span></div>' +
+        '<div><span class="muted">' + LB('آجل', 'Balance due') + '</span><span>' + sar(x.due) + ' SAR</span></div>' +
+        (b && b.hr ? '<div><span class="muted">' + LB('الدوام', 'Hours') + '</span><span style="font-size:12.5px">' + esc(b.hr) + '</span></div>' : '') + '</div>' +
+        '<div class="bf"><button type="button" class="bbtn pri" data-bo="' + esc(c || 'M') + '">' + LB('فتح', 'Open') + '</button>' +
+        (b ? '<button type="button" class="bbtn" data-be="' + esc(c) + '">' + LB('تعديل', 'Edit') + '</button><button type="button" class="bbtn" data-bl="' + esc(c) + '">' + LB('الرابط', 'Link') + '</button>' : '') + '</div></div>';
+    }
+    function facCard(b) {
+      var F = (BRD && BRD.factory) || { atPcs: 0, atOrders: 0, sentToday: 0, backToday: 0, by: {} }, cap = b.cap || 0, load = cap ? Math.min(100, F.atPcs / (cap * 7) * 100) : 0;
+      var shops = [''].concat(BRS.filter(function (x) { return x.k === 'shop'; }).map(function (x) { return x.c; }));
+      return '<div class="bcard fac' + (b.on ? '' : ' off') + '"><div class="bh"><span class="bcode">' + esc(b.c) + '</span><span class="bcode g">' + LB('مصنع', 'Factory') + '</span><h3>' + esc(b.ar || b.n) + (b.ar && b.n ? ' · ' + esc(b.n) : '') + '</h3><p>' + esc([b.ad, b.ph].filter(Boolean).join(' · ') || '—') + '</p></div>' +
+        '<div class="bs"><div><span>' + LB('في المصنع', 'In factory') + '</span><b>' + F.atPcs + '</b></div><div><span>' + LB('وصل اليوم', 'In today') + '</span><b>' + F.sentToday + '</b></div><div><span>' + LB('رجع اليوم', 'Back today') + '</span><b style="color:var(--ok)">' + F.backToday + '</b></div></div>' +
+        '<div class="bm">' + (cap ? '<div><span class="muted">' + LB('الطاقة', 'Capacity') + '</span><span>' + cap + ' pcs / day</span></div><div><div class="bload"><i class="' + (load > 85 ? 'hi' : '') + '" style="width:' + load + '%"></i></div></div>' : '') +
+        shops.map(function (c) { return '<div><span class="muted">' + LB('من ', 'From ') + esc(c ? brName(c) : 'Main') + '</span><span>' + (F.by[c] || 0) + ' pcs</span></div>'; }).join('') +
+        (b.hr ? '<div><span class="muted">' + LB('الدوام', 'Hours') + '</span><span style="font-size:12.5px">' + esc(b.hr) + '</span></div>' : '') + '</div>' +
+        '<div class="bf"><button type="button" class="bbtn" data-be="' + esc(b.c) + '">' + LB('تعديل', 'Edit') + '</button><button type="button" class="bbtn" data-bl="' + esc(b.c) + '">' + LB('الرابط', 'Link') + '</button></div></div>';
     }
     function drawBranches() {
-      var t = '<thead><tr><th>' + LB('الرمز', 'Code') + '</th><th>' + LB('الاسم', 'Name') + '</th><th>' + LB('الاسم بالعربي', 'Arabic name') + '</th><th>' + LB('النوع', 'Type') + '</th><th class="c">' + LB('يعمل', 'Active') + '</th><th class="c">' + LB('طلبات', 'Orders') + '</th><th></th></tr></thead><tbody>' +
-        '<tr class="main"><td class="cd"><b>—</b></td><td><b>Main shop</b></td><td><b dir="rtl">المحل الرئيسي</b></td><td>' + LB('محل', 'Shop') + '</td><td class="c">✔</td><td class="c">' + (BR_CNT[''] || 0) + '</td><td></td></tr>' +
-        BR_EDIT.map(function (b, i) {
-          return '<tr><td class="cd"><input data-bf="c" data-i="' + i + '" value="' + esc(b.c) + '" maxlength="5" placeholder="B2"></td>' +
-            '<td class="nm2"><input data-bf="n" data-i="' + i + '" value="' + esc(b.n) + '" maxlength="40" placeholder="Olaya"></td>' +
-            '<td class="nm2"><input data-bf="ar" data-i="' + i + '" value="' + esc(b.ar) + '" maxlength="40" dir="rtl" placeholder="العليا"></td>' +
-            '<td><select data-bf="k" data-i="' + i + '"><option value="shop"' + (b.k === 'shop' ? ' selected' : '') + '>محل · Shop</option><option value="factory"' + (b.k === 'factory' ? ' selected' : '') + '>مصنع · Factory</option></select></td>' +
-            '<td class="c"><input type="checkbox" data-bf="on" data-i="' + i + '"' + (b.on ? ' checked' : '') + ' style="width:20px;height:20px"></td>' +
-            '<td class="c">' + (b.k === 'shop' ? (BR_CNT[b.c] || 0) : '–') + '</td>' +
-            '<td><button type="button" class="x" data-bx="' + i + '" aria-label="Remove">✕</button></td></tr>';
-        }).join('') + '</tbody>';
-      $('brTab').innerHTML = t;
+      var shops = BRS.filter(function (b) { return b.k === 'shop'; }), facs = BRS.filter(function (b) { return b.k === 'factory'; });
+      var add = function (k, ar, en, dar, den) { return '<button type="button" class="bcard add" data-ba="' + k + '"><b>+ ' + LB(ar, en) + '</b><span style="font-size:12.5px">' + LB(dar, den) + '</span></button>'; };
+      $('brNS').textContent = shops.length + 1; $('brNF').textContent = facs.length;
+      $('brShops').innerHTML = shopCard(null) + shops.map(shopCard).join('') + add('shop', 'فرع جديد', 'Add a branch', 'محل يحجز الطلبات ويأخذ المقاسات ويسلّم الثياب', 'A shop that books orders, measures customers and hands over thobes');
+      $('brFacs').innerHTML = facs.map(facCard).join('') + (facs.length ? '' : add('factory', 'مصنع', 'Add the factory', 'المكان الذي تُخاط فيه طلبات كل الفروع', 'Where the orders of all shops are stitched'));
+      var rows = [{ c: '', b: null }].concat(shops.map(function (b) { return { c: b.c, b: b }; })), T = { o: 0, p: 0, f: 0, s: 0, d: 0, l: 0 };
+      $('brCmp').innerHTML = '<thead><tr><th>' + LB('الفرع', 'Branch') + '</th><th class="c">' + LB('طلبات', 'Orders') + '</th><th class="c">' + LB('ثياب', 'Thobes') + '</th><th class="c">' + LB('للمصنع', 'Sent to factory') + '</th><th class="c">' + LB('المبيعات', 'Sales') + '</th><th class="c">' + LB('متوسط الطلب', 'Avg / order') + '</th><th class="c">' + LB('آجل', 'Balance') + '</th><th class="c">' + LB('متأخر', 'Late') + '</th></tr></thead><tbody>' +
+        rows.map(function (r) { var x = brSt(r.c); T.o += x.orders30; T.p += x.pcs30; T.f += x.fac30; T.s += x.sales30; T.d += x.due; T.l += x.late;
+          return '<tr><td><span class="bpill">' + esc(r.c || 'MAIN') + '</span> <b>' + esc(r.b ? (r.b.n || r.b.ar) : 'Main shop') + '</b></td><td class="c">' + x.orders30 + '</td><td class="c">' + x.pcs30 + '</td><td class="c">' + x.fac30 + ' <span class="muted">(' + (x.pcs30 ? Math.round(x.fac30 / x.pcs30 * 100) : 0) + '%)</span></td><td class="c"><b>' + sar(x.sales30) + '</b></td><td class="c">' + (x.orders30 ? sar(x.sales30 / x.orders30) : '—') + '</td><td class="c">' + sar(x.due) + '</td><td class="c" style="color:' + (x.late ? 'var(--bad)' : 'inherit') + '">' + x.late + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td>' + LB('المجموع', 'Total') + '</td><td class="c">' + T.o + '</td><td class="c">' + T.p + '</td><td class="c">' + T.f + '</td><td class="c">' + sar(T.s) + '</td><td class="c">' + (T.o ? sar(T.s / T.o) : '—') + '</td><td class="c">' + sar(T.d) + '</td><td class="c">' + T.l + '</td></tr></tfoot>';
     }
-    $('brTab').addEventListener('input', function (ev) {
-      var e = ev.target, i = Number(e.getAttribute('data-i')), f = e.getAttribute('data-bf'); if (!f || !BR_EDIT[i]) return;
-      if (f === 'c') { e.value = e.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); }
-      BR_EDIT[i][f] = f === 'on' ? e.checked : e.value;
-    });
-    $('brTab').addEventListener('change', function (ev) { var e = ev.target, i = Number(e.getAttribute('data-i')), f = e.getAttribute('data-bf'); if (f && BR_EDIT[i]) { BR_EDIT[i][f] = f === 'on' ? e.checked : e.value; if (f === 'k') drawBranches(); } });
-    $('brTab').addEventListener('click', function (ev) {
-      var b = ev.target.closest && ev.target.closest('[data-bx]'); if (!b) return;
-      var x = BR_EDIT[Number(b.getAttribute('data-bx'))]; if (!x) return;
-      if (BR_CNT[x.c] && !confirm('الفرع ' + x.c + ' له ' + BR_CNT[x.c] + ' طلب – الطلبات تبقى برمزه.\nBranch ' + x.c + ' has ' + BR_CNT[x.c] + ' orders – they keep its code. Better: untick Active.\n\nRemove anyway?')) return;
-      BR_EDIT.splice(Number(b.getAttribute('data-bx')), 1); drawBranches();
-    });
-    function brAdd(k) {
-      var n = 2, used = {}; BR_EDIT.forEach(function (b) { used[b.c] = 1; });
-      var c = k === 'factory' ? 'F' : 'B2'; while (used[c]) c = k === 'factory' ? 'F' + (n++) : 'B' + (++n);
-      BR_EDIT.push({ c: c, n: '', ar: '', k: k, on: true }); drawBranches();
-      var ins = $('brTab').querySelectorAll('input[data-bf="n"]'); if (ins.length) ins[ins.length - 1].focus();
+    function brDlg(html) { $('brDlgBox').innerHTML = html; $('brDlg').hidden = false; }
+    function brDlgClose() { $('brDlg').hidden = true; $('brDlgBox').innerHTML = ''; }
+    $('brDlg').addEventListener('click', function (ev) { if (ev.target === $('brDlg') || (ev.target.closest && ev.target.closest('[data-bx]'))) brDlgClose(); });
+    function brForm(code, kind) {
+      var b = code ? BRS.filter(function (x) { return x.c === code; })[0] : null, F = b ? b.k === 'factory' : kind === 'factory', used = {};
+      BRS.forEach(function (x) { used[x.c] = 1; }); var sug = F ? 'F' : 'B2', n = 2; while (!b && used[sug]) sug = F ? 'F' + (n++) : 'B' + (++n);
+      var e = b || { c: sug, n: '', ar: '', k: F ? 'factory' : 'shop', on: true, ph: '', ad: '', hr: F ? '7:00 – 17:00' : '9:00 – 12:00 · 16:00 – 23:00', cap: 0, pin: '' };
+      var cnt = b && BRD ? (BRD.count[b.c] || 0) : 0;
+      brDlg('<div class="hd"><b>' + (b ? LB('تعديل ', 'Edit ') + esc(b.n || b.ar || b.c) : F ? LB('مصنع جديد', 'Add the factory') : LB('فرع جديد', 'Add a branch')) + '</b><button type="button" class="bbtn" data-bx="1">✕</button></div><div class="bd">' +
+        '<label>' + LB('الاسم', 'Name') + '<input id="bfN" value="' + esc(e.n) + '" placeholder="' + (F ? 'Factory' : 'Olaya') + '" maxlength="40"></label>' +
+        '<label>' + LB('الاسم بالعربي', 'Arabic name') + '<input id="bfA" value="' + esc(e.ar) + '" dir="rtl" placeholder="' + (F ? 'المصنع' : 'العليا') + '" maxlength="40"></label>' +
+        '<label>' + LB('الرمز', 'Short code') + '<input id="bfC" value="' + esc(e.c) + '" maxlength="5" style="text-transform:uppercase;font-weight:700"' + (cnt ? ' disabled title="Has orders"' : '') + '></label>' +
+        '<label>' + LB('النوع', 'Type') + '<select id="bfK"><option value="shop"' + (F ? '' : ' selected') + '>محل · Shop branch</option><option value="factory"' + (F ? ' selected' : '') + '>مصنع · Tailoring factory</option></select></label>' +
+        '<label>' + LB('الجوال', 'Phone') + '<input id="bfP" value="' + esc(e.ph) + '" inputmode="tel" placeholder="05xxxxxxxx"></label>' +
+        '<label>' + LB('الدوام', 'Hours') + '<input id="bfH" value="' + esc(e.hr) + '"></label>' +
+        '<label class="w">' + LB('العنوان', 'Address') + '<input id="bfD" value="' + esc(e.ad) + '" placeholder="Street, district"></label>' +
+        '<label data-fo>' + LB('الطاقة (قطعة/يوم)', 'Capacity (pcs / day)') + '<input id="bfQ" type="number" min="0" value="' + (e.cap || '') + '"></label>' +
+        '<label>' + LB('رقم سري للرابط', 'PIN for its link') + '<input id="bfPin" type="password" inputmode="numeric" maxlength="8" placeholder="' + (e.pin ? '•••• (set – type to change)' : '4–8 digits (optional)') + '"></label>' +
+        (e.pin ? '<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="bfPinX" style="width:18px;height:18px"> ' + LB('حذف الرقم السري', 'Remove PIN') + '</label>' : '') +
+        '<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="bfOn"' + (e.on ? ' checked' : '') + ' style="width:18px;height:18px"> ' + LB('يعمل', 'Active') + '</label>' +
+        '<div class="note" id="bfHelp"></div><div id="bfErr" class="w" style="grid-column:1/-1;color:var(--bad);font-size:13px"></div></div>' +
+        '<div class="ft">' + (b && !cnt ? '<button type="button" class="bbtn" id="bfDel" style="margin-inline-end:auto;color:var(--bad)">' + LB('حذف', 'Delete') + '</button>' : '') + '<button type="button" class="bbtn" data-bx="1">' + LB('إلغاء', 'Cancel') + '</button><button type="button" class="bbtn pri" id="bfSave">' + LB('حفظ', 'Save') + '</button></div>');
+      var sync = function () { var f = $('bfK').value === 'factory'; document.querySelectorAll('[data-fo]').forEach(function (x) { x.style.display = f ? '' : 'none'; });
+        $('bfHelp').innerHTML = f ? LB('المصنع يخيط طلبات كل المحلات. المحل يرسل الطلب للمصنع، والمصنع يرجعه جاهزاً.', 'The factory stitches the orders of all shops: a shop sends the order to the factory, the factory sends it back ready. Its link shows what is at the factory, from which shop, and marks orders sent back.')
+                                  : LB('الفرع يحجز أمر التشغيل (عميل، قماش، مقاس، فاتورة جينكس) في نفس InvProject وجميل. رقم الطلب يظهر برمز الفرع.', 'The branch books its InvProject order (customer, fabric, measurements, Genix invoice) into the same InvProject and Jameel. Its order numbers show with the branch code. Customers and measurements are shared by all branches.'); };
+      $('bfK').onchange = sync; sync();
+      $('bfC').oninput = function () { this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); };
+      if ($('bfDel')) $('bfDel').onclick = function () { if (!confirm('Delete ' + b.c + '?')) return; brSave(BRS.filter(function (x) { return x.c !== b.c; })); };
+      $('bfSave').onclick = function () {
+        var c = $('bfC').value.trim().toUpperCase(), nm = $('bfN').value.trim(), ar = $('bfA').value.trim(), pin = $('bfPin').value.trim(), err = '';
+        if (!/^[A-Z][A-Z0-9]{0,4}$/.test(c)) err = 'Code: a letter first, then letters/digits (max 5), e.g. B2';
+        else if (c === 'M' || c === 'MAIN') err = 'This code is the main shop – use another';
+        else if (BRS.some(function (x) { return x.c === c && (!b || x.c !== b.c); })) err = 'Code ' + c + ' is already used';
+        else if (!nm && !ar) err = 'Write the name';
+        else if (pin && !/^[0-9]{4,8}$/.test(pin)) err = 'PIN: 4–8 digits';
+        if (err) { $('bfErr').textContent = '⚠ ' + err; return; }
+        var v = { c: c, n: nm, ar: ar, k: $('bfK').value, on: $('bfOn').checked, ph: $('bfP').value.trim(), ad: $('bfD').value.trim(), hr: $('bfH').value.trim(), cap: Number($('bfQ').value) || 0, pin: b ? b.pin : '' };
+        if (pin) v.pinNew = pin; if ($('bfPinX') && $('bfPinX').checked) v.pinClear = 1;
+        var list = BRS.map(function (x) { return x; }); if (b) list[list.indexOf(b)] = v; else list.push(v);
+        brSave(list, b ? '' : c);
+      };
     }
-    $('brAddS').addEventListener('click', function () { brAdd('shop'); });
-    $('brAddF').addEventListener('click', function () { brAdd('factory'); });
-    $('brSave').addEventListener('click', function () {
-      var seen = {}, bad = '';
-      BR_EDIT.forEach(function (b) { b.c = String(b.c || '').toUpperCase(); if (!/^[A-Z][A-Z0-9]{0,4}$/.test(b.c)) bad = bad || 'Code "' + b.c + '": letter first, then letters/digits (max 5), e.g. B2'; else if (b.c === 'M') bad = bad || 'Code M is the main shop – use another code'; else if (seen[b.c]) bad = bad || 'Code ' + b.c + ' twice'; seen[b.c] = 1; if (!b.n && !b.ar) bad = bad || 'Branch ' + b.c + ': write its name'; });
-      if (bad) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc(bad) + '</span>'; return; }
-      $('brMsg').textContent = '…';
+    function brSave(list, linkFor) {
+      var sv = $('bfSave'); if (sv) sv.disabled = true;
       google.script.run.withSuccessHandler(function (r) {
-        if (!r || !r.ok) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc((r && r.msg) || 'Not saved') + '</span>'; return; }
-        BR_EDIT = r.list; BRS = r.list; drawBranches(); brSelFill();
-        $('brMsg').innerHTML = '<span style="color:var(--ok)">✔ ' + LB('تم الحفظ', 'Saved') + '</span>';
-      }).withFailureHandler(function (e) { $('brMsg').innerHTML = '<span style="color:var(--bad)">⚠ ' + esc(e && e.message || e) + '</span>'; }).aSetBranches(KEY, PIN, BR_EDIT);
+        if (!r || !r.ok) { if (sv) sv.disabled = false; if ($('bfErr')) $('bfErr').textContent = '⚠ ' + ((r && r.msg) || 'Not saved'); return; }
+        BRS = r.list; brSelFill(); brDlgClose(); $('brMsg').innerHTML = '<span style="color:var(--ok)">✔ ' + LB('تم الحفظ', 'Saved') + '</span>';
+        if (BRD) BRD.list = r.list; drawBranches(); if (linkFor) brLinks(linkFor, true); loadBranches();
+      }).withFailureHandler(function (e) { if (sv) sv.disabled = false; if ($('bfErr')) $('bfErr').textContent = '⚠ ' + (e && e.message || e); }).aSetBranches(KEY, PIN, list);
+    }
+    function brLinks(code, fresh) {
+      var b = BRS.filter(function (x) { return x.c === code; })[0]; if (!b) return;
+      var key = BRD && BRD.okey, F = b.k === 'factory', url = key ? location.origin + '/app/?k=' + key + '&' + (F ? 'f' : 'b') + '=' + b.c : '';
+      var msg = 'السلام عليكم\\nرابط ' + (F ? 'المصنع' : 'فرع') + ' ' + (b.ar || b.n) + ' – جميل الهندام:\\n' + url + (b.pin ? '\\n(الرقم السري عند المدير)' : '') + '\\n\\nOpen it in Chrome on the ' + (F ? 'factory' : 'branch') + ' PC, then ⋮ → Install app (an icon like an .exe).';
+      brDlg('<div class="hd"><b>' + (fresh ? '✔ ' : '') + esc(b.n || b.ar) + ' · ' + LB('الرابط', 'Link') + '</b><button type="button" class="bbtn" data-bx="1">✕</button></div><div class="bd">' +
+        (url ? '<div class="blink"><b>' + (F ? LB('صفحة المصنع', 'Factory page') : LB('صفحة الفرع', 'Branch page')) + '</b><span class="muted" style="font-size:12.5px">' +
+          (F ? LB('ما في المصنع من كل فرع، والإرجاع للفرع', 'What is at the factory from each shop · send back to the shop') : LB('أمر تشغيل جديد · طلبات الفرع · التسليم · المصنع', 'New InvProject order · its orders · deliveries · factory')) + '</span><code id="blU">' + esc(url) + '</code>' +
+          '<div class="row2"><button type="button" class="bbtn pri" id="blCp">' + LB('نسخ الرابط', 'Copy link') + '</button><button type="button" class="bbtn" id="blWa">' + LB('رسالة واتساب', 'WhatsApp message') + '</button><a class="bbtn" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none">' + LB('فتح', 'Open') + ' ↗</a></div></div>'
+          : '<div class="note">' + LB('رابط الطلبات لم يصل من جهاز المحل بعد', 'The order link has not come from the shop PC yet (Jameel → online order page must be on).') + '</div>') +
+        '<div class="note">' + (b.pin ? LB('الرابط محمي برقم سري – أعطه للموظف فقط.', 'The link asks for the branch PIN – give it only to the staff.') : LB('بدون رقم سري: من معه الرابط يفتح الصفحة. يمكنك وضع رقم سري من تعديل.', 'No PIN: anyone with the link opens the page. You can set a PIN in Edit.')) + '</div></div>' +
+        '<div class="ft"><button type="button" class="bbtn" data-bx="1">' + LB('تم', 'Done') + '</button></div>');
+      var cp = function (t, ok) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('brMsg').textContent = ok; }, function () { prompt('Copy:', t); }); };
+      if ($('blCp')) $('blCp').onclick = function () { cp(url, '✔ Link copied'); this.textContent = '✔'; };
+      if ($('blWa')) $('blWa').onclick = function () { window.open('https://wa.me/?text=' + encodeURIComponent(msg.replace(/\\n/g, '\n')), '_blank'); };
+    }
+    $('p13').addEventListener('click', function (ev) {
+      var t = ev.target.closest && ev.target.closest('[data-bo],[data-be],[data-bl],[data-ba]'); if (!t) return;
+      if (t.hasAttribute('data-ba')) return brForm('', t.getAttribute('data-ba'));
+      if (t.hasAttribute('data-be')) return brForm(t.getAttribute('data-be'));
+      if (t.hasAttribute('data-bl')) return brLinks(t.getAttribute('data-bl'));
+      BR = t.getAttribute('data-bo'); try { localStorage.setItem('jadm-br', BR); } catch (e) { } brSelFill(); brFilter(); tab(2);
     });
+    $('brAddS').addEventListener('click', function () { brForm('', 'shop'); });
+    $('brAddF').addEventListener('click', function () { brForm('', 'factory'); });
     $('brSel').addEventListener('change', function () {
       BR = $('brSel').value; try { localStorage.setItem('jadm-br', BR); } catch (e) { }
       $('brSel').parentNode.classList.toggle('on', BR !== '*');
@@ -2152,7 +2242,7 @@
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };
     function shopTab(n) {
       var f = $('shopFrame'), h = SHOP_HASH[n] || 'home';
-      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=19#' + h);
+      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=20#' + h);
       else try { f.contentWindow.location.hash = h + '-' + Date.now(); } catch (x) { }
       setTimeout(function () { $('p5').scrollIntoView({ block: 'start' }); }, 50);
     }

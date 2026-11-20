@@ -1017,7 +1017,9 @@ function cleanBranches(list) {
     const c = String(b && b.c || '').trim().toUpperCase();
     if (!BR_RX.test(c) || seen.has(c) || c === 'M') continue;
     seen.add(c);
-    out.push({ c, n: String(b.n || '').trim().slice(0, 40), ar: String(b.ar || '').trim().slice(0, 40), k: b.k === 'factory' ? 'factory' : 'shop', on: b.on !== false });
+    out.push({ c, n: String(b.n || '').trim().slice(0, 40), ar: String(b.ar || '').trim().slice(0, 40), k: b.k === 'factory' ? 'factory' : 'shop', on: b.on !== false,
+               ph: String(b.ph || '').trim().slice(0, 20), ad: String(b.ad || '').trim().slice(0, 80), hr: String(b.hr || '').trim().slice(0, 50),
+               cap: Math.max(0, Math.min(5000, Math.round(Number(b.cap) || 0))), pin: /^[0-9a-f]{64}$/.test(String(b.pin || '')) ? String(b.pin) : '' });
     if (out.length >= 20) break;
   }
   return out;
@@ -1025,16 +1027,46 @@ function cleanBranches(list) {
 async function branchList() {
   try { const s = await getDoc(doc(db, 'sys', 'branches')); return cleanBranches(J(s.exists() && s.data().list, [])); } catch (e) { return []; }
 }
+// Admin → Branches: every shop's and the factory's figures (orders, pieces, ready, at the factory, sales, balance, late)
 async function aBranches(key, pin) {
   const r = await root('ak', key, pin);
   if (!r) return null;
-  const list = await branchList(), n = {};
-  try { (await dsRows('j_orders')).forEach(o => { const b = String(o.branch || ''); n[b] = (n[b] || 0) + 1; }); } catch (e) { }
-  return { list, count: n };
+  const [list, os, fx] = await Promise.all([branchList(), dsRows('j_orders').catch(() => []), fxMap()]);
+  const day = riyadh().slice(0, 10), dAgo = n => riyadh(new Date(Date.now() - n * 864e5)).slice(0, 10), d30 = dAgo(29), d14 = dAgo(13);
+  const n = {}, st = {}, fac = { atPcs: 0, atOrders: 0, sentToday: 0, backToday: 0, by: {} };
+  const S = c => st[c] || (st[c] = { act: 0, actPcs: 0, ready: 0, atF: 0, atFPcs: 0, today: 0, todayAmt: 0, todayPcs: 0, sales30: 0, orders30: 0, pcs30: 0, fac30: 0, due: 0, late: 0, spark: Array(14).fill(0) });
+  for (const o of os) {
+    const c = String(o.branch || ''), x = S(c), no = String(o.order_no), pcs = Number(o.pcs) || 0, given = Number(o.delivered_qty) || 0, f = fx[no];
+    const bd = String(o.booking_date || '').slice(0, 10), dd = String(o.delivery_date || '').slice(0, 10), tot = Number(o.total) || 0;
+    n[c] = (n[c] || 0) + 1;
+    if (given < pcs) {
+      x.act++; x.actPcs += pcs - given;
+      if (Number(o.ready) === 1) x.ready++;
+      if (dd && dd < day) x.late++;
+      if (f && f.st === 'sent') { x.atF++; x.atFPcs += pcs - given; fac.atPcs += pcs - given; fac.atOrders++; fac.by[c] = (fac.by[c] || 0) + pcs - given; }
+    }
+    if (f && f.s && f.s.slice(0, 10) === day) fac.sentToday += pcs;
+    if (f && f.st === 'back' && f.b && f.b.slice(0, 10) === day) fac.backToday += pcs;
+    if (bd === day) { x.today++; x.todayAmt += tot; x.todayPcs += pcs; }
+    if (bd >= d30 && bd <= day) { x.sales30 += tot; x.orders30++; x.pcs30 += pcs; if (f) x.fac30 += pcs; }
+    if (bd >= d14 && bd <= day) x.spark[Math.round((Date.parse(bd) - Date.parse(d14)) / 864e5)] += tot;
+    if (String(o.invoice_no ?? '').trim() && tot - (Number(o.paid) || 0) >= 1) x.due += tot - (Number(o.paid) || 0);
+  }
+  for (const c of Object.keys(st)) { st[c].sales30 = Math.round(st[c].sales30); st[c].due = Math.round(st[c].due); st[c].spark = st[c].spark.map(Math.round); }
+  let okey = ''; try { okey = String(((await dsRows('j_links'))[0] || {}).OnlineOrderKey || ''); } catch (e) { }
+  return { list, count: n, stats: st, factory: fac, today: day, okey: /^[0-9a-f]{32}$/.test(okey) ? okey : '' };
 }
 async function aSetBranches(key, pin, list) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  // a new branch PIN arrives as pinNew (digits) and is kept only as a hash; pinClear removes it
+  const old = await branchList();
+  for (const b of Array.isArray(list) ? list : []) {
+    const c = String(b && b.c || '').trim().toUpperCase();
+    if (b && b.pinClear) b.pin = '';
+    else if (b && /^[0-9]{4,8}$/.test(String(b.pinNew || ''))) b.pin = await sha256('tsbranch:' + c + ':' + String(b.pinNew));
+    else { const o = old.find(x => x.c === c); b.pin = o ? o.pin : ''; }
+  }
   const v = cleanBranches(list);
   await setDoc(doc(db, 'sys', 'branches'), { list: JSON.stringify(v), at: serverTimestamp() });
   return { ok: true, list: v };
