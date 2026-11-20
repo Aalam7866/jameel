@@ -80,6 +80,7 @@ button.job{cursor:pointer}button.job:hover{border-color:#c9c8cf}
 .job.late{border-inline-start-color:var(--bad)}.job.new{border-inline-start-color:#b88a3e;box-shadow:0 2px 10px rgba(31,42,58,.08)}.job.ded{border-inline-start-color:var(--bad)}
 .due{font-weight:700}.due.late{color:var(--bad)}
 .prog{font-size:13px;font-weight:700;margin-top:4px}
+.swl{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.swl span{display:inline-block;font-size:14px;font-weight:800;padding:3px 10px;border-radius:99px;font-variant-numeric:tabular-nums}.swl .s{background:#fff4d6;color:#8a5a00}.swl .w{background:#e3edfb;color:#1f4f8f}
 .inp{flex:1;min-width:0;min-height:52px;border-radius:10px;border:1px solid var(--line);padding:6px 12px;font-size:20px;background:var(--bg);color:var(--ink);direction:ltr;text-align:center}
 .stepper{display:flex;align-items:center;gap:10px;margin-top:10px}
 .stepper b{font-size:24px;min-width:44px;text-align:center}
@@ -172,7 +173,19 @@ async function loadOrders() {   // customer name + delivery date from the shop d
     const m = {}; s.forEach(x => { try { JSON.parse(x.data().v).forEach(o => { m[String(o.order_no)] = o; }); } catch (e) { } });
     orders = m;
   } catch (e) { }
+  // cutting master: summer / winter thobes of each order (صيفي / شتوي of its fabric lines in InvProject – ShopSync data set i_osrv)
+  if (me && me.kinds.includes('CUT')) try {
+    const s = await getDocs(collection(db, 'ds', 'i_osrv', 'c')), m = {};
+    s.forEach(x => { try { JSON.parse(x.data().v).forEach(v => { const q = Number(v.qty) || 0, n = String(v.season ?? v.name ?? ''), k = /صيف|summer/i.test(n) ? 0 : /شت|winter/i.test(n) ? 1 : -1;
+      if (q && k >= 0) (m[String(v.OrderId)] = m[String(v.OrderId)] || [0, 0])[k] += q; }); } catch (e) { } });
+    SEASON = m;
+  } catch (e) { }
   try { const p = await getDoc(doc(db, 'sys', 'prio')); const o = p.exists() ? String(p.data().o || '') : ''; PRIO = {}; o.split(',').forEach((k, i) => { if (k) PRIO[k] = i; }); } catch (e) { }
+}
+let SEASON = {};   // order → [summer, winter] thobes (cutting master only)
+function seasonLine(o) {
+  const v = kind === 'CUT' && SEASON[String(o)]; if (!v || !(v[0] + v[1])) return null;
+  return el('div', { class: 'swl' }, [v[0] ? el('span', { class: 's', text: '☀️ ' + L('صيفي', 'Summer') + ' ' + v[0] }) : null, v[1] ? el('span', { class: 'w', text: '❄️ ' + L('شتوي', 'Winter') + ' ' + v[1] }) : null]);
 }
 let PRIO = {};   // Admin → Deliveries ↑ ↓: the order in which orders are worked (same delivery date)
 const prioOf = (o) => PRIO[String(o)] == null ? 1e6 + Number(o) : PRIO[String(o)];
@@ -316,6 +329,7 @@ function drawFound(main) {
   const c = el('div', { class: 'job new' });
   c.appendChild(el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:20px', text: '#' + oNo(a.o) }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: L('التسليم: ', 'Due: ') + dmy(due) }) : null]));
   const info = orderLine(a.o); if (info) c.appendChild(el('div', { style: 'margin-top:4px;font-weight:600', text: info }));
+  const sl = seasonLine(a.o); if (sl) c.appendChild(sl);
   c.appendChild(el('div', { style: 'margin-top:6px', text: kName(kind) + ' · ' + L('المتبقي ', 'left ') + a.left + '/' + a.total }));
   c.appendChild(progress(a));
   const msg = el('p', { class: 'msg' });
@@ -408,7 +422,7 @@ function drawOpen(main) {
     main.appendChild(el('button', { type: 'button', class: 'job' + (late ? ' late' : ''), onclick: () => { found = a; findMsg = ''; draw(); scrollTo(0, 0); } }, [
       el('div', { class: 'top' }, [el('span', { class: 'num', style: 'font-size:17px', text: '#' + oNo(a.o) }), el('span', { class: 'st ' + (a.avail ? '' : 'blue'), text: a.avail ? a.avail + ' ' + L('قطعة لك', 'pcs for you') : (a.wip ? '🔄 ' + L('قيد العمل', 'in work') : L('بالانتظار', 'waiting')) })]),
       due ? el('div', { class: 'due' + (late ? ' late' : ''), style: 'margin-top:4px', text: L('التسليم: ', 'Due: ') + dmy(due) + (late ? ' (' + L('متأخر', 'late') + ')' : '') }) : null,
-      info ? el('div', { class: 'small', style: 'margin-top:2px', text: info }) : null, progress(a)]));
+      info ? el('div', { class: 'small', style: 'margin-top:2px', text: info }) : null, seasonLine(a.o), progress(a)]));
   });
 }
 function filterBar(main) {
