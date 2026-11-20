@@ -845,6 +845,9 @@ function jOrder(o) {
       getDocs(query(collection(db, 'jdone'), where('o', '==', Number(o.order_no)))).catch(() => null),
     ]);
     const due = oDue(o);
+    // a discount given at payment (extra discount here, or in Jameel at delivery) lowers the total – it is not money paid
+    const disc = Math.round(pays.rows.reduce((a, p) => a + N(p.discount), 0) * 100) / 100;
+    const tot = N(o.total) - disc, paidNet = N(o.paid) - disc;
     const wk = {}; work.rows.forEach(w => wk[String(w.kind).toUpperCase()] = { ...w });
     // finished on a worker link but not taken into TailorShop yet (shop program closed)
     if (jdone) jdone.forEach(x => { const d = x.data(), k = String(d.kind || '').toUpperCase(); if (!k) return;
@@ -854,7 +857,7 @@ function jOrder(o) {
     <div class="card"><div class="row" style="justify-content:space-between"><div><div class="ar" style="font-size:18px;font-weight:600">${H(o.customer_name)}</div>
     <div class="muted">${H(o.mobile)} · customer ${H(o.customer_no)}</div></div>${jStatus(o)}</div>
     ${orderTrack(orderStages({ pcs: N(o.pcs), cut: N(wk.CUT && wk.CUT.qty), stitch: N(wk.STITCH && wk.STITCH.qty), embQty: emb, emb: N(wk.EMBROIDERY && wk.EMBROIDERY.qty), hingeQty: N(o.hinge_qty), hinge: N(wk.HINGE && wk.HINGE.qty), ready: N(o.ready), delivered: N(o.delivered_qty), dates: { cut: wk.CUT && wk.CUT.last, stitch: wk.STITCH && wk.STITCH.last, emb: wk.EMBROIDERY && wk.EMBROIDERY.last, hinge: wk.HINGE && wk.HINGE.last, ready: o.ready_at, delivered: o.delivered_date } }))}
-    <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(o.total)}</b><span>Total (VAT ${money(o.vat)})</span></div><div class="stat"><b>${money(o.paid)}</b><span>Paid</span></div>
+    <div class="grid" style="margin:12px 0 0"><div class="stat"><b>${money(tot)}</b><span>Total (VAT ${money(o.vat)})${disc ? `<br><s class="muted">${money(o.total)}</s> <span style="color:var(--bad);font-weight:600">− ${money(disc)} discount</span>` : ''}</span></div><div class="stat"><b>${money(paidNet)}</b><span>Paid</span></div>
     <div class="stat"><b style="color:${due >= DUE_MIN ? 'var(--bad)' : 'inherit'}">${money(due)}</b><span>Balance</span></div><div class="stat"><b>${N(o.delivered_qty)}/${N(o.pcs)}</b><span>Delivered pcs</span></div></div>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">${o.invoice_no ? `<button class="btn small" id="pdf">Invoice ${H(o.invoice_no)} PDF</button>` : ''}
     ${o.mobile ? `<a class="btn ghost small" href="https://wa.me/${H(wa(o.mobile))}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost small" href="tel:${H(o.mobile)}">Call</a>` : ''}</div>
@@ -864,7 +867,7 @@ function jOrder(o) {
       <button class="btn small" id="dscGo">Apply</button><button class="btn ghost small" id="dscAll">All ${money(due)}</button></div><div id="dscst"></div>` : ''}</div>
     <h2>Details</h2><div class="card">${kv(o, ['customer_name', 'mobile', 'customer_no', 'paid', 'open', 'unpaid'])}</div>
     <h2>Items</h2><div class="card">${lines.rows.length ? `<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>${lines.rows.map(l => `<tr><td class="ar">${H(l.item || l.code)}${l.fabric ? `<div class="muted">${H(l.fabric)}</div>` : ''}</td><td class="n">${H(l.qty)}</td><td class="n">${money(l.rate)}</td><td class="n">${money(l.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No lines</p>'}</div>
-    <h2>Payments</h2><div class="card">${pays.rows.length ? `<table><tr><th>Date</th><th>Kind</th><th>Method</th><th class="n">Amount</th></tr>${pays.rows.map(p => `<tr><td>${H(p.date)}</td><td>${H(p.kind)}</td><td>${H(p.method)}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No payments</p>'}</div>
+    <h2>Payments</h2><div class="card">${pays.rows.length ? `<table><tr><th>Date</th><th>Kind</th><th>Method</th><th class="n">Amount</th></tr>${pays.rows.map(p => `<tr><td>${H(p.date)}</td><td>${H(p.kind)}</td><td>${H(p.method)}</td><td class="n">${N(p.discount) ? `${N(p.amount) ? money(p.amount) + '<br>' : ''}<span style="color:var(--bad)">− ${money(p.discount)} discount</span>` : money(p.amount)}</td></tr>`).join('')}</table>` : '<p class="muted">No payments</p>'}</div>
     ${meas.rows.length ? `<h2>Measurements – المقاسات</h2><div class="card" style="padding:6px">${d7Html(meas.rows[0])}</div>` : ''}
     ${inv.rows.length ? `<h2>InvProject</h2><div class="card"><button class="btn ghost small" id="io">Open InvProject order ${H(o.order_no)}</button></div>` : ''}`;
     if (o.invoice_no) $('#pdf', m).onclick = () => pdfJob(o.invoice_no, $('#pdfst', m));
