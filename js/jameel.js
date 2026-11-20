@@ -1052,6 +1052,7 @@ async function aBranches(key, pin) {
     if (bd >= d14 && bd <= day) x.spark[Math.round((Date.parse(bd) - Date.parse(d14)) / 864e5)] += tot;
     if (String(o.invoice_no ?? '').trim() && tot - (Number(o.paid) || 0) >= 1) x.due += tot - (Number(o.paid) || 0);
   }
+  try { (await dsRows('j_alts')).forEach(a => { if (String(a.status || '') !== 'Delivered') { const x = S(String(a.branch || '')); x.alt = (x.alt || 0) + 1; if (String(a.ready_date || '').slice(0, 10) < day) x.altLate = (x.altLate || 0) + 1; } }); } catch (e) { }
   for (const c of Object.keys(st)) { st[c].sales30 = Math.round(st[c].sales30); st[c].due = Math.round(st[c].due); st[c].spark = st[c].spark.map(Math.round); }
   let okey = ''; try { okey = String(((await dsRows('j_links'))[0] || {}).OnlineOrderKey || ''); } catch (e) { }
   return { list, count: n, stats: st, factory: fac, today: day, okey: /^[0-9a-f]{32}$/.test(okey) ? okey : '' };

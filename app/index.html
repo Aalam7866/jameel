@@ -1336,7 +1336,7 @@ function branchPin(err) {
   $('#bp').onsubmit = (e) => { e.preventDefault(); branchStart($('#bpin').value.trim()); };
 }
 // ---- shared bits
-const BICON = { home: ICON.home, new: '<path d="M12 5v14M5 12h14"/>', orders: ICON.inv, due: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', fac: '<path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/>' };
+const BICON = { alt: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', home: ICON.home, new: '<path d="M12 5v14M5 12h14"/>', orders: ICON.inv, due: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', fac: '<path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/>' };
 const dmy = (d) => String(d || '').slice(0, 10).split('-').reverse().join('-');
 const dm = (t) => t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : '';
 async function fxNow() {
@@ -1367,12 +1367,12 @@ const needWho = () => { if (bWho()) return true; const n = prompt('اسمك – 
 let bTab = 'home';
 function branchHome(t) {
   bTab = t || bTab;
-  const B = BR_MODE, tabs = [['home', 'Home'], ['new', 'New order'], ['orders', 'Orders'], ['due', 'Delivery'], ['fac', 'Factory']];
+  const B = BR_MODE, tabs = [['home', 'Home'], ['new', 'New order'], ['orders', 'Orders'], ['due', 'Delivery'], ['alt', 'Alteration'], ['fac', 'Factory']];
   if (bTab === 'new') { if (!needWho()) bTab = 'home'; else { const m = bShell(tabs, 'new', branchHome); m.innerHTML = '<p class="muted center">…</p>'; newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: bWho(), done: () => branchHome('home') }); return; } }
   const m = bShell(tabs, bTab, branchHome);
   m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
-  ({ home: bHomeView, orders: bOrdersView, due: bDueView, fac: bFacView }[bTab] || bHomeView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
-  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet') && (bTab === 'home' || bTab === 'fac' || bTab === 'due')) branchHome(bTab); }, 90000);
+  ({ home: bHomeView, orders: bOrdersView, due: bDueView, fac: bFacView, alt: (x) => altView(x, { br: B.b, fac: false, back: () => branchHome('alt') }) }[bTab] || bHomeView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet') && (bTab === 'home' || bTab === 'fac' || bTab === 'due' || bTab === 'alt')) branchHome(bTab); }, 90000);
 }
 async function bData() {
   DSC.j_orders = null;
@@ -1460,13 +1460,107 @@ async function bFacView(m) {
   m.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => set([b.dataset.o], b.dataset.fx, b));
   const all = $('#fxall', m); if (all) all.onclick = () => { if (confirm(`${g.shop.length} order factory bhejein?`)) set(g.shop.map(o => o.order_no), 'sent', all); };
 }
+// ---- alterations (TailorShop's Alterations window, online): new one → job alt_new, Ready / Delivered → job alt_status
+const ALT_FAULT = [['', 'بدون · None'], ['خياط', 'خياط · Tailor'], ['عميل', 'عميل · Customer'], ['معلم قص', 'معلم قص · Cutting master'], ['معلم مقاس', 'معلم مقاس · Measurement'], ['صانع الزرار', 'صانع الزرار · Hinge'], ['مطرز', 'مطرز · Embroidery']];
+const ALT_ROLE = { 'خياط': 'Tailor', 'معلم قص': 'Master', 'صانع الزرار': 'Hinge', 'مطرز': 'Embroidery', 'معلم مقاس': 'Measure' };
+const altSt = (st) => st === 'Ready' ? '<span class="pill" style="background:var(--okbg);color:var(--ok)">Ready · جاهز</span>' : st === 'Delivered' ? '<span class="pill">Delivered · سُلّم</span>' : '<span class="pill" style="background:#fff1db;color:#8a5a00">Pending · قيد العمل</span>';
+async function altView(m, opt) {
+  DSC.j_alts = null;
+  const day = riyadh().slice(0, 10), [al, js] = await Promise.all([loadDs('j_alts').catch(() => ({ rows: [] })),
+    getDocs(query(collection(db, 'jobs'), where('st', 'in', ['new', 'running']))).catch(() => null)]);
+  const brOfAlt = (a) => String(a.branch || '');
+  const mine = al.rows.filter(a => opt.fac || brOfAlt(a) === opt.br);
+  const pend = {}, newOnes = [];
+  if (js) js.forEach(x => { const d = x.data(); if (d.kind === 'alt_status') pend[String(d.alt)] = d.status; if (d.kind === 'alt_new' && (opt.fac || String(d.br || '') === opt.br)) newOnes.push(d); });
+  const open = mine.filter(a => a.status !== 'Delivered').sort((a, b) => cmpv(a.ready_date, b.ready_date) || cmpv(a.alt_no, b.alt_no));
+  const done = mine.filter(a => a.status === 'Delivered').sort((a, b) => cmpv(b.alt_no, a.alt_no)).slice(0, 20);
+  const shopName = (c) => { if (!c) return 'Main'; const b = (BR_MODE.all || []).find(x => x.c === c); return b ? (b.n || b.ar || c) : c; };
+  const item = (a) => { const st = pend[String(a.alt_no)] || a.status, late = st !== 'Delivered' && String(a.ready_date || '').slice(0, 10) < day;
+    return `<div class="it" data-a="${H(a.alt_no)}"><div class="no">A${H(a.alt_no)}</div><div class="main"><div class="t ar">${H(a.customer_name)}${a.order_no ? ` <span class="muted">· ${H((a.branch ? a.branch + '-' : '') + a.order_no)}</span>` : ''}</div>
+      <div class="s ar">${N(a.qty)} × ${H(String(a.details || '').split('\n')[0])}</div><div class="s">${opt.fac ? '🏬 ' + H(shopName(brOfAlt(a))) + ' · ' : ''}ready <span${late ? ' style="color:var(--bad)"' : ''}>${H(dmy(a.ready_date))}</span>${a.fault_by ? ' · ' + H(a.fault_by) + (a.fault_person ? ' ' + H(a.fault_person) : '') : ''}</div></div>
+      <div class="r" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${altSt(st)}${pend[String(a.alt_no)] ? '<span class="muted" style="font-size:11px">⏳ PC</span>'
+        : st === 'Pending' ? `<button class="btn small" data-as="Ready" data-n="${H(a.alt_no)}">✔ Ready</button>` : st === 'Ready' && !opt.fac ? `<button class="btn small" data-as="Delivered" data-n="${H(a.alt_no)}">Delivered</button>${a.mobile ? `<a class="btn ghost small" target="_blank" rel="noopener" href="https://wa.me/${H(wa(a.mobile))}?text=${encodeURIComponent('السلام عليكم ' + (a.customer_name || '') + '\nتعديل الثوب (رقم ' + a.alt_no + ') جاهز للاستلام.\nجميل الهندام للخياطة الرجالية')}">WhatsApp</a>` : ''}` : ''}</div></div>`; };
+  m.innerHTML = (opt.fac ? '' : `<button class="btn bgo" id="anew" style="margin:0 0 12px">+ تعديل جديد · New alteration</button>`) +
+    (newOnes.length ? `<div class="note">⏳ ${newOnes.length} naya alteration shop PC par save ho raha hai…</div>` : '') +
+    `<div class="grid"><div class="stat"><b>${open.filter(a => (pend[String(a.alt_no)] || a.status) === 'Pending').length}</b><span>Pending · قيد العمل</span></div><div class="stat"><b style="color:var(--ok)">${open.filter(a => (pend[String(a.alt_no)] || a.status) === 'Ready').length}</b><span>Ready · جاهز</span></div>
+      <div class="stat"><b style="color:${open.some(a => String(a.ready_date || '').slice(0, 10) < day) ? 'var(--bad)' : 'inherit'}">${open.filter(a => String(a.ready_date || '').slice(0, 10) < day).length}</b><span>Late</span></div></div>
+    <h2>Open – مفتوح (${open.length})</h2><div class="card list">${open.map(item).join('') || '<p class="muted center">Koi alteration baaki nahin</p>'}</div>
+    ${done.length ? `<h2>Delivered (last ${done.length})</h2><div class="card list">${done.map(item).join('')}</div>` : ''}`;
+  if (!opt.fac) $('#anew', m).onclick = () => { if (needWho()) altForm(opt); };
+  m.querySelectorAll('[data-as]').forEach(b => b.onclick = async (e) => {
+    e.stopPropagation(); if (!needWho()) return;
+    if (b.dataset.as === 'Delivered' && !confirm('Alteration A' + b.dataset.n + ' customer ko de diya?')) return;
+    b.disabled = true;
+    try { await jobNew('alt_status', { alt: Number(b.dataset.n), status: b.dataset.as, by: bWho(), br: opt.br || '' }); opt.back(); } catch (x) { b.disabled = false; alert(x.message); }
+  });
+  m.querySelectorAll('[data-a]').forEach(el => el.onclick = () => { const a = mine.find(x => String(x.alt_no) === el.dataset.a); if (a) openSheet(`<h2 style="margin:4px 0">Alteration A${H(a.alt_no)} · <span class="ar">${H(a.customer_name)}</span></h2>
+    <div class="muted">${H(a.mobile)} · ${a.order_no ? 'order ' + H((a.branch ? a.branch + '-' : '') + a.order_no) + ' · ' : ''}date ${H(dmy(a.date))} · ready ${H(dmy(a.ready_date))}</div>
+    <div class="row" style="margin:10px 0">${altSt(a.status)}</div><div class="card ar" style="white-space:pre-wrap">${N(a.qty)} ×\n${H(a.details)}</div>
+    ${a.fault_by ? `<div class="muted">Fault: ${H(a.fault_by)} ${H(a.fault_person || '')}</div>` : ''}`); });
+}
+function altForm(opt) {
+  const s = document.createElement('div'); s.className = 'sheet';
+  const rd = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
+  s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">تعديل جديد · New alteration</h2><button class="x" id="cl">×</button></div>
+  ${opt.br ? `<div class="brtag">🏬 ${H(BR_MODE.ar)} · ${H(BR_MODE.name)} (${H(opt.br)})</div>` : ''}
+  <label class="muted">Order no. – رقم الطلب</label><input id="ao" inputmode="numeric" placeholder="${opt.br ? opt.br + '-1250 / 1250' : '1250'}"><div id="aov" class="muted" style="margin:4px 0 8px"></div>
+  <label class="muted">ya Customer – أو العميل</label><input id="aq" placeholder="Name ya mobile"><div class="sug" id="as" hidden></div>
+  <div class="row" style="gap:6px;margin-top:6px"><input id="an" class="ar" placeholder="اسم العميل" style="flex:2"><input id="am" placeholder="05xxxxxxxx" inputmode="tel" style="flex:1"></div>
+  <div class="row" style="gap:6px;margin-top:10px"><label style="flex:1">Thobe – عدد<input id="aqty" type="number" min="1" max="100" value="1" inputmode="numeric"></label><label style="flex:1.4">Ready date – تاريخ الجاهزية<input id="ard" type="date" value="${rd}"></label></div>
+  <label class="muted" style="display:block;margin-top:10px">Details – التفاصيل</label><textarea id="ad" rows="4" class="ar" style="width:100%" placeholder="تقصير الطول ٢ سم، توسيع الكم…"></textarea>
+  <div class="row" style="gap:6px;margin-top:10px"><label style="flex:1">Fault – الخطأ من<select id="af">${ALT_FAULT.map(f => `<option value="${H(f[0])}">${H(f[1])}</option>`).join('')}</select></label>
+    <label style="flex:1">Person – الاسم<input id="ap" list="apl" disabled><datalist id="apl"></datalist></label></div>
+  <div id="ae"></div><button class="btn" id="ago" style="width:100%;margin-top:12px">Save – حفظ</button><div id="ars"></div></div>`;
+  document.body.appendChild(s);
+  const st = { order: 0, cust: 0 };
+  $('#cl', s).onclick = () => { s.remove(); opt.back(); };
+  // order no → the customer
+  let t; $('#ao', s).oninput = () => { clearTimeout(t); t = setTimeout(async () => {
+    const v = $('#ao', s).value.trim().toUpperCase().replace(/^[A-Z][A-Z0-9]*-/, '').replace(/\D/g, '');
+    st.order = 0; $('#aov', s).textContent = '';
+    if (!v) return;
+    const o = (await rows('j_orders', { f: ['order_no:' + v], limit: 1 })).rows[0];
+    if (!o) { $('#aov', s).innerHTML = '<span style="color:var(--bad)">Order nahin mila</span>'; return; }
+    st.order = +o.order_no; st.cust = N(o.customer_no);
+    $('#an', s).value = o.customer_name || ''; $('#am', s).value = o.mobile || '';
+    $('#aov', s).innerHTML = `✔ <b class="ar">${H(o.customer_name)}</b> · ${N(o.pcs)} thobe · delivery ${H(dmy(o.delivery_date))}${o.branch ? ' · ' + H(o.branch) : ''}`;
+  }, 400); };
+  suggest($('#aq', s), $('#as', s), 'j_customers', c => `${H(c.name)} <span class="muted">${H(c.mobile)} · ${H(c.customer_no)}</span>`, c => { st.cust = N(c.customer_no); $('#an', s).value = c.name || ''; $('#am', s).value = c.mobile || ''; $('#aq', s).value = ''; });
+  // fault → the people of that job (Jameel workers)
+  $('#af', s).onchange = async () => {
+    const f = $('#af', s).value, p = $('#ap', s); p.disabled = !f; p.value = f === 'عميل' ? $('#an', s).value : '';
+    const role = ALT_ROLE[f]; let names = [];
+    if (role) names = (await rows('j_workers', { limit: 500 })).rows.filter(w => N(w.active) === 1 && String(w.role || '').toLowerCase() === role.toLowerCase()).map(w => w.name);
+    $('#apl', s).innerHTML = names.map(n => `<option value="${H(n)}">`).join('');
+  };
+  $('#ago', s).onclick = async () => {
+    const fail = (x) => { $('#ae', s).innerHTML = `<div class="err">${H(x)}</div>`; };
+    const name = $('#an', s).value.trim(), details = $('#ad', s).value.trim(), qty = Math.round(N($('#aqty', s).value));
+    if (!st.order && !name) return fail('Order no. ya customer ka naam likhiye');
+    if (!details) return fail('Details likhiye – kya badalna hai');
+    if (!(qty >= 1 && qty <= 100)) return fail('Thobe ginti 1–100');
+    const go = $('#ago', s); go.disabled = true; $('#ae', s).innerHTML = '';
+    const data = { order: st.order, cust: st.cust, name, mobile: $('#am', s).value.trim(), qty, details, ready: $('#ard', s).value, fault: $('#af', s).value, person: $('#ap', s).value.trim() };
+    try {
+      let j = await jobNew('alt_new', { data: JSON.stringify(data), who: name, br: opt.br || '', by: bWho() });
+      $('#ars', s).innerHTML = '<p class="muted"><span class="spin"></span> Shop PC par save ho raha hai…</p>';
+      const t0 = Date.now();
+      while (j.status === 'new' || j.status === 'running') {
+        if (Date.now() - t0 > 90000) { $('#ars', s).innerHTML = '<div class="note">Request save hai – shop PC on hote hi alteration ban jayega.</div>'; return; }
+        await new Promise(r => setTimeout(r, 3000)); j = await jobGet(j.id);
+      }
+      if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
+      $('#ars', s).innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>Alteration A${H(j.result.alt)} save ho gaya ✓</b></div>`; go.hidden = true;
+    } catch (e) { go.disabled = false; $('#ars', s).innerHTML = `<div class="err">${H(e.message)}</div>`; }
+  };
+}
 // ---- the factory
 let fTab = 'fac';
 function factoryHome(t) {
   fTab = t || fTab;
-  const m = bShell([['fac', 'Factory'], ['due', 'Coming']], fTab, factoryHome);
+  const m = bShell([['fac', 'Factory'], ['due', 'Coming'], ['alt', 'Alteration']], fTab, factoryHome);
   m.innerHTML = '<p class="muted"><span class="spin"></span> Loading…</p>';
-  (fTab === 'due' ? fComingView : fFacView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
+  (fTab === 'due' ? fComingView : fTab === 'alt' ? (x) => altView(x, { br: '', fac: true, back: () => factoryHome('alt') }) : fFacView)(m).catch(e => m.innerHTML = `<div class="err">${H(e.message)}</div>`);
   clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet')) factoryHome(fTab); }, 90000);
 }
 async function fData() {

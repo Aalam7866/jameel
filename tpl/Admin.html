@@ -769,6 +769,7 @@
         '<div><span class="muted">' + LB('قطع لم تُسلَّم', 'Pieces still to deliver') + '</span><span>' + x.actPcs + ' pcs</span></div>' +
         '<div><span class="muted">' + LB('متأخر', 'Late') + '</span><span style="color:' + (x.late ? 'var(--bad)' : 'inherit') + '">' + x.late + '</span></div>' +
         '<div><span class="muted">' + LB('آجل', 'Balance due') + '</span><span>' + sar(x.due) + ' SAR</span></div>' +
+        '<div><span class="muted">' + LB('تعديلات مفتوحة', 'Open alterations') + '</span><span>' + (x.alt || 0) + (x.altLate ? ' <span style="color:var(--bad)">(' + x.altLate + ' late)</span>' : '') + '</span></div>' +
         (b && b.hr ? '<div><span class="muted">' + LB('الدوام', 'Hours') + '</span><span style="font-size:12.5px">' + esc(b.hr) + '</span></div>' : '') + '</div>' +
         '<div class="bf"><button type="button" class="bbtn pri" data-bo="' + esc(c || 'M') + '">' + LB('فتح', 'Open') + '</button>' +
         (b ? '<button type="button" class="bbtn" data-be="' + esc(c) + '">' + LB('تعديل', 'Edit') + '</button><button type="button" class="bbtn" data-bl="' + esc(c) + '">' + LB('الرابط', 'Link') + '</button>' : '') + '</div></div>';
@@ -2242,7 +2243,7 @@
     var SHOP_HASH = { 5: 'home', 6: 'jameel', 7: 'inv', 8: 'genix', 9: 'more', 10: 'neworder' };
     function shopTab(n) {
       var f = $('shopFrame'), h = SHOP_HASH[n] || 'home';
-      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=20#' + h);
+      if (!f.getAttribute('src')) f.setAttribute('src', '/app/?embed=1&v=21#' + h);
       else try { f.contentWindow.location.hash = h + '-' + Date.now(); } catch (x) { }
       setTimeout(function () { $('p5').scrollIntoView({ block: 'start' }); }, 50);
     }
