@@ -60,6 +60,15 @@ service cloud.firestore {
     }
     // work in progress on the worker app (Start pressed, Finish not yet)
     match /jwip/{id} { allow read, write: if true; }
+    // where the thobes of an order are: sent to the factory → back at the shop (Admin → Deliveries, a branch's order page)
+    match /jfx/{id} {
+      allow read: if true;
+      allow create, update: if id.matches('^[0-9]{1,9}$') && request.resource.data.keys().hasOnly(['st', 'br', 's', 'sb', 'b', 'bb', 'at'])
+        && request.resource.data.st in ['sent', 'back', 'none'] && request.resource.data.at == request.time
+        && request.resource.data.get('br', '') is string && request.resource.data.get('br', '').size() <= 6
+        && request.resource.data.get('sb', '') is string && request.resource.data.get('sb', '').size() <= 40
+        && request.resource.data.get('bb', '') is string && request.resource.data.get('bb', '').size() <= 40;
+    }
     // finished work not taken by TailorShop yet (opens the next work while the shop PC is off)
     match /jdone/{id} { allow read, write: if true; }
     // how long a piece of work took (worker app: Start → Finish, duty hours only) – Admin → Work log

@@ -205,6 +205,12 @@
       <div class="muted">رقم الطلب يظهر بعد أن يستلمه جهاز المحل (دقائق) – the order number shows when the shop PC took it (a few minutes)</div>
       <div id="mine">…</div>
     </div>
+
+    <div class="card">
+      <h3>المصنع / Factory</h3>
+      <div class="muted">طلبات المحل التي لم تُسلَّم بعد: أرسلها للمصنع، وعند رجوعها اضغط وصل – this shop's open orders: send them to the factory, press Received when they come back</div>
+      <div id="fx">…</div>
+    </div>
   </div>
 
   <div id="mo">
@@ -279,7 +285,7 @@
         $('delivery').min = META.today;
         $('provaDate').min = META.today;
         recalc();
-        loadMine();
+        loadMine(); loadFx();
       });
     }
 
@@ -813,6 +819,38 @@
         showMine(r.list);
       }).withFailureHandler(function (e) { showMsg('خطأ – ' + (e && e.message || e), true); }).oDelete(KEY, PIN, id, $('by').value.trim(), BRANCH);
     }
+    // ---------------- factory: this shop's open orders – at the shop → at the factory → back
+    function loadFx() { if (META) google.script.run.withSuccessHandler(showFx).oFactory(KEY, PIN, BRANCH); }
+    function fxD(t) { return t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : ''; }
+    function showFx(list) {
+      var el = $('fx'); if (!list) { el.innerHTML = ''; return; }
+      var shop = list.filter(function (o) { return !o.fx; }), fac = list.filter(function (o) { return o.fx && o.fx.st === 'sent'; }), back = list.filter(function (o) { return o.fx && o.fx.st === 'back'; });
+      var row = function (o, btn) {
+        return '<tr><td><b>' + esc(brNo(o.no)) + '</b></td><td><b>' + esc(o.name) + '</b><br><span class="muted">' + o.pcs + ' ثوب · التسليم ' + esc(o.due.split('-').reverse().join('-')) +
+               (o.fx && o.fx.st === 'sent' ? ' · أُرسل ' + esc(fxD(o.fx.s)) : o.fx && o.fx.st === 'back' ? ' · وصل ' + esc(fxD(o.fx.b)) : '') + '</span></td><td style="text-align:end">' + btn + '</td></tr>';
+      };
+      var sec = function (t, n, color, extra) { return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 6px;padding:6px 10px;border-radius:8px;background:' + color + '"><b>' + t + ' (' + n + ')</b>' + (extra || '') + '</div>'; };
+      var bt = function (o, st, txt, bg) { return '<button type="button" data-fx="' + st + '" data-no="' + esc(o.no) + '" style="width:auto;margin:0;padding:6px 10px;font-size:14px;background:' + bg + '">' + txt + '</button>'; };
+      el.innerHTML =
+        sec('🏬 في المحل – At the shop', shop.length, '#eef1f5', shop.length ? '<button type="button" data-fxall="1" style="width:auto;margin:0;padding:6px 10px;font-size:14px">إرسال الكل ← Send all</button>' : '') +
+        (shop.length ? '<table style="width:100%;border-collapse:collapse">' + shop.map(function (o) { return row(o, bt(o, 'sent', '→ المصنع / Factory', '')); }).join('') + '</table>' : '<div class="muted">لا يوجد – none</div>') +
+        sec('🏭 في المصنع – At the factory', fac.length, '#fff1db') +
+        (fac.length ? '<table style="width:100%;border-collapse:collapse">' + fac.map(function (o) { return row(o, bt(o, 'back', '✔ وصل / Received', '#137a4b')); }).join('') + '</table>' : '<div class="muted">لا يوجد – none</div>') +
+        sec('✔ رجع للمحل – Back at the shop', back.length, '#e3f4ea') +
+        (back.length ? '<table style="width:100%;border-collapse:collapse">' + back.map(function (o) { return row(o, bt(o, 'sent', '↺', '#8a93a3')); }).join('') + '</table>' : '<div class="muted">لا يوجد – none</div>');
+      el.querySelectorAll('button[data-fx]').forEach(function (b) { b.addEventListener('click', function () { fxSet([b.getAttribute('data-no')], b.getAttribute('data-fx'), b); }); });
+      var all = el.querySelector('button[data-fxall]');
+      if (all) all.addEventListener('click', function () { if (confirm('إرسال ' + shop.length + ' طلب للمصنع؟ – Send ' + shop.length + ' orders to the factory?')) fxSet(shop.map(function (o) { return o.no; }), 'sent', all); });
+    }
+    function fxSet(nos, st, btn) {
+      if (btn) btn.disabled = true;
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { if (btn) btn.disabled = false; showMsg((r && r.msg) || 'لم يُحفظ – not saved', true); return; }
+        showFx(r.list);
+      }).withFailureHandler(function (e) { if (btn) btn.disabled = false; showMsg('لم يُحفظ – not saved: ' + (e && e.message || e), true); })
+        .oFactorySet(KEY, PIN, nos, st, $('by').value.trim(), BRANCH);
+    }
+    setInterval(function () { if (!document.hidden) loadFx(); }, 90000);
     function loadMine() { if (META) google.script.run.withSuccessHandler(showMine).oMine(KEY, PIN, BRANCH); }
     setInterval(function () { if (!document.hidden) loadMine(); }, 30000);
 

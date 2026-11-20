@@ -656,7 +656,8 @@ async function aOrders(key, pin) {
     (await dsRows('j_orders')).forEach(o => { if (o.ready_sent) sent[String(o.order_no)] = String(o.ready_sent); if (!String(o.invoice_no ?? '').trim()) noInv.add(String(o.order_no)); if (o.branch) br[String(o.order_no)] = String(o.branch); });
     for (const x of rows) { if (x.length > 14 && noInv.has(String(x[0]))) x[14] = '0'; while (x.length < 16) x.push(''); x[16] = br[String(x[0])] || ''; }
   } catch (e) { }
-  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent, branches: await branchList() };
+  const [branches, fx] = await Promise.all([branchList(), fxMap()]);
+  return { rows, pending: pend, conf: J(r.aconf, null), fit, sent, branches, fx };
 }
 async function aSearch(key, pin, q) {
   const all = await aOrders(key, pin);
@@ -1038,6 +1039,57 @@ async function aSetBranches(key, pin, list) {
   await setDoc(doc(db, 'sys', 'branches'), { list: JSON.stringify(v), at: serverTimestamp() });
   return { ok: true, list: v };
 }
+// ---- factory: where the thobes of an order are – jfx/{order_no} {st: 'sent' (at the factory) | 'back' (back at the shop) | 'none',
+// s / sb: sent when, by whom · b / bb: back when, by whom · br: the order's branch}
+async function fxMap() {
+  const m = {};
+  try {
+    const s = await getDocs(query(collection(db, 'jfx'), where('at', '>=', new Date(Date.now() - 120 * 864e5))));
+    s.forEach(x => { const d = x.data(); if (d.st === 'sent' || d.st === 'back') m[x.id] = { st: d.st, s: d.s ? riyadh(d.s.toDate()).slice(0, 16) : '', sb: d.sb || '', b: d.b ? riyadh(d.b.toDate()).slice(0, 16) : '', bb: d.bb || '' }; });
+  } catch (e) { }
+  return m;
+}
+async function fxSet(nos, st, by, brOf) {
+  if (!['sent', 'back', 'none'].includes(st)) return { ok: false, msg: 'bad status' };
+  const list = [...new Set((Array.isArray(nos) ? nos : [nos]).map(x => String(x).replace(/\D/g, '')).filter(Boolean))].slice(0, 200);
+  if (!list.length) return { ok: false, msg: 'no order' };
+  const b = writeBatch(db), who = String(by || '').slice(0, 40);
+  for (const no of list) {
+    const d = { st, at: serverTimestamp(), br: String(brOf[no] || '').slice(0, 6) };
+    if (st === 'sent') { d.s = serverTimestamp(); d.sb = who; d.bb = ''; }
+    if (st === 'back') { d.b = serverTimestamp(); d.bb = who; }
+    b.set(doc(db, 'jfx', no), d, { merge: true });
+  }
+  await b.commit();
+  return { ok: true, n: list.length, fx: await fxMap() };
+}
+async function brOfOrders() { const m = {}; try { (await dsRows('j_orders')).forEach(o => { m[String(o.order_no)] = String(o.branch || ''); }); } catch (e) { } return m; }
+async function aFactory(key, pin, nos, st, by) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  return fxSet(nos, st, by || 'Admin', await brOfOrders());
+}
+// a shop's order page: its open orders (not all delivered) with where they are
+async function oFactory(key, pin, br) {
+  const r = await root('ok', key, pin);
+  if (!r) return null;
+  br = String(br || ''); const fx = await fxMap(), out = [];
+  (await dsRows('j_orders')).forEach(o => {
+    if (String(o.branch || '') !== br || !(Number(o.open) === 1 || (Number(o.delivered_qty) || 0) < (Number(o.pcs) || 0))) return;
+    out.push({ no: String(o.order_no), name: String(o.customer_name || ''), pcs: Number(o.pcs) || 0, given: Number(o.delivered_qty) || 0, due: String(o.delivery_date || '').slice(0, 10), ready: Number(o.ready) || 0, fx: fx[String(o.order_no)] || null });
+  });
+  out.sort((a, b) => (a.due || '9').localeCompare(b.due || '9') || Number(a.no) - Number(b.no));
+  return out.slice(0, 300);
+}
+async function oFactorySet(key, pin, nos, st, by, br) {
+  const r = await root('ok', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const brOf = await brOfOrders(); br = String(br || '');
+  const mine = (Array.isArray(nos) ? nos : [nos]).filter(n => (brOf[String(n)] || '') === br);   // only this shop's orders
+  if (!mine.length) return { ok: false, msg: 'ليس من طلبات هذا الفرع – not this shop\'s order' };
+  const x = await fxSet(mine, st, by || (br ? 'Branch ' + br : 'Main shop'), brOf);
+  return x.ok ? { ok: true, n: x.n, list: await oFactory(key, pin, br) } : x;
+}
 // Admin → Deliveries: the order in which orders are worked (↑ ↓), read by the worker app – sys/prio {o:'1242,1279,…'}
 async function aPrio(key, pin) {
   const r = await root('ak', key, pin);
@@ -1086,6 +1138,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aWorkTime,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aFactory, oFactory, oFactorySet, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };

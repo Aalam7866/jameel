@@ -266,6 +266,16 @@
   /* shop online tabs */
   #shopFrame { display: block; width: 100%; height: calc(100vh - 150px); height: calc(100dvh - 150px); min-height: 480px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
 
+  /* Factory */
+  .fxc { white-space: nowrap; } .fxp { display: inline-block; font-size: 12px; font-weight: 600; color: var(--mute); padding: 2px 8px; border-radius: 99px; background: #eef1f5; vertical-align: middle; }
+  .fxp i { font-style: normal; font-weight: 500; opacity: .8; margin-inline-start: 2px; } .fxp small { font-size: inherit; margin-inline-start: .3em; }
+  .fxp.s { background: #fff1db; color: #8a5a00; } .fxp.b { background: #e3f4ea; color: #137a4b; }
+  .fxb { margin-inline-start: 6px; border: 1px solid var(--line); background: #fff; color: #0d1b2e; border-radius: 7px; padding: 4px 9px; font-size: 12px; font-weight: 600; cursor: pointer; vertical-align: middle; width: auto; }
+  .fxb small { font-size: inherit; margin-inline-start: .3em; } .fxb:hover { background: #0d1b2e; color: #fff; border-color: #0d1b2e; }
+  .fxb.go { background: #0d1b2e; color: #fff; border-color: #0d1b2e; } .fxb.u { padding: 4px 7px; color: var(--mute); }
+  .fxday { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%; justify-content: flex-end; }
+  .fxday:empty { display: none; }
+  @media (max-width: 720px) { .fxc .fxp { display: block; margin-bottom: 4px; width: max-content; } .fxc .fxb { margin: 0; } .fxday { justify-content: flex-start; } }
   /* Branches */
   .brhow { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height: 1.6; color: var(--ink); } .brhow small { font-size: inherit; margin-inline-start: .35em; }
   #brTab input, #brTab select { margin: 0; height: 36px; font-size: 14px; padding: 4px 8px; min-width: 0; }
@@ -809,8 +819,11 @@
         return '<section class="dvday"><div class="dvdh"><div class="dvcal"><b>' + Number(dd[2]) + '</b><span>' + DV_MO[Number(dd[1]) - 1] + '</span></div>' +
           '<div class="dvdt"><b>' + LB(wd[0], wd[1]) + '</b>' + tag + '<div dir="ltr" style="text-align:start">' + esc(day(x.d)) + '</div></div>' +
           '<div class="dvds"><div><b>' + x.list.length + '</b><span>' + LB('طلب', 'Orders') + '</span></div><div><b>' + x.pcs + '</b><span>' + LB('قطع', 'Pcs') + '</span></div>' +
-          '<div class="ok"><b>' + x.rp + '</b><span>' + LB('جاهز', 'Ready') + '</span></div><div class="bd"><b>' + x.left + '</b><span>' + LB('باقي', 'Left') + '</span></div><div><b>' + x.dp + '</b><span>' + LB('سُلّم', 'Given') + '</span></div></div></div>' +
-          '<div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt"><thead><tr><th>' + LB('الترتيب', 'Work order') + '</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th class="mob">' + LB('الجوال', 'Mobile') + '</th><th class="c">' + LB('القطع', 'Qty') + '</th><th class="st2">' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
+          '<div class="ok"><b>' + x.rp + '</b><span>' + LB('جاهز', 'Ready') + '</span></div><div class="bd"><b>' + x.left + '</b><span>' + LB('باقي', 'Left') + '</span></div><div><b>' + x.dp + '</b><span>' + LB('سُلّم', 'Given') + '</span></div></div>' + (function () {
+            var ns = x.list.filter(function (r) { var q = dvPcs(r); return !(q.P && q.g >= q.P) && !FX[r[0]]; }).map(function (r) { return r[0]; }), atF = x.list.filter(function (r) { return FX[r[0]] && FX[r[0]].st === 'sent'; }).length;
+            return '<div class="fxday">' + (atF ? '<span class="fxp s">🏭 ' + atF + ' ' + LB('في المصنع', 'at factory') + '</span>' : '') + (ns.length ? '<button type="button" class="fxb go" data-fxall="' + ns.join(',') + '">' + LB('الكل إلى المصنع', '→ Factory all') + ' (' + ns.length + ')</button>' : '') + '</div>';
+          })() + '</div>' +
+          '<div class="tw" style="margin:0;border:0;border-radius:0"><table class="dvt"><thead><tr><th>' + LB('الترتيب', 'Work order') + '</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th class="mob">' + LB('الجوال', 'Mobile') + '</th><th class="c">' + LB('القطع', 'Qty') + '</th><th>' + LB('المصنع', 'Factory') + '</th><th class="st2">' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
           x.list.map(function (r, i) {
             var q = dvPcs(r), st = STAT[r[15]] || ['', r[15] || ''], dn = q.P && q.g >= q.P;
             var note = dn ? 'all given' : [q.rd ? q.rd + ' ready' : '', q.g ? q.g + ' given' : '', q.left ? q.left + ' left' : ''].filter(Boolean).join(' · ');
@@ -818,8 +831,8 @@
                    '<button type="button" class="pmv" data-mv="-1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i ? '' : ' disabled') + ' aria-label="Up">▲</button>' +
                    '<button type="button" class="pmv" data-mv="1" data-d="' + x.d + '" data-o="' + esc(r[0]) + '"' + (i < x.list.length - 1 ? '' : ' disabled') + ' aria-label="Down">▼</button></span></td>' +
                    '<td class="no">' + esc(ONO(r[0])) + '</td><td class="nm"><b dir="auto">' + esc(r[1]) + '</b><span class="mobi" dir="ltr">' + esc(r[2]) + '</span></td><td class="mob" dir="ltr">' + esc(r[2]) + '</td>' +
-                   '<td class="c q"><b>' + q.P + '</b>' + dvBar(q) + '<em dir="ltr">' + note + '</em></td><td class="st2"><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td></tr>';
-          }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">' + LB('المجموع', 'Total') + '</td><td class="mob"></td><td class="c">' + x.pcs + '</td><td class="st2"></td></tr></tfoot></table></div>' +
+                   '<td class="c q"><b>' + q.P + '</b>' + dvBar(q) + '<em dir="ltr">' + note + '</em></td><td class="fxc">' + fxCell(r, dn) + '</td><td class="st2"><span class="sp ' + st[0] + '">' + esc(st[1]) + '</span></td></tr>';
+          }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">' + LB('المجموع', 'Total') + '</td><td class="mob"></td><td class="c">' + x.pcs + '</td><td></td><td class="st2"></td></tr></tfoot></table></div>' +
           '</section>';
       }).join('') + '<div class="dvhint">▲ ▼ ' + LB('ترتيب العمل – عامل القص يرى الطلبات بنفس الترتيب', 'Work order – the cutting worker sees the orders of each day in this order') + '</div>'
         : '<div class="dvnone">' + LB('لا يوجد تسليم في هذه الأيام', 'No deliveries on these days') + '</div>';
@@ -837,7 +850,7 @@
         '.ks{display:flex;border:1px solid #c9ced6;border-radius:6px;margin-bottom:14px}.k{flex:1;padding:7px 10px;border-left:1px solid #c9ced6}.k:first-child{border-left:0}.k span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#555;font-weight:bold}.k b{font-size:24px}.k.ok b{color:#137a4b}.k.bd b{color:#b42318}' +
         '.day{page-break-inside:avoid;margin-bottom:14px}.dh{display:flex;justify-content:space-between;align-items:center;background:#0d1b2e;color:#fff;padding:6px 10px;border-radius:5px 5px 0 0}.dh b{font-size:16.5px}.dh .s{font-size:13.5px}.dh .s b{font-size:15px;color:#e6cf9a}' +
         'table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff !important;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:6px 8px;border:1px solid #c9ced6}' +
-        'td{padding:7px 8px;border:1px solid #c9ced6;font-size:15px}td.n{width:30px;text-align:center;color:#555}td.o{font-weight:bold;width:95px;font-size:16px}td.nm{direction:rtl;text-align:right;font-size:16px}td.c{text-align:center;width:62px;font-size:16px}td.ok{color:#137a4b;font-weight:bold}td.bd{color:#b42318;font-weight:bold}td.x{width:36px}' +
+        'td{padding:7px 8px;border:1px solid #c9ced6;font-size:15px}td.n{width:30px;text-align:center;color:#555}td.o{font-weight:bold;width:95px;font-size:16px}td.nm{direction:rtl;text-align:right;font-size:16px}td.c{text-align:center;width:62px;font-size:16px}td.f{font-size:12px;width:78px;white-space:nowrap}td.ok{color:#137a4b;font-weight:bold}td.bd{color:#b42318;font-weight:bold}td.x{width:36px}' +
         'td.x i{display:block;width:16px;height:16px;border:1.5px solid #333;margin:auto}tbody tr:nth-child(odd) td{background:#ffffff}tbody tr:nth-child(even) td{background:#e8eef7}tr.dn td{color:#888}tfoot td{background:#d6e0ee;font-weight:bold;border-top:2px solid #1f3a5f}tfoot td.big{font-size:19px}' +
         '.ft{margin-top:6px;display:flex;justify-content:space-between;color:#777;font-size:11px;border-top:1px solid #ccc;padding-top:5px}.sg{margin-top:28px;display:flex;justify-content:space-between;font-size:13px;color:#333}.sg div{width:30%;border-top:1px solid #333;padding-top:4px;text-align:center}' +
         '</style></head><body>' +
@@ -846,12 +859,12 @@
         G.map(function (x) {
           var wd = dvWd(x.d);
           return '<div class="day"><div class="dh"><b>' + esc(day(x.d)) + ' · ' + wd[1] + ' · ' + wd[0] + '</b><span class="s">' + x.list.length + (x.list.length === 1 ? ' order' : ' orders') + ' · <b>' + x.pcs + '</b> pcs · ready ' + x.rp + ' · left ' + x.left + '</span></div>' +
-            '<table><thead><tr><th>#</th><th style="white-space:nowrap">Order No.</th><th style="text-align:right">Name</th><th style="text-align:center">Qty</th><th style="text-align:center">Ready</th><th style="text-align:center">Left</th><th style="text-align:center">✓</th></tr></thead><tbody>' +
+            '<table><thead><tr><th>#</th><th style="white-space:nowrap">Order No.</th><th style="text-align:right">Name</th><th style="text-align:center">Qty</th><th style="text-align:center">Ready</th><th style="text-align:center">Left</th><th style="text-align:center">Factory</th><th style="text-align:center">✓</th></tr></thead><tbody>' +
             x.list.map(function (r, i) {
               var q = dvPcs(r), dn = q.P && q.g >= q.P;
               return '<tr' + (dn ? ' class="dn"' : '') + '><td class="n">' + (i + 1) + '</td><td class="o">' + esc(ONO(r[0])) + '</td><td class="nm">' + esc(r[1]) + '</td><td class="c"><b>' + q.P + '</b></td>' +
-                '<td class="c ok">' + (dn ? '✔' : q.rd || '') + '</td><td class="c bd">' + (q.left || '') + '</td><td class="x">' + (dn ? '✔' : '<i></i>') + '</td></tr>';
-            }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">Total Pcs</td><td class="c big">' + x.pcs + '</td><td class="c ok">' + x.rp + '</td><td class="c bd">' + x.left + '</td><td></td></tr></tfoot></table></div>';
+                '<td class="c ok">' + (dn ? '✔' : q.rd || '') + '</td><td class="c bd">' + (q.left || '') + '</td><td class="c f">' + (FX[r[0]] ? (FX[r[0]].st === 'sent' ? 'At factory' : 'Back ✔') : '') + '</td><td class="x">' + (dn ? '✔' : '<i></i>') + '</td></tr>';
+            }).join('') + '</tbody><tfoot><tr><td></td><td colspan="2">Total Pcs</td><td class="c big">' + x.pcs + '</td><td class="c ok">' + x.rp + '</td><td class="c bd">' + x.left + '</td><td></td><td></td></tr></tfoot></table></div>';
         }).join('') +
         '<div class="sg"><div>Prepared by</div><div>Checked by</div><div>Date</div></div>' +
         '<div class="ft"><span>Jameel Al Hindam · Deliveries</span><span>Printed ' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</span></div></body></html>';
@@ -1000,7 +1013,27 @@
     // ---- order status table ----
     var ALL = [], PEND = {}, FIT = {}, METHODS = ['Cash'], CUR = '';
     // ---- branches: ALL_RAW = every order, ALL = the orders of the branch chosen at the top (All / Main / CODE)
-    var ALL_RAW = [], BRS = [], BR_OF = {}, BR = '*';
+    var ALL_RAW = [], BRS = [], BR_OF = {}, BR = '*', FX = {};
+    // ---- factory: where the thobes are (jfx) – at the shop → at the factory → back at the shop
+    function fxDate(t) { return t ? t.slice(8, 10) + '-' + t.slice(5, 7) : ''; }
+    function fxCell(r, dn) {
+      var f = FX[r[0]];
+      if (dn && !f) return '<span class="muted">—</span>';
+      if (f && f.st === 'sent') return '<span class="fxp s" title="' + esc((f.sb ? 'by ' + f.sb + ' · ' : '') + f.s) + '">🏭 ' + LB('في المصنع', 'At factory') + ' <i>' + fxDate(f.s) + '</i></span>' +
+        '<button type="button" class="fxb" data-fx="back" data-o="' + esc(r[0]) + '">' + LB('وصل', '← Back') + '</button>';
+      if (f && f.st === 'back') return '<span class="fxp b" title="' + esc((f.bb ? 'by ' + f.bb + ' · ' : '') + f.b) + '">✔ ' + LB('رجع', 'Back') + ' <i>' + fxDate(f.b) + '</i></span>' +
+        '<button type="button" class="fxb u" data-fx="none" data-o="' + esc(r[0]) + '" title="Undo">↺</button>';
+      return '<span class="fxp">' + LB('في المحل', 'At shop') + '</span><button type="button" class="fxb go" data-fx="sent" data-o="' + esc(r[0]) + '">' + LB('إلى المصنع', '→ Factory') + '</button>';
+    }
+    function fxSend(nos, st) {
+      if (!nos.length) return;
+      if (st === 'none' && !confirm('↺ ' + nos.join(', ') + '\nإلغاء – Undo?')) return;
+      var now = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16).replace('T', ' ');
+      nos.forEach(function (n) { var f = FX[n] || {}; if (st === 'none') delete FX[n]; else FX[n] = { st: st, s: st === 'sent' ? now : f.s, b: st === 'back' ? now : '' }; });
+      renderDeliv();
+      google.script.run.withSuccessHandler(function (r) { if (!r || !r.ok) { alert((r && r.msg) || 'Not saved'); return; } FX = r.fx || FX; if (CUR_TAB === 12) renderDeliv(); })
+        .withFailureHandler(function (e) { alert('لم يُحفظ – Not saved: ' + (e && e.message || e)); }).aFactory(KEY, PIN, nos, st, 'Admin');
+    }
     try { BR = localStorage.getItem('jadm-br') || '*'; } catch (e) { }
     function brName(c) { if (!c) return 'Main'; var b = BRS.filter(function (x) { return x.c === c; })[0]; return b ? (b.n || b.ar || c) : c; }
     function brNameAr(c) { if (!c) return 'الرئيسي'; var b = BRS.filter(function (x) { return x.c === c; })[0]; return b ? (b.ar || b.n || c) : c; }
@@ -1032,7 +1065,7 @@
     function day(s) { if (!s || s.length < 10) return s || ''; var p = s.slice(0, 10).split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
     function loadOrders() {
       google.script.run.withSuccessHandler(function (r) {
-        if (!r) return; ALL_RAW = r.rows || []; BRS = r.branches || []; brFilter(); brSelFill(); setTimeout(shopToday, 0); setTimeout(renderNow, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
+        if (!r) return; ALL_RAW = r.rows || []; BRS = r.branches || []; FX = r.fx || {}; brFilter(); brSelFill(); setTimeout(shopToday, 0); setTimeout(renderNow, 0); PEND = r.pending || {}; FIT = r.fit || {}; RSENT = r.sent || {};
         if (r.conf && r.conf.methods && r.conf.methods.length) { METHODS = r.conf.methods; CUR = r.conf.currency || ''; }
         renderTable(); readyAsk(); if (CUR_TAB === 12) renderDeliv();
         // opened for one order (InvProject on another PC: the customer's name → /a/KEY/?ord=NO): its details, once
@@ -1760,6 +1793,10 @@
             (other.length ? other.map(function (x) { return '<div style="white-space:nowrap">' + esc((WLK[x.k] || x.k).split(' · ')[0]) + ': <b>' + esc(x.w) + '</b> × ' + x.q + ' <span class="muted" style="font-size:12px">' + esc(x.d.slice(5)) + '</span></div>'; }).join('') : '<span class="c-no">—</span>') + '</td></tr>';
         }).join('') + '</tbody>';
     }
+    $('dvTab').addEventListener('click', function (ev) {
+      var fb = ev.target.closest && ev.target.closest('[data-fx],[data-fxall]'); if (!fb) return; ev.stopPropagation();
+      if (fb.hasAttribute('data-fxall')) fxSend(fb.getAttribute('data-fxall').split(','), 'sent'); else fxSend([fb.getAttribute('data-o')], fb.getAttribute('data-fx'));
+    }, true);
     $('dvTab').addEventListener('click', function (ev) { if (!ev.target.closest || !ev.target.closest('.pv')) return; ev.stopPropagation(); var b = ev.target.closest('.pmv'); if (!b || b.disabled) return; movePrio(b.getAttribute('data-d'), b.getAttribute('data-o'), Number(b.getAttribute('data-mv'))); }, true);
     $('dvF').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvT').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvPrint').addEventListener('click', printDeliv);
     Array.prototype.forEach.call(document.querySelectorAll('.dvq button[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });
