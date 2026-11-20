@@ -70,6 +70,9 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .login img{width:84px;height:auto;margin-bottom:12px}
 .login h1{font:600 30px/1.2 var(--b-display,system-ui);margin:0 0 4px}
 .login .ar{font:500 17px var(--b-display,system-ui);color:var(--goldink);margin:0 0 18px}
+.blang{display:inline-flex;border:1px solid rgba(255,255,255,.3);border-radius:99px;overflow:hidden;flex:none}.blang button{background:none;border:0;color:#c9ced8;font-weight:700;font-size:12px;padding:6px 9px;cursor:pointer}.blang button.on{background:#cfae6a;color:#0d1b2e}
+.login .blang{border-color:var(--line);margin-top:10px}.login .blang button{color:var(--mute)}
+[dir=rtl] .bhead,[dir=rtl] .it,[dir=rtl] .row{direction:rtl}
 .brtag{background:#0d1b2e;color:#fff;font-weight:700;border-radius:10px;padding:9px 12px;margin:6px 0 10px}
 .bhead{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0d1b2e;color:#fff}.bhead img{width:44px;height:44px;border-radius:10px;background:#fff}
 .bhead h1{margin:0;font-size:18px;color:#fff}.bhead div{font-size:13px;color:#cfae6a}
@@ -1305,6 +1308,97 @@ let BR_MODE = null;
   if (k && (b || f) && !EMBED) BR_MODE = { k, b: f ? '' : b, f, code: f || b, fac: !!f };
 })();
 const pinKey = () => 'jbpin-' + BR_MODE.code;
+// ---- language of the branch / factory pages: Hinglish (as written) · English · Arabic – translated on the page itself
+let BLANG = 'hi'; try { BLANG = localStorage.getItem('jbranch-lang') || 'hi'; } catch (e) { }
+const LANG_PH = [
+  ['Home', 'Home', 'الرئيسية'], ['New order', 'New order', 'طلب جديد'], ['Orders', 'Orders', 'الطلبات'], ['Delivery', 'Delivery', 'التسليم'], ['Alteration', 'Alteration', 'التعديل'], ['Factory', 'Factory', 'المصنع'], ['Coming', 'Coming', 'القادمة'],
+  ['Aaj ka amount SAR', "Today's amount SAR", 'مبلغ اليوم ر.س'], ['Delivery ≤ 2 din', 'Delivery ≤ 2 days', 'التسليم خلال يومين'], ['Ready – dene ke liye', 'Ready to hand over', 'جاهز للتسليم'],
+  ['Factory mein (pcs)', 'At the factory (pcs)', 'في المصنع (قطعة)'], ['Late', 'Late', 'متأخر'], ['Aaj ke InvProject orders', "Today's InvProject orders", 'أوامر التشغيل اليوم'],
+  ['Aaj abhi koi order nahin', 'No order yet today', 'لا توجد طلبات اليوم بعد'], ['Kuch nahin', 'Nothing', 'لا شيء'], ['Kuch nahin mila', 'Nothing found', 'لا توجد نتائج'], ['Koi order baaki nahin', 'No order left', 'لا توجد طلبات متبقية'],
+  ['Search: order no, name, mobile', 'Search: order no, name, mobile', 'بحث: رقم الطلب، الاسم، الجوال'], ['Ready', 'Ready', 'جاهز'], ['Delivered', 'Delivered', 'سُلّم'], ['In work', 'In work', 'قيد العمل'],
+  ['🏭 factory', '🏭 factory', '🏭 في المصنع'], ['✔ back', '✔ back', '✔ رجع'], ['Thobe', 'Thobe', 'ثوب'], ['Total', 'Total', 'الإجمالي'], ['Balance', 'Balance', 'الباقي'], ['Call', 'Call', 'اتصال'],
+  ['Aaj aaye', 'Came in today', 'وصل اليوم'], ['Aaj wapas bheje', 'Sent back today', 'أُرجع اليوم'], ['✔ Aaj wapas bheje', '✔ Sent back today', '✔ أُرجع اليوم'], ['Factory mein abhi kuch nahin', 'Nothing at the factory now', 'لا شيء في المصنع الآن'],
+  ['Shops ke orders jo abhi factory nahin aaye. Kapda aa jaye to "Received" dabaiye.', 'Shop orders not at the factory yet. When the fabric arrives press "Received".', 'طلبات المحلات التي لم تصل المصنع بعد. عند وصول القماش اضغط "وصل".'],
+  ['Sab orders factory mein hain', 'All orders are at the factory', 'كل الطلبات في المصنع'], ['Koi alteration baaki nahin', 'No alteration left', 'لا توجد تعديلات متبقية'], ['✔ Ready', '✔ Ready', '✔ جاهز'], ['⏳ PC', '⏳ PC', '⏳ الجهاز'],
+  ['ya Customer – أو العميل', 'or Customer', 'أو العميل'], ['Name ya mobile', 'Name or mobile', 'الاسم أو الجوال'], ['Order nahin mila', 'Order not found', 'الطلب غير موجود'],
+  ['Order no. ya customer ka naam likhiye', 'Write the order no. or the customer name', 'اكتب رقم الطلب أو اسم العميل'], ['Details likhiye – kya badalna hai', 'Write the details – what to change', 'اكتب التفاصيل – ما المطلوب تعديله'],
+  ['Thobe ginti 1–100', 'Thobes: 1–100', 'عدد الثياب ١–١٠٠'], ['Shop PC par save ho raha hai…', 'Saving on the shop PC…', 'جاري الحفظ في جهاز المحل…'],
+  ['Request save hai – shop PC on hote hi alteration ban jayega.', 'Request saved – the alteration is made as soon as the shop PC is on.', 'تم حفظ الطلب – يُسجَّل التعديل عند تشغيل جهاز المحل.'],
+  ['Order shop PC par InvProject mein save hoga – bilkul InvProject jaise (order, kapda, naap, Genix invoice, Jameel). Shop PC on hona chahiye.', 'The order is saved in InvProject on the shop PC – exactly like InvProject (order, fabric, measurements, Genix invoice, Jameel). The shop PC must be on.', 'يُحفظ أمر التشغيل في InvProject على جهاز المحل – تماماً مثل InvProject (الطلب، القماش، المقاس، فاتورة جينكس، جميل). يجب أن يكون جهاز المحل يعمل.'],
+  ['Name ya mobile likhiye', 'Write a name or mobile', 'اكتب الاسم أو الجوال'], ['+ Naya customer', '+ New customer', '+ عميل جديد'], ['+ Kapda add: code ya naam (جيب الهندام…)', '+ Add fabric: code or name', '+ أضف قماش: الكود أو الاسم'],
+  ['+ Customer ka kapda (قماش خارجي)', "+ Customer's own fabric", '+ قماش العميل (خارجي)'], ['Order notes (InvProject ملاحظات)', 'Order notes', 'ملاحظات الطلب'], ['Cash', 'Cash', 'نقداً'], ['Network (مصرف الانماء)', 'Network', 'شبكة (مصرف الانماء)'],
+  ['Jameel plan se apne aap', 'Automatic from the Jameel plan', 'تلقائياً حسب خطة جميل'], ['Jameel plan se apne aap (PC par)', 'Automatic from the Jameel plan', 'تلقائياً حسب خطة جميل'],
+  ['(main shop ka Genix)', "(the main shop's Genix)", '(جينكس المحل الرئيسي)'], ['– naap save hote hi asli tax invoice (ZATCA)', '– a real tax invoice (ZATCA) once the measurements are saved', '– فاتورة ضريبية حقيقية (زاتكا) عند حفظ المقاس'],
+  ['Purana naap chuniye…', 'Pick earlier measurements…', 'اختر مقاساً سابقاً…'], ['Purana naap nahin', 'No earlier measurements', 'لا يوجد مقاس سابق'], ['Naap nahin', 'No measurements', 'بدون مقاس'], ['Naap dalein', 'Add measurements', 'أضف المقاس'],
+  ['Naap nahin – InvProject mein baad mein dalenge (Genix invoice tab banega).', 'No measurements – added later in InvProject (the Genix invoice is made then).', 'بدون مقاس – يُضاف لاحقاً في InvProject (وتُصدر فاتورة جينكس حينها).'],
+  ['Total (VAT ke saath)', 'Total (incl. VAT)', 'الإجمالي (شامل الضريبة)'], ['Baaki (آجل)', 'Balance due', 'الباقي (آجل)'], ['Upar se kapda chuniye', 'Pick a fabric above', 'اختر القماش من الأعلى'], ['Price/thobe', 'Price / thobe', 'السعر / ثوب'],
+  ['Customer chuniye, ya naye customer ka naam aur mobile likhiye', 'Pick a customer, or write the new customer\'s name and mobile', 'اختر العميل، أو اكتب اسم وجوال العميل الجديد'], ['Kapda / thobe add kijiye', 'Add a fabric / thobe', 'أضف القماش / الثوب'],
+  ['Har line ki thobe ginti aur price likhiye', 'Write the thobes and price of every line', 'اكتب عدد الثياب والسعر لكل سطر'], ['Paid amount total se zyada hai', 'Paid is more than the total', 'المدفوع أكثر من الإجمالي'],
+  ['Shop PC par InvProject mein order save ho raha hai…', 'Saving the order in InvProject on the shop PC…', 'جاري حفظ الطلب في InvProject على جهاز المحل…'],
+  ['Yeh kapda pehle se hai – thobe ki ginti badhaiye', 'This fabric is already there – raise its thobes', 'هذا القماش موجود – زِد عدد الثياب'], ['Customer ka kapda pehle se hai – thobe ki ginti badhaiye', "The customer's fabric is already there – raise its thobes", 'قماش العميل موجود – زِد عدد الثياب'],
+  ['Loading…', 'Loading…', 'جاري التحميل…'], ['PIN galat hai', 'Wrong PIN', 'الرقم السري غير صحيح'], ['Pehle apna naam likhiye – اسمك', 'Write your name first', 'اكتب اسمك أولاً'],
+  ['اسمك – Your name (yaad rahega)', 'Your name (kept on this device)', 'اسمك (يُحفظ في هذا الجهاز)'], ['اسمك – Your name', 'Your name', 'اسمك'], ['Save nahin hua: ', 'Not saved: ', 'لم يُحفظ: '],
+  ['Koi alteration baaki nahin', 'No alteration left', 'لا توجد تعديلات متبقية'], ['Delivered (last ', 'Delivered (last ', 'سُلّم (آخر '], ['booked', 'booked', 'الحجز'],
+  ['Naap – المقاسات', 'Measurements', 'المقاسات'], ['Thobe – الثياب', 'Thobes', 'الثياب'], ['فاتورة جينكس', 'Genix invoice', 'فاتورة جينكس'], ['Thobe – عدد', 'Thobes', 'عدد الثياب'], ['Save – حفظ', 'Save', 'حفظ'], ['Order save karein – حفظ', 'Save the order', 'حفظ الطلب'],
+];
+const LANG_RX = [
+  [/^Aaj ke orders \((\d+) pcs\)$/, "Today's orders ($1 pcs)", 'طلبات اليوم ($1 قطعة)'], [/^(\d+) orders$/, '$1 orders', '$1 طلب'], [/^(\d+) orders · (\d+) pcs$/, '$1 orders · $2 pcs', '$1 طلب · $2 قطعة'],
+  [/^Aaj · (.*)$/, 'Today · $1', 'اليوم · $1'], [/^Late · (.*)$/, 'Late · $1', 'متأخر · $1'], [/^Jameel plan \((\d+) thobe\): (.*)$/, 'Jameel plan ($1 thobes): $2', 'خطة جميل ($1 ثوب): $2'],
+  [/^Purana naap chuniye \((\d+)\)…$/, 'Pick earlier measurements ($1)…', 'اختر مقاساً سابقاً ($1)…'], [/^⏳ (\d+) naya alteration shop PC par save ho raha hai…$/, '⏳ $1 new alteration being saved on the shop PC…', '⏳ $1 تعديل جديد يُحفظ في جهاز المحل…'],
+  [/^Alteration A(\d+) save ho gaya ✓$/, 'Alteration A$1 saved ✓', 'تم حفظ التعديل A$1 ✓'], [/^(.*) save ho gaya ✓$/, '$1 saved ✓', 'تم حفظ $1 ✓'], [/^(\d+) order factory bhejein\?$/, 'Send $1 orders to the factory?', 'إرسال $1 طلب للمصنع؟'],
+  [/^Alteration A(\d+) customer ko de diya\?$/, 'Alteration A$1 handed to the customer?', 'هل سُلّم التعديل A$1 للعميل؟'], [/^Genix invoice (\d+) PDF$/, 'Genix invoice $1 PDF', 'فاتورة جينكس $1 PDF'], [/^Genix (\d+)$/, 'Genix $1', 'جينكس $1'],
+  [/^(.*)InvProject order save karein\?$/, '$1Save the InvProject order?', '$1حفظ أمر التشغيل؟'],
+];
+// words inside longer lines (thobe · delivery …), Arabic only
+const LANG_W = [[/\bthobe\b/g, 'ثوب'], [/\bdelivery\b/g, 'التسليم'], [/\bready\b/g, 'جاهز'], [/\bsent back\b/g, 'أُرجع'], [/\bsent\b/g, 'أُرسل'], [/\bcame\b/g, 'وصل'], [/\bback\b/g, 'رجع'], [/\bpcs\b/g, 'قطعة'], [/\borders\b/g, 'طلبات'], [/\border\b/g, 'طلب'], [/\bdate\b/g, 'التاريخ'], [/\bFault\b/g, 'الخطأ']];
+const LANG_MAP = new Map(LANG_PH.map(x => [x[0], x]));
+const hasAr = (t) => /[؀-ۿ]/.test(t), hasLat = (t) => /[A-Za-z]{2}/.test(t);
+function trText(t) {
+  if (BLANG === 'hi' || !t) return t;
+  const i = BLANG === 'ar' ? 2 : 1, m0 = t.match(/^(\s*)([\s\S]*?)(\s*)$/), core = m0[2];
+  if (!core) return t;
+  const w = (v) => m0[1] + v + m0[3];
+  const ph = LANG_MAP.get(core); if (ph) return w(ph[i]);
+  for (const [rx, en, ar] of LANG_RX) if (rx.test(core)) return w(core.replace(rx, i === 2 ? ar : en));
+  // Arabic · English (or – / →): keep the side of the language picked; leading signs and a trailing (n) stay
+  if (hasAr(core) && hasLat(core)) {
+    const mm = core.match(/^([^\p{L}\d]*)([\s\S]*?)(\s*\(\d+\))?$/u), body = mm[2];
+    const parts = body.split(/\s+(?:·|–|\/|→|←)\s+/);
+    if (parts.length > 1) {
+      const pick = parts.filter(p => (i === 2 ? hasAr(p) && !hasLat(p.replace(/[A-Z0-9]+-\d+|PDF|InvProject|Genix|SAR|PC/g, '')) : !hasAr(p)));
+      if (pick.length && pick.length < parts.length) return w(mm[1] + pick.join(' · ') + (mm[3] || ''));
+    }
+  }
+  if (i === 2 && hasLat(core)) { let v = core; for (const [rx, ar] of LANG_W) v = v.replace(rx, ar); return w(v); }
+  return t;
+}
+const LANG_DONE = new WeakMap();
+function trRoot(root) {
+  if (BLANG === 'hi' || !root) return;
+  const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  for (let n = root; n; n = tw.nextNode()) {
+    if (n.nodeType === 1) {
+      if (n.placeholder && LANG_DONE.get(n) !== n.placeholder) { n.placeholder = trText(n.placeholder); LANG_DONE.set(n, n.placeholder); }
+      continue;
+    }
+    const p = n.parentNode && n.parentNode.nodeName;
+    if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') continue;
+    if (LANG_DONE.get(n) === n.nodeValue) continue;
+    const v = trText(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; LANG_DONE.set(n, n.nodeValue);
+  }
+}
+function langStart() {
+  document.documentElement.dir = BLANG === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = BLANG === 'ar' ? 'ar' : 'en';
+  if (BLANG === 'hi') return;
+  const msg = (m) => String(m).split('\n').map(trText).join('\n');
+  const A = window.alert.bind(window), C = window.confirm.bind(window), P = window.prompt.bind(window);
+  window.alert = (m) => A(msg(m)); window.confirm = (m) => C(msg(m)); window.prompt = (m, d) => P(msg(m), d);
+  new MutationObserver(ms => { for (const x of ms) { if (x.type === 'characterData') trRoot(x.target); else x.addedNodes.forEach(trRoot); } })
+    .observe(document.body, { childList: true, subtree: true, characterData: true });
+  trRoot(document.body);
+}
+const langBar = () => `<div class="blang">${[['hi', 'Hinglish'], ['en', 'EN'], ['ar', 'ع']].map(([k, l]) => `<button type="button" data-lg="${k}" class="${BLANG === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-lg]'); if (!b) return; try { localStorage.setItem('jbranch-lang', b.dataset.lg); } catch (x) { } location.reload(); });
 async function branchStart(pinTry) {
   const B = BR_MODE, app = $('#app');
   app.innerHTML = '<p class="muted center" style="margin-top:40px"><span class="spin"></span> Loading…</p>';
@@ -1331,7 +1425,7 @@ async function branchStart(pinTry) {
   } catch (e) { app.innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Jameel Al Hindam</h1><div class="err">${H(e.message)}</div></div>`; }
 }
 function branchPin(err) {
-  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>${BR_MODE.fac ? 'Factory' : 'Branch'} ${H(BR_MODE.code)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>
+  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>${BR_MODE.fac ? 'Factory' : 'Branch'} ${H(BR_MODE.code)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>${langBar()}
   <form id="bp" class="card"><input id="bpin" type="password" inputmode="numeric" placeholder="PIN" autofocus>${err ? `<div class="err" style="margin-top:10px">${H(err)}</div>` : ''}<button class="btn" style="width:100%;margin-top:10px">OK</button></form></div>`;
   $('#bp').onsubmit = (e) => { e.preventDefault(); branchStart($('#bpin').value.trim()); };
 }
@@ -1355,7 +1449,7 @@ const bWho = () => { try { return localStorage.getItem('jbranch-by') || ''; } ca
 function bShell(tabs, cur, go) {
   const B = BR_MODE;
   $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1;min-width:0"><h1>${B.fac ? '🏭' : '🏬'} ${H(B.ar)}${B.ar !== B.name ? ' · ' + H(B.name) : ''} <span class="bcode">${H(B.code)}</span></h1><div>جميل الهندام · Jameel Al Hindam${bWho() ? ' · ' + H(bWho()) : ''}</div></div>
-    <button class="btn ghost small" id="bwho" style="color:#fff;border-color:rgba(255,255,255,.3)">👤</button></div>
+    ${langBar()}<button class="btn ghost small" id="bwho" style="color:#fff;border-color:rgba(255,255,255,.3)">👤</button></div>
   <main class="bmain" id="bm"></main>
   <nav>${tabs.map(([k, l]) => `<button data-bt="${k}" class="${k === cur ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${BICON[k]}</svg>${l}</button>`).join('')}</nav>`;
   document.querySelectorAll('[data-bt]').forEach(b => b.onclick = () => go(b.dataset.bt));
@@ -1597,7 +1691,7 @@ async function fComingView(m) {
   m.querySelectorAll('[data-fx]').forEach(b => b.onclick = async () => { if (!needWho()) return; b.disabled = true; try { await fxPut([b.dataset.o], 'sent', bWho() || 'Factory', brOf); factoryHome('due'); } catch (e) { b.disabled = false; alert(e.message); } });
 }
 let started = false;
-if (BR_MODE) branchStart();
+if (BR_MODE) { langStart(); branchStart(); }
 else if (EMBED) {
   adminOk().then(ok => {
     if (!ok) { $('#app').innerHTML = '<div class="login"><p class="err">Admin key / PIN check fail – admin page dobara kholiye</p></div>'; return; }
