@@ -70,6 +70,11 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .login img{width:84px;height:auto;margin-bottom:12px}
 .login h1{font:600 30px/1.2 var(--b-display,system-ui);margin:0 0 4px}
 .login .ar{font:500 17px var(--b-display,system-ui);color:var(--goldink);margin:0 0 18px}
+.brtag{background:#0d1b2e;color:#fff;font-weight:700;border-radius:10px;padding:9px 12px;margin:6px 0 10px}
+.bhead{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0d1b2e;color:#fff}.bhead img{width:44px;height:44px;border-radius:10px;background:#fff}
+.bhead h1{margin:0;font-size:18px;color:#fff}.bhead div{font-size:13px;color:#cfae6a}
+.bmain{max-width:860px;margin:0 auto;padding:14px 14px 40px}.bgo{width:100%;font-size:18px;padding:16px;margin-top:10px}
+.bsec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:16px 0 6px;padding:7px 12px;border-radius:9px;font-weight:700}
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--bg);width:100%;max-width:860px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px 24px}
 .sug{border:1px solid var(--line);border-radius:9px;margin-top:4px;background:var(--card);max-height:220px;overflow:auto}
@@ -121,7 +126,7 @@ a{color:var(--acc)}
 <div id="app"></div>
 <script type="module">
 import { db, auth, riyadh, sha256 } from '../js/fb.js?v=1';
-import { doc, getDoc, getDocs, collection, query, where, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 const OWNER = 'owner@saudithobe.best';
 const $ = (s, e = document) => e.querySelector(s);
@@ -313,9 +318,10 @@ async function homeView() {
   $('#qx').onclick = () => { state.tab = 'jameel'; state.sub.jameel = 'xdaily'; render(); };
 }
 function dsOpen() { try { return localStorage.getItem('dsOpen') === '1'; } catch (e) { return false; } }
-function newInvOrder() {
+function newInvOrder(opt = {}) {
   const s = document.createElement('div'); s.className = 'sheet';
   s.innerHTML = `<div class="box"><div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">New InvProject order · أمر تشغيل جديد</h2><button class="x" id="cl">×</button></div>
+  ${opt.br ? `<div class="brtag">🏬 الفرع ${H(opt.brAr || opt.brName)} · Branch ${H(opt.brName)} (${H(opt.br)})</div>` : ''}
   <div class="note" id="mode">Order shop PC par InvProject mein save hoga – bilkul InvProject jaise (order, kapda, naap, Genix invoice, Jameel). Shop PC on hona chahiye.</div>
   <label class="muted">Customer – العميل</label><input id="cq" placeholder="Name ya mobile likhiye"><div class="sug" id="cs" hidden></div>
   <div id="cv" style="margin:6px 0 4px"></div>
@@ -327,7 +333,7 @@ function newInvOrder() {
   <div class="row" style="margin-top:8px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><label class="muted">Delivery – موعد التسليم</label><input id="dl" type="date"><div class="muted" style="font-size:12px" id="dlh">Jameel plan se apne aap</div></div>
     <div style="flex:1;min-width:120px"><label class="muted">Cash</label><input id="ca" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
     <div style="flex:1;min-width:120px"><label class="muted">Network (مصرف الانماء)</label><input id="ne" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div></div>
-  <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="gx" checked style="width:auto"> <b>فاتورة جينكس</b> <span class="muted">– naap save hote hi asli tax invoice (ZATCA)</span></label>
+  <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="gx"${opt.br ? '' : ' checked'} style="width:auto"> <b>فاتورة جينكس</b>${opt.br ? ' <span class="muted">(main shop ka Genix)</span>' : ''} <span class="muted">– naap save hote hi asli tax invoice (ZATCA)</span></label>
   <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px"><h3 style="margin:0">Naap – المقاسات</h3>
     <div class="row" style="gap:6px"><select id="cp" disabled style="max-width:210px;padding:6px"><option value="">Purana naap chuniye…</option></select><button class="btn ghost small" id="nz">Naap nahin</button></div></div>
   <div id="mz"></div>
@@ -335,7 +341,7 @@ function newInvOrder() {
   <div id="er"></div><button class="btn" id="go" style="width:100%">Order save karein – حفظ</button><div id="rs"></div></div>`;
   document.body.appendChild(s);
   const st = { cust: null, lines: [], d7: { Note: 'جيب قلم + جيب جوال' }, noD7: false, notesTouched: false };
-  $('#cl', s).onclick = () => s.remove();
+  $('#cl', s).onclick = () => { s.remove(); if (opt.done) opt.done(); };
   getDoc(doc(db, 'sys', 'agent')).then(a => { const d = a.exists() ? a.data() : {}; if (d.invOrderTest) $('#mode', s).innerHTML = `<b>TEST mode:</b> order InvProject ki test copy (${H(d.invOrderDb)}) mein jayega – asli InvProject, Genix aur Jameel mein kuch nahin badlega.`; }).catch(() => { });
   let services = [];
   rows('i_services', { limit: 20, asc: true }).then(r => { services = r.rows; draw(); });
@@ -448,7 +454,8 @@ function newInvOrder() {
     const go = $('#go', s); go.disabled = true;
     const rs = $('#rs', s);
     try {
-      let j = await jobNew('inv_order', { data: JSON.stringify({ cust, lines, notes: $('#no', s).value.trim(), delivery: $('#dl', s).value || '', d7, want, cash, network }), who });
+      let j = await jobNew('inv_order', Object.assign({ data: JSON.stringify({ cust, lines, notes: $('#no', s).value.trim(), delivery: $('#dl', s).value || '', d7, want, cash, network }), who },
+        opt.br ? { br: opt.br, by: String(opt.by || '').slice(0, 40) } : {}));
       rs.innerHTML = '<p class="muted"><span class="spin"></span> Shop PC par InvProject mein order save ho raha hai…</p>';
       const t0 = Date.now();
       while (j.status === 'new' || j.status === 'running') {
@@ -458,7 +465,7 @@ function newInvOrder() {
       }
       if (j.status !== 'done') throw new Error((j.result && j.result.error) || j.status);
       const r = j.result;
-      rs.innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>${r.test ? 'TEST: ' : ''}أمر التشغيل ${H(r.order)} save ho gaya ✓</b>
+      rs.innerHTML = `<div class="card" style="background:var(--okbg);color:var(--ok)"><b>${r.test ? 'TEST: ' : ''}أمر التشغيل ${H(opt.br ? opt.br + '-' + r.order : r.order)} save ho gaya ✓</b>
         ${r.no ? `<div>Genix invoice ${H(r.no)}</div>` : ''}${r.file ? `<p>${fileBtn(r.file)}</p>` : ''}
         ${r.warn ? `<div class="muted" style="font-size:13px;margin-top:6px">${H(r.warn)}</div>` : ''}</div>`;
       go.hidden = true;
@@ -1233,7 +1240,7 @@ async function moreView() {
     const row = (title, sub, url) => `<div class="linkrow"><div class="main"><b>${H(title)}</b> <span class="muted">${H(sub)}</span><br><code>${H(url)}</code></div>
       <button class="btn ghost small" data-copy="${H(url)}">Copy</button><a class="btn ghost small" href="${H(url)}" target="_blank" rel="noopener">Open</a></div>`;
     b.innerHTML = `<p class="muted">Yeh JAMEEL ke online pages hain – ab apne domain par. Link secret hai: sirf usi ko bhejiye jiska hai.</p>
-    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد · Main shop', base + '/o/' + l.OnlineOrderKey + '/?b=-') : ''}${l.OnlineOrderKey ? brs.filter(x => x.k === 'shop' && x.on).map(x => row('New order · ' + (x.n || x.c) + ' (' + x.c + ')', 'طلب جديد · فرع ' + (x.ar || x.n || x.c), base + '/o/' + l.OnlineOrderKey + '/?b=' + x.c)).join('') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>`;
+    <div class="card">${l.OnlineOrderKey ? row('New order page', 'طلب جديد · Main shop', base + '/o/' + l.OnlineOrderKey + '/?b=-') : ''}${l.OnlineOrderKey ? brs.filter(x => x.k === 'shop' && x.on).map(x => row('Branch ' + (x.n || x.c) + ' (' + x.c + ') – InvProject order', 'فرع ' + (x.ar || x.n || x.c) + ' · أمر تشغيل', base + '/app/?k=' + l.OnlineOrderKey + '&b=' + x.c)).join('') : ''}${l.OnlineAdminKey ? row('Alerts page', 'تنبيهات', base + '/a/' + l.OnlineAdminKey + '/') : ''}${!l.OnlineOrderKey && !l.OnlineAdminKey ? '<p class="muted">Abhi sync nahin hua</p>' : ''}</div>`;
     b.querySelectorAll('[data-copy]').forEach(el => el.onclick = async () => { try { await navigator.clipboard.writeText(el.dataset.copy); el.textContent = 'Copied ✓'; } catch (e) { prompt('Copy:', el.dataset.copy); } });
     return;
   }
@@ -1282,8 +1289,101 @@ async function adminOk() {
     return (await getDoc(doc(db, 'ak', await sha256('ak:' + key + ':' + ph)))).exists();
   } catch (e) { return false; }
 }
+// ---------------------------------------------------------------- branch page (/app/?k=ORDERKEY&b=CODE): no owner login –
+// the order link's key (+ PIN) and the branch code; only: new InvProject order for this branch, its orders, factory
+const BQ = new URLSearchParams(location.search);
+let BR_MODE = null;
+(function () {
+  let k = (BQ.get('k') || '').trim(), b = (BQ.get('b') || '').trim().toUpperCase();
+  try { if (k && b) localStorage.setItem('jbranch', JSON.stringify({ k, b })); else if (BQ.has('owner')) localStorage.removeItem('jbranch'); else { const x = JSON.parse(localStorage.getItem('jbranch') || 'null'); if (x && !EMBED) { k = x.k; b = x.b; } } } catch (e) { }
+  if (k && b && !EMBED) BR_MODE = { k, b };
+})();
+async function branchStart(pinTry) {
+  const B = BR_MODE, app = $('#app');
+  app.innerHTML = '<p class="muted center" style="margin-top:40px"><span class="spin"></span> Loading…</p>';
+  try {
+    if (!/^[0-9a-f]{32}$/.test(B.k)) throw new Error('Link galat hai');
+    const g = await getDoc(doc(db, 'okk', B.k));
+    if (!g.exists()) throw new Error('Link galat hai – Shop Online → More → Online links se naya link lijiye');
+    let pin = pinTry != null ? pinTry : (sessionStorage.getItem('jbpin') || '');
+    if (g.data().pin && !pin) return branchPin();
+    const ph = g.data().pin ? await sha256('tsorder:' + pin) : '';
+    if (!(await getDoc(doc(db, 'ok', await sha256('ok:' + B.k + ':' + ph)))).exists()) { sessionStorage.removeItem('jbpin'); return branchPin(g.data().pin ? 'PIN galat hai' : 'Link galat hai'); }
+    if (g.data().pin) sessionStorage.setItem('jbpin', pin);
+    const bs = await getDoc(doc(db, 'sys', 'branches'));
+    const list = bs.exists() ? JSON.parse(bs.data().list || '[]') : [];
+    const br = list.find(x => x.c === B.b);
+    if (!br || br.k !== 'shop' || br.on === false) throw new Error('Branch ' + B.b + ' Admin → Branches mein nahin hai (ya band hai)');
+    B.name = br.n || br.ar || br.c; B.ar = br.ar || br.n || br.c;
+    document.title = 'Jameel · ' + B.name;
+    branchHome();
+  } catch (e) { app.innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Jameel Al Hindam</h1><div class="err">${H(e.message)}</div></div>`; }
+}
+function branchPin(err) {
+  $('#app').innerHTML = `<div class="login"><img src="/img/logo-240.png" alt=""><h1>Branch ${H(BR_MODE.b)}</h1><p class="ar">جميل الهندام للخياطة الرجالية</p>
+  <form id="bp" class="card"><input id="bpin" type="password" inputmode="numeric" placeholder="PIN" autofocus>${err ? `<div class="err" style="margin-top:10px">${H(err)}</div>` : ''}<button class="btn" style="width:100%;margin-top:10px">OK</button></form></div>`;
+  $('#bp').onsubmit = (e) => { e.preventDefault(); branchStart($('#bpin').value.trim()); };
+}
+function branchHome() {
+  const B = BR_MODE;
+  let by = ''; try { by = localStorage.getItem('jbranch-by') || ''; } catch (e) { }
+  $('#app').innerHTML = `<div class="bhead"><img src="/img/logo-240.png" alt=""><div style="flex:1"><h1>🏬 ${H(B.ar)} · ${H(B.name)} (${H(B.b)})</h1><div>جميل الهندام · Jameel Al Hindam</div></div></div>
+  <div class="bmain"><div class="card"><label class="muted">اسمك – Your name</label><input id="bby" value="${H(by)}" placeholder="اسم الموظف">
+    <button class="btn bgo" id="bnew">+ أمر تشغيل جديد · New order</button>
+    <div class="muted" style="font-size:13px;margin-top:8px">Order main shop ke InvProject mein banega (kapda, naap, Genix invoice, Jameel) – number ${H(B.b)}-1234 jaisa dikhega.</div></div>
+  <h2>Orders – اليوم</h2><div id="bjobs" class="card"><p class="muted"><span class="spin"></span></p></div>
+  <h2>المصنع · Factory</h2><div id="bfx"><p class="muted"><span class="spin"></span></p></div></div>`;
+  $('#bby').oninput = () => { try { localStorage.setItem('jbranch-by', $('#bby').value.trim()); } catch (e) { } };
+  $('#bnew').onclick = () => {
+    const who = $('#bby').value.trim(); if (!who) { $('#bby').focus(); return alert('Pehle apna naam likhiye – اسمك'); }
+    newInvOrder({ br: B.b, brName: B.name, brAr: B.ar, by: who, done: branchLists });
+  };
+  branchLists();
+  clearInterval(window.__bt); window.__bt = setInterval(() => { if (!document.hidden && !document.querySelector('.sheet')) branchLists(); }, 60000);
+}
+async function branchLists() {
+  const B = BR_MODE; if (!$('#bjobs')) return;
+  // this branch's InvProject orders (jobs), newest first
+  try {
+    const js = await getDocs(query(collection(db, 'jobs'), where('br', '==', B.b), limit(80)));
+    const L = []; js.forEach(x => { const d = x.data(); if (d.kind === 'inv_order') L.push({ id: x.id, ...d, t: d.ts && d.ts.toDate ? d.ts.toDate() : new Date(0) }); });
+    L.sort((a, b) => b.t - a.t);
+    const day = riyadh().slice(0, 10), Ls = L.filter(x => riyadh(x.t).slice(0, 10) === day || x.st === 'new' || x.st === 'running');
+    $('#bjobs').innerHTML = Ls.length ? `<table>${Ls.map(x => `<tr><td class="muted">${H(riyadh(x.t).slice(11, 16))}</td><td><b class="ar">${H(x.who || '')}</b>${x.by ? `<div class="muted">${H(x.by)}</div>` : ''}</td>
+      <td>${x.st === 'done' ? `<span class="pill" style="background:var(--okbg);color:var(--ok)">✔ ${H(B.b + '-' + (x.order || ''))}</span>${x.no ? `<div class="muted">Genix ${H(x.no)}</div>` : ''}${x.file ? fileBtn(x.file, 'PDF') : ''}`
+        : x.st === 'error' ? `<span class="err" style="display:inline-block;padding:4px 8px">✖ ${H(x.error || 'error')}</span>` : x.st === 'cancelled' ? '<span class="muted">cancelled</span>' : '<span class="pill">⏳ Shop PC…</span>'}</td></tr>`).join('')}</table>`
+      : '<p class="muted">Aaj abhi koi order nahin</p>';
+  } catch (e) { $('#bjobs').innerHTML = `<div class="err">${H(e.message)}</div>`; }
+  // factory: this branch's open orders – at the shop → at the factory → back
+  try {
+    DSC.j_orders = null;
+    const [jo, fx] = await Promise.all([loadDs('j_orders'), getDocs(query(collection(db, 'jfx'), where('at', '>=', new Date(Date.now() - 120 * 864e5))))]);
+    const F = {}; fx.forEach(x => { const d = x.data(); if (d.st === 'sent' || d.st === 'back') F[x.id] = { st: d.st, s: d.s && d.s.toDate ? riyadh(d.s.toDate()) : '', b: d.b && d.b.toDate ? riyadh(d.b.toDate()) : '' }; });
+    const os = jo.rows.filter(o => String(o.branch || '') === B.b && N(o.delivered_qty) < N(o.pcs)).sort((a, b) => cmpv(a.delivery_date, b.delivery_date) || cmpv(a.order_no, b.order_no));
+    const g = { shop: os.filter(o => !F[o.order_no]), fac: os.filter(o => F[o.order_no] && F[o.order_no].st === 'sent'), back: os.filter(o => F[o.order_no] && F[o.order_no].st === 'back') };
+    const dm = (t) => t ? t.slice(8, 10) + '-' + t.slice(5, 7) + ' ' + t.slice(11, 16) : '';
+    const row = (o, st, lbl, cls) => `<div class="it"><div class="no">${H(B.b)}-${H(o.order_no)}</div><div class="main"><div class="t ar">${H(o.customer_name)}</div><div class="s">${N(o.pcs)} thobe · delivery ${H(String(o.delivery_date || '').slice(0, 10).split('-').reverse().join('-'))}${F[o.order_no] ? ' · ' + (F[o.order_no].st === 'sent' ? 'sent ' + dm(F[o.order_no].s) : 'back ' + dm(F[o.order_no].b)) : ''}</div></div>
+      <div class="r"><button class="btn small ${cls || ''}" data-fx="${st}" data-o="${H(o.order_no)}">${lbl}</button></div></div>`;
+    const sec = (t, n, bg, x) => `<div class="bsec" style="background:${bg}"><span>${t} (${n})</span>${x || ''}</div>`;
+    $('#bfx').innerHTML = sec('🏬 في المحل – At the shop', g.shop.length, '#eef1f5', g.shop.length ? `<button class="btn small" id="fxall">إرسال الكل → Send all</button>` : '') +
+      `<div class="card list">${g.shop.map(o => row(o, 'sent', '→ المصنع / Factory')).join('') || '<p class="muted">—</p>'}</div>` +
+      sec('🏭 في المصنع – At the factory', g.fac.length, '#fff1db') + `<div class="card list">${g.fac.map(o => row(o, 'back', '✔ وصل / Received')).join('') || '<p class="muted">—</p>'}</div>` +
+      sec('✔ رجع للمحل – Back at the shop', g.back.length, '#e3f4ea') + `<div class="card list">${g.back.map(o => row(o, 'sent', '↺', 'ghost')).join('') || '<p class="muted">—</p>'}</div>`;
+    const set = async (nos, st, btn) => {
+      if (btn) btn.disabled = true;
+      const who = ($('#bby') && $('#bby').value.trim()) || ('Branch ' + B.b);
+      try {
+        for (const no of nos) { const d = { st, at: serverTimestamp(), br: B.b }; if (st === 'sent') { d.s = serverTimestamp(); d.sb = who.slice(0, 40); d.bb = ''; } else { d.b = serverTimestamp(); d.bb = who.slice(0, 40); } await setDoc(doc(db, 'jfx', String(no)), d, { merge: true }); }
+        branchLists();
+      } catch (e) { if (btn) btn.disabled = false; alert('Save nahin hua: ' + e.message); }
+    };
+    $('#bfx').querySelectorAll('[data-fx]').forEach(b => b.onclick = () => set([b.dataset.o], b.dataset.fx, b));
+    const all = $('#fxall'); if (all) all.onclick = () => { if (confirm(`${g.shop.length} order factory bhejein?`)) set(g.shop.map(o => o.order_no), 'sent', all); };
+  } catch (e) { $('#bfx').innerHTML = `<div class="err">${H(e.message)}</div>`; }
+}
 let started = false;
-if (EMBED) {
+if (BR_MODE) branchStart();
+else if (EMBED) {
   adminOk().then(ok => {
     if (!ok) { $('#app').innerHTML = '<div class="login"><p class="err">Admin key / PIN check fail – admin page dobara kholiye</p></div>'; return; }
     started = true; start();
