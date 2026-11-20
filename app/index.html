@@ -278,6 +278,7 @@ async function homeView() {
     <div class="stat tap" data-go="due"><b>${s.dueSoon}</b><span>Delivery due ≤ 2 days</span></div>
     <div class="stat tap" data-go="unpaid"><b>${money(s.unpaid.due)}</b><span>Unpaid balance (${s.unpaid.n} orders)</span></div>
     <div class="stat tap" data-go="genix"><b>${money(s.genixToday.amt)}</b><span>Genix invoices (${s.genixToday.n})</span></div>
+    <div class="stat tap" data-go="gonly"><b style="color:${s.genixOnly.n ? 'var(--bad)' : 'inherit'}">${money(s.genixOnly.amt)}</b><span>Sirf Genix – order nahi (${s.genixOnly.n})</span></div>
   </div>
   <h2>Quick</h2>
   <div class="row" style="flex-wrap:wrap">
@@ -481,20 +482,28 @@ function homeGo(k, s) {
   if (k === 'duerecv') return list('Due received – purane orders', s.lists.duerecv, pay, p => jOrderByNo(p.order_no));
   if (k === 'advance') return list('Advance – aaj ke orders', s.lists.advance, pay, p => jOrderByNo(p.order_no));
   if (k === 'genix') return list('Genix invoices ' + s.F + (s.F === s.T ? '' : ' → ' + s.T), s.lists.genix, gInvItem, gInvoice);
+  if (k === 'gonly') return list('Sirf Genix invoice – InvProject / Jameel order nahi ' + s.F + (s.F === s.T ? '' : ' → ' + s.T), s.lists.gonly, gInvItem, gInvoice);
 }
 async function summary() {
   const now = riyadh(), today = now.slice(0, 10);
   // the date range picked on the home page (default today): the day's figures become the range's
   const F = state.rng ? state.rng.f : today, T = state.rng ? state.rng.t : today, inR = (d) => { d = String(d || '').slice(0, 10); return d >= F && d <= T; };
   const soon = riyadh(new Date(Date.now() + 2 * 864e5)).slice(0, 10);
-  const [jo, jp, gi, metas, ag, pj] = await Promise.all([
+  const [jo, jp, gi, metas, ag, pj, io] = await Promise.all([
     loadDs('j_orders').catch(() => ({ rows: [] })), loadDs('j_payments').catch(() => ({ rows: [] })), loadDs('g_invoices').catch(() => ({ rows: [] })),
     getDocs(collection(db, 'ds')), getDoc(doc(db, 'sys', 'agent')), getDocs(query(collection(db, 'jobs'), where('st', '==', 'new'))),
+    loadDs('i_orders').catch(() => ({ rows: [] })),
   ]);
   const bk = jo.rows.filter(o => inR(o.booking_date));
   const pt = jp.rows.filter(p => inR(p.date));
   const un = jo.rows.filter(o => oDue(o) >= DUE_MIN);
   const gt = gi.rows.filter(v => inR(v.date));
+  // Genix invoices made straight in Genix: no InvProject order (GenixInvNo) and no Jameel order (invoice_no) has their number
+  const iv = x => String(x ?? '').trim().replace(/\.0+$/, '');
+  const linked = new Set();
+  io.rows.forEach(o => { const v = iv(o.GenixInvNo); if (v && v !== '0') linked.add(v); });
+  jo.rows.forEach(o => { const v = iv(o.invoice_no); if (v && v !== '0') linked.add(v); });
+  const gOnly = gt.filter(v => !linked.has(iv(v.id)));
   const bd = {}; jo.rows.forEach(o => bd[o.order_no] = o.booking_date || '');
   const dl = pt.filter(p => (bd[p.order_no] || F) < F); const dueList = () => dl;
   const meta = [];
@@ -506,7 +515,8 @@ async function summary() {
     genixInv: { n: bk.filter(o => o.invoice_no).length, amt: bk.filter(o => o.invoice_no).reduce((s, o) => s + N(o.total), 0) },
     paidToday: { n: pt.length, amt: pt.reduce((s, p) => s + N(p.amount), 0) },
     dueRecv: (() => { const d = dueList(); return { n: d.length, amt: d.reduce((s, p) => s + N(p.amount), 0) }; })(),
-    lists: { booked: bk, paid: pt, duerecv: dueList(), advance: pt.filter(p => !dueList().includes(p)), genix: gt },
+    lists: { booked: bk, paid: pt, duerecv: dueList(), advance: pt.filter(p => !dueList().includes(p)), genix: gt, gonly: gOnly },
+    genixOnly: { n: gOnly.length, amt: gOnly.reduce((s, v) => s + N(v.tot_net), 0) },
     dueSoon: jo.rows.filter(o => N(o.open) === 1 && o.delivery_date && o.delivery_date <= soon).length,
     unpaid: { n: un.length, due: un.reduce((s, o) => s + oDue(o), 0) },
     genixToday: { n: gt.length, amt: gt.reduce((s, v) => s + N(v.tot_net), 0) },
