@@ -1171,12 +1171,13 @@ async function aNewCustomers(key, pin) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   const [cu, io] = await Promise.all(['i_customers', 'i_orders'].map(n => dsRows(n).catch(() => [])));
-  const mo = (d) => String(d || '').slice(0, 7), M = {}, first = {}, cnt = {};
+  const mo = (d) => String(d || '').slice(0, 7), M = {}, first = {}, cnt = {}, per = {};   // per: customer → his orders
   const month = (m) => M[m] = M[m] || { m, nw: 0, reg: 0, orders: 0, act: new Set(), sales: 0 };
   io.forEach(o => {
     const c = String(o.CustomerID ?? '').trim(), d = String(o.OrderDate || '').slice(0, 10);
     if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     cnt[c] = (cnt[c] || 0) + 1;
+    (per[c] = per[c] || []).push([String(o.OrderId), d, Number(o.NetTotal) || 0]);
     const f = first[c]; if (!f || d < f.d || (d === f.d && Number(o.OrderId) < Number(f.o))) first[c] = { d, o: o.OrderId };
     const x = month(mo(d)); x.orders++; x.act.add(c); x.sales += Number(o.NetTotal) || 0;
   });
@@ -1188,7 +1189,12 @@ async function aNewCustomers(key, pin) {
   Object.keys(first).forEach(c => { const f = first[c], k = CU.get(c) || {};
     (list[mo(f.d)] = list[mo(f.d)] || []).push([c, String(k.CustomerNameAr || ''), String(k.Mobile1 || ''), String(f.o), f.d, cnt[c]]); });
   Object.values(list).forEach(a => a.sort((x, y) => x[4].localeCompare(y[4]) || Number(x[3]) - Number(y[3])));
-  return { ok: true, months, list, customers: cu.length, buyers: Object.keys(first).length };
+  // the customers who came back most (2 orders or more): orders, money, first / last, orders per year, their orders (newest 40)
+  const rep = Object.keys(per).filter(c => per[c].length >= 2).map(c => { const a = per[c].sort((x, y) => y[1].localeCompare(x[1]) || Number(y[0]) - Number(x[0])), k = CU.get(c) || {}, yr = {};
+    a.forEach(x => { const y = x[1].slice(0, 4); yr[y] = (yr[y] || 0) + 1; });
+    return [c, String(k.CustomerNameAr || ''), String(k.Mobile1 || ''), a.length, a[a.length - 1][1], a[0][1], Math.round(a.reduce((t, x) => t + x[2], 0)), yr, a.slice(0, 40).map(x => [x[0], x[1]])]; })
+    .sort((x, y) => y[3] - x[3] || y[6] - x[6]).slice(0, 500);
+  return { ok: true, months, list, rep, customers: cu.length, buyers: Object.keys(first).length };
 }
 // a shop's order page: its open orders (not all delivered) with where they are
 async function oFactory(key, pin, br) {

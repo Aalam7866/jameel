@@ -568,6 +568,7 @@
         </div>
         <div id="ncSum"></div>
         <div id="ncTab"></div>
+        <div id="ncRep"></div>
       </div>
       <div class="dv" id="fbBox" style="display:none">
         <div class="card dvh">
@@ -1977,7 +1978,7 @@
     $('dvF').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvT').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvPrint').addEventListener('click', printDeliv);
 
     // ---- Deliveries → New customers (InvProject): month by month
-    var NC = null, NCY = '', NCO = '';
+    var NC = null, NCY = '', NCO = '', NCR = '', NCN = 30;
     var MONTHS = ['يناير · Jan', 'فبراير · Feb', 'مارس · Mar', 'أبريل · Apr', 'مايو · May', 'يونيو · Jun', 'يوليو · Jul', 'أغسطس · Aug', 'سبتمبر · Sep', 'أكتوبر · Oct', 'نوفمبر · Nov', 'ديسمبر · Dec'];
     function ncMonth(m) { var p = String(m).split('-'); return (MONTHS[Number(p[1]) - 1] || m) + ' ' + p[0]; }
     function ncLoad(force) {
@@ -2009,6 +2010,26 @@
             '<td><div class="ncbw"><div class="ncbar" style="width:' + Math.round(x.nw / max * 100) + '%"></div></div></td><td class="c">' + x.ret + '</td><td class="c">' + x.act + '</td><td class="c">' + x.orders + '</td><td class="c muted">' + x.reg + '</td></tr>' +
             (NCO === x.m ? ncList(x.m) : '');
         }).join('') + '</tbody><tfoot><tr><td>' + LB('المجموع', 'Total') + '</td><td class="c">' + sum('nw') + '</td><td></td><td class="c">' + sum('ret') + '</td><td></td><td class="c">' + sum('orders') + '</td><td class="c">' + sum('reg') + '</td></tr></tfoot></table></div>';
+      ncRepDraw();
+    }
+    // the customers who came back most – in the year chosen (or all years)
+    function ncRepRows() {
+      if (!NC || !NC.rep) return [];
+      return NC.rep.map(function (c) { return { c: c, n: NCY === '*' ? c[3] : (c[7][NCY] || 0) }; }).filter(function (x) { return x.n >= 1; })   // all came 2 times or more; in a year: ordered that year
+        .sort(function (a, b) { return b.n - a.n || b.c[3] - a.c[3] || b.c[6] - a.c[6]; });
+    }
+    function ncRepDraw() {
+      var A = ncRepRows(), L = A.slice(0, NCN);
+      $('ncRep').innerHTML = '<h3 style="margin:18px 0 8px">' + LB('أكثر العملاء تكراراً', 'Most repeated customers') + ' <span class="muted" style="font-size:13px;font-weight:600">· ' + (NCY === '*' ? LB('كل السنوات', 'all years') : NCY) + ' · ' + A.length + '</span></h3>' +
+        (!A.length ? '<div class="dvnone">—</div>' : '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt nct"><thead><tr><th>#</th><th>' + LB('رقم العميل', 'Customer no') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th>' +
+          '<th class="c">' + LB('الطلبات', 'Orders') + (NCY === '*' ? '' : ' ' + NCY) + '</th><th class="c">' + LB('كل الطلبات', 'All orders') + '</th><th class="c">' + LB('المبلغ', 'Amount SAR') + '</th><th>' + LB('أول طلب', 'First order') + '</th><th>' + LB('آخر طلب', 'Last order') + '</th></tr></thead><tbody>' +
+          L.map(function (x, i) { var c = x.c;
+            return '<tr class="ncr' + (NCR === c[0] ? ' on' : '') + '" data-ncc="' + esc(c[0]) + '"><td class="muted">' + (i + 1) + '</td><td>' + esc(c[0]) + ' <span class="fbx">' + (NCR === c[0] ? '▾' : '▸') + '</span></td><td class="ar"><b>' + esc(c[1]) + '</b></td><td dir="ltr">' + esc(c[2]) + '</td>' +
+              '<td class="c big">' + x.n + '</td><td class="c">' + c[3] + '</td><td class="c">' + Number(c[6]).toLocaleString('en-US') + '</td><td>' + esc(dvD(c[4])) + '</td><td>' + esc(dvD(c[5])) + '</td></tr>' +
+              (NCR === c[0] ? '<tr class="ncd"><td colspan="9"><div class="ncl"><b>' + LB('طلباته', 'His orders') + ' · ' + c[3] + '</b> <span class="muted">' + Object.keys(c[7]).sort().reverse().map(function (y) { return y + ': ' + c[7][y]; }).join(' · ') + '</span>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + c[8].map(function (o) { return '<span class="fbst dl" style="font-size:12.5px"><b>' + esc(o[0]) + '</b> · ' + esc(dvD(o[1])) + '</span>'; }).join('') + (c[3] > c[8].length ? '<span class="muted">…</span>' : '') + '</div></div></td></tr>' : '');
+          }).join('') + '</tbody></table></div>' +
+          (A.length > NCN ? '<div style="text-align:center;margin:10px 0"><button type="button" class="dvbtn" data-ncmore="1"><span>عرض المزيد<small>Show more</small> (' + (A.length - NCN) + ')</span></button></div>' : ''));
     }
     function ncList(m) {
       var A = (NC.list && NC.list[m]) || [];
@@ -2026,13 +2047,17 @@
         '<table><thead><tr><th>Month</th><th class="c">New customers</th><th class="c">Returning</th><th class="c">Customers who ordered</th><th class="c">Orders</th><th class="c">Added</th></tr></thead><tbody>' +
         L.map(function (x) { return '<tr><td><b>' + esc(ncMonth(x.m)) + '</b></td><td class="c b">' + x.nw + '</td><td class="c">' + x.ret + '</td><td class="c">' + x.act + '</td><td class="c">' + x.orders + '</td><td class="c">' + x.reg + '</td></tr>'; }).join('') +
         '</tbody><tfoot><tr><td>Total</td><td class="c">' + sum('nw') + '</td><td class="c">' + sum('ret') + '</td><td></td><td class="c">' + sum('orders') + '</td><td class="c">' + sum('reg') + '</td></tr></tfoot></table>' +
+        (function () { var A = ncRepRows().slice(0, 30); return A.length ? '<h3 style="margin:18px 0 6px;color:#1f3a5f">Most repeated customers · أكثر العملاء تكراراً</h3><table><thead><tr><th>#</th><th>Customer no</th><th style="text-align:right">Name</th><th>Mobile</th><th class="c">Orders</th><th class="c">All orders</th><th class="c">Amount SAR</th><th>Last order</th></tr></thead><tbody>' +
+          A.map(function (x, i) { var c = x.c; return '<tr><td>' + (i + 1) + '</td><td>' + esc(c[0]) + '</td><td style="text-align:right"><b>' + esc(c[1]) + '</b></td><td>' + esc(c[2]) + '</td><td class="c b">' + x.n + '</td><td class="c">' + c[3] + '</td><td class="c">' + Number(c[6]).toLocaleString('en-US') + '</td><td>' + esc(dvD(c[5])) + '</td></tr>'; }).join('') + '</tbody></table>' : ''; })() +
         '<p style="font-size:12px;color:#555">New customer = his first order in InvProject that month · Returning = ordered that month, first order earlier · Added = customers added to InvProject that month.</p></body></html>';
       var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
       var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
       setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
     }
     $('ncBox').addEventListener('click', function (e) {
-      var y = e.target.closest('[data-ncy]'); if (y) { NCY = y.getAttribute('data-ncy'); NCO = ''; ncDraw(); return; }
+      var y = e.target.closest('[data-ncy]'); if (y) { NCY = y.getAttribute('data-ncy'); NCO = ''; NCR = ''; NCN = 30; ncDraw(); return; }
+      var c = e.target.closest('[data-ncc]'); if (c) { var id = c.getAttribute('data-ncc'); NCR = NCR === id ? '' : id; ncRepDraw(); return; }
+      if (e.target.closest('[data-ncmore]')) { NCN += 50; ncRepDraw(); return; }
       var r = e.target.closest('[data-ncm]'); if (r) { var m = r.getAttribute('data-ncm'); NCO = NCO === m ? '' : m; ncDraw(); }
     });
     $('ncPrint').addEventListener('click', ncPrint);
