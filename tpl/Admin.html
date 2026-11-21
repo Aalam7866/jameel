@@ -337,7 +337,7 @@
   .dvpg button { border: 0; background: transparent; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 14px; color: var(--mute); cursor: pointer; }
   .dvpg button.on { background: #0d1b2e; color: #fff; }
   .fbin input { min-width: 220px; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
-  .fbt th { white-space: normal; padding: 9px 8px; vertical-align: bottom; } .fbt td { white-space: nowrap; padding: 10px 8px; } .fbt td.ar { white-space: normal; min-width: 120px; }
+  .fbt th { white-space: normal; padding: 9px 8px; vertical-align: bottom; } .fbt td { white-space: nowrap; padding: 10px 8px; } .fbt td.ar { white-space: normal; min-width: 120px; } .fbt td.fbf { font-weight: 600; font-size: 13px; min-width: 200px; } .fbt td.fbf .muted { font-size: 12px; font-weight: 500; }
   .fbt th small { display: block !important; margin: 2px 0 0 !important; }
   .fbst { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
   .fbst.nc { background: var(--badbg, #fde8e8); color: var(--bad); } .fbst.pt { background: #fff4d6; color: #8a5a00; } .fbst.ct { background: #e3f4ea; color: var(--ok); }
@@ -1984,13 +1984,14 @@
         k('bd', 'لم يُقص', 'Not cut', nc.length, pcs(nc) + ' ' + LB('ثوب', 'thobes')) + k('', 'كل الطلبات', 'All orders', FB.list.length, pcs(FB.list) + ' ' + LB('ثوب', 'thobes')) +
         k('ok', 'مقصوص', 'Cut', all.filter(function (s) { return s.k === 'ct'; }).length, '') + k('gd', 'سُلّم / مغلق', 'Delivered / closed', all.filter(function (s) { return s.k === 'dl'; }).length, '') + '</div>';
       if (!L.length) { $('fbTab').innerHTML = '<div class="dvnone">' + (FB.list.length ? LB('كل من أخذ هذا القماش تم قصه', 'Everyone with this fabric is cut') + ' – <a href="#" data-fb="all">' + LB('عرض الكل', 'Show all') + '</a>' : LB('لا يوجد طلب بهذا الباركود', 'No order with this barcode')) + '</div>'; return; }
-      $('fbTab').innerHTML = '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt"><thead><tr><th>#</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th>' +
+      $('fbTab').innerHTML = '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt"><thead><tr><th>#</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th><th>' + LB('القماش', 'Fabric') + '</th>' +
         '<th class="c">' + LB('من هذا القماش', 'This fabric') + '</th><th class="swc">' + LB('صيفي / شتوي', 'Summer / Winter') + '</th><th class="c">' + LB('قطع الطلب', 'Order pcs') + '</th><th>' + LB('الحجز', 'Booked') + '</th><th>' + LB('التسليم', 'Delivery') + '</th><th>' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
         L.map(function (y, i) { var x = y.x, late = x.delivery && x.delivery < dvToday() && (y.st.k === 'nc' || y.st.k === 'pt');
-          return '<tr><td class="muted">' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b>' + (FB.fabrics > 1 ? '<div class="muted" style="font-size:12px">' + esc(x.fabric) + '</div>' : '') + '</td><td class="ar"><b>' + esc(x.name) + '</b></td><td dir="ltr">' + esc(x.mobile) + '</td>' +
+          return '<tr><td class="muted">' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b></td><td class="ar"><b>' + esc(x.name) + '</b></td><td dir="ltr">' + esc(x.mobile) + '</td>' +
+            '<td class="ar fbf">' + esc(x.fabric || FB.fabric) + (x.code ? '<div class="muted" dir="ltr">' + esc(x.code) + '</div>' : '') + '</td>' +
             '<td class="c"><b>' + (Number(x.qty) || 0) + '</b></td><td class="swc">' + fbSeason(x) + '</td><td class="c">' + (y.st.c ? y.st.c.P : x.pcs || '') + '</td><td>' + esc(dvD(x.booked)) + '</td><td' + (late ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + esc(dvD(x.delivery)) + '</td>' +
             '<td><span class="fbst ' + y.st.k + '">' + y.st.t + '</span></td></tr>'; }).join('') +
-        '</tbody><tfoot><tr><td></td><td colspan="3">' + L.length + ' ' + LB('طلب', 'orders') + '</td><td class="c">' + pcs(L.map(function (y) { return y.x; })) + '</td><td colspan="5"></td></tr></tfoot></table></div>';
+        '</tbody><tfoot><tr><td></td><td colspan="4">' + L.length + ' ' + LB('طلب', 'orders') + '</td><td class="c">' + pcs(L.map(function (y) { return y.x; })) + '</td><td colspan="5"></td></tr></tfoot></table></div>';
     }
     function dvToday() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); }
     function dvD(d) { return d ? String(d).slice(0, 10).split('-').reverse().join('-') : ''; }
@@ -2010,10 +2011,10 @@
         '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}' +
         'table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff;font-size:13px;text-align:left;padding:7px}td{padding:7px;border-bottom:1px solid #d6e0ee;font-size:14px}tr:nth-child(even) td{background:#e8eef7}.c{text-align:center}td.x{width:34px}td.x i{display:inline-block;width:16px;height:16px;border:1.5px solid #333;border-radius:3px}tfoot td{background:#d6e0ee!important;font-weight:700}</style></head><body>' +
         '<div class="hd"><div><h1>JAMEEL AL HINDAM</h1><div style="font-weight:700">جميل الهندام للخياطة الرجالية</div></div><div style="text-align:right"><div style="font-size:18px"><b>' + esc(FB.fabric) + '</b></div><div>Barcode <b>' + esc(FB.code) + '</b> · ' + (FBM === 'all' ? 'All orders' : 'Not cut yet · لم يُقص') + '</div><div>' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</div></div></div>' +
-        '<table><thead><tr><th>#</th><th>Order No.</th><th style="text-align:right">Name</th><th class="c">This fabric</th><th class="c">Summer / Winter</th><th>Delivery</th><th>Status</th><th>✓</th></tr></thead><tbody>' +
-        L.map(function (y, i) { var x = y.x, v = x.season; return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b></td><td style="text-align:right"><b>' + esc(x.name) + '</b></td><td class="c"><b>' + (Number(x.qty) || 0) + '</b></td>' +
+        '<table><thead><tr><th>#</th><th>Order No.</th><th style="text-align:right">Name</th><th style="text-align:right">Fabric</th><th class="c">This fabric</th><th class="c">Summer / Winter</th><th>Delivery</th><th>Status</th><th>✓</th></tr></thead><tbody>' +
+        L.map(function (y, i) { var x = y.x, v = x.season; return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b></td><td style="text-align:right"><b>' + esc(x.name) + '</b></td><td style="text-align:right;font-size:13px">' + esc(x.fabric || FB.fabric) + (x.code ? ' <span style="color:#555">(' + esc(x.code) + ')</span>' : '') + '</td><td class="c"><b>' + (Number(x.qty) || 0) + '</b></td>' +
           '<td class="c">' + (v && v.s + v.w ? (v.s ? '☀ ' + v.s : '') + (v.s && v.w ? ' · ' : '') + (v.w ? '❄ ' + v.w : '') : '') + '</td><td>' + esc(dvD(x.delivery)) + '</td><td style="white-space:nowrap">' + esc(y.st.e) + '</td><td class="x"><i></i></td></tr>'; }).join('') +
-        '</tbody><tfoot><tr><td></td><td colspan="2">Total · ' + L.length + ' orders</td><td class="c">' + L.reduce(function (t, y) { return t + (Number(y.x.qty) || 0); }, 0) + '</td><td colspan="4"></td></tr></tfoot></table></body></html>';
+        '</tbody><tfoot><tr><td></td><td colspan="3">Total · ' + L.length + ' orders</td><td class="c">' + L.reduce(function (t, y) { return t + (Number(y.x.qty) || 0); }, 0) + '</td><td colspan="4"></td></tr></tfoot></table></body></html>';
       var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
       var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
       setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
