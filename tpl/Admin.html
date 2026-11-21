@@ -336,6 +336,12 @@
   .dvpg { display: inline-flex; gap: 4px; background: #e6e9ef; border-radius: 12px; padding: 4px; margin: 0 0 12px; }
   .dvpg button { border: 0; background: transparent; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 14px; color: var(--mute); cursor: pointer; }
   .dvpg button.on { background: #0d1b2e; color: #fff; }
+  @media (max-width: 720px) { .dvpg { display: flex; flex-wrap: wrap; } .dvpg button { padding: 8px 10px; font-size: 13px; flex: 1 1 auto; } }
+  .ncbar { height: 10px; border-radius: 99px; background: #137a4b; min-width: 2px; } .ncbw { width: 160px; background: #eef1f5; border-radius: 99px; }
+  .nct tr.ncr { cursor: pointer; } .nct tr.ncr:hover td { background: #f6f8fb; } .nct tr.ncr.on td { background: #eef3fb; } .nct td.big { font-size: 18px; font-weight: 800; color: #137a4b; }
+  .nct tr.ncd > td { background: #f7f9fc; padding: 4px 8px 14px; white-space: normal; } .nct .ncl { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 8px 12px; max-height: 460px; overflow: auto; }
+  .nct .ncl table { width: 100%; border-collapse: collapse; } .nct .ncl th { font-size: 11px; color: var(--mute); text-align: start; padding: 6px 8px; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; position: sticky; top: 0; background: #fff; }
+  .nct .ncl td { padding: 7px 8px; border-bottom: 1px solid #eef1f5; }
   .fbin input { min-width: 220px; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
   .fbt th { white-space: normal; padding: 9px 6px; vertical-align: bottom; } .fbt td { white-space: nowrap; padding: 10px 6px; } .fbt td.ar { white-space: normal; min-width: 120px; } .fbt td.fbf { font-weight: 600; font-size: 13px; min-width: 170px; white-space: normal; } .fbt td.fbf .muted { font-size: 12px; font-weight: 500; }
   .fbt tr.fbr { cursor: pointer; } .fbt tr.fbr:hover td { background: #f6f8fb; } .fbt tr.fbr.on td { background: #eef3fb; } .fbx { color: var(--mute); font-size: 12px; }
@@ -550,7 +556,19 @@
       </div>
     </div>
     <div id="p12" style="display:none">
-      <div class="dvpg" role="tablist"><button type="button" data-dvp="d" class="on"><span>التسليمات<small>Deliveries</small></span></button><button type="button" data-dvp="f"><span>🔎 بحث بالقماش<small>Fabric barcode</small></span></button></div>
+      <div class="dvpg" role="tablist"><button type="button" data-dvp="d" class="on"><span>التسليمات<small>Deliveries</small></span></button><button type="button" data-dvp="f"><span>🔎 بحث بالقماش<small>Fabric barcode</small></span></button><button type="button" data-dvp="c"><span>👥 العملاء الجدد<small>New customers</small></span></button></div>
+      <div class="dv" id="ncBox" style="display:none">
+        <div class="card dvh">
+          <div class="dvtop">
+            <div><h3 style="margin:0">العملاء الجدد<small>New customers</small></h3>
+              <div class="muted dvsub"><span>كل شهر من بيانات InvProject: العميل الجديد = أول طلب له في ذلك الشهر<small>Every month from InvProject: a new customer = his first order that month</small></span></div></div>
+            <div class="dvtr"><button type="button" id="ncPrint" class="dvbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>طباعة<small>Print</small></span></button></div>
+          </div>
+          <div class="dvctl"><div class="dvq" role="group" id="ncYears"></div></div>
+        </div>
+        <div id="ncSum"></div>
+        <div id="ncTab"></div>
+      </div>
       <div class="dv" id="fbBox" style="display:none">
         <div class="card dvh">
           <div class="dvtop">
@@ -1958,6 +1976,67 @@
     $('dvTab').addEventListener('click', function (ev) { if (!ev.target.closest || !ev.target.closest('.pv')) return; ev.stopPropagation(); var b = ev.target.closest('.pmv'); if (!b || b.disabled) return; movePrio(b.getAttribute('data-d'), b.getAttribute('data-o'), Number(b.getAttribute('data-mv'))); }, true);
     $('dvF').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvT').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvPrint').addEventListener('click', printDeliv);
 
+    // ---- Deliveries → New customers (InvProject): month by month
+    var NC = null, NCY = '', NCO = '';
+    var MONTHS = ['يناير · Jan', 'فبراير · Feb', 'مارس · Mar', 'أبريل · Apr', 'مايو · May', 'يونيو · Jun', 'يوليو · Jul', 'أغسطس · Aug', 'سبتمبر · Sep', 'أكتوبر · Oct', 'نوفمبر · Nov', 'ديسمبر · Dec'];
+    function ncMonth(m) { var p = String(m).split('-'); return (MONTHS[Number(p[1]) - 1] || m) + ' ' + p[0]; }
+    function ncLoad(force) {
+      if (NC && !force) return ncDraw();
+      $('ncTab').innerHTML = '<div class="dvnone">…</div>';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { $('ncTab').innerHTML = '<div class="dvnone">' + esc(r ? r.msg : 'Error') + '</div>'; return; }
+        NC = r; if (!NCY) NCY = (r.months[0] && r.months[0].m.slice(0, 4)) || ''; ncDraw();
+      }).aNewCustomers(KEY, PIN);
+    }
+    function ncRows() { return NC ? NC.months.filter(function (x) { return NCY === '*' || x.m.slice(0, 4) === NCY; }) : []; }
+    function ncDraw() {
+      if (!NC) return;
+      var years = []; NC.months.forEach(function (x) { var y = x.m.slice(0, 4); if (years.indexOf(y) < 0) years.push(y); });
+      $('ncYears').innerHTML = years.map(function (y) { return '<button type="button" data-ncy="' + y + '"' + (NCY === y ? ' class="on"' : '') + '>' + y + '</button>'; }).join('') + '<button type="button" data-ncy="*"' + (NCY === '*' ? ' class="on"' : '') + '><span>الكل<small>All</small></span></button>';
+      var L = ncRows(), now = dvToday().slice(0, 7), last = new Date(Date.now() + 3 * 3600e3); last.setUTCDate(1); last.setUTCMonth(last.getUTCMonth() - 1);
+      var lm = last.toISOString().slice(0, 7), find = function (m) { for (var i = 0; i < NC.months.length; i++) if (NC.months[i].m === m) return NC.months[i]; return null; };
+      var tm = find(now), pm = find(lm), y12 = NC.months.filter(function (x) { return x.m < now; }).slice(0, 12), avg = y12.length ? Math.round(y12.reduce(function (t, x) { return t + x.nw; }, 0) / y12.length) : 0;
+      var sum = function (k) { return L.reduce(function (t, x) { return t + x[k]; }, 0); };
+      var k = function (cls, ar, en, v, sub) { return '<div class="' + cls + '"><div class="lbx">' + LB(ar, en) + '</div><b>' + v + '</b><em>' + (sub || '') + '</em></div>'; };
+      $('ncSum').innerHTML = '<div class="dvk" style="margin-bottom:12px">' + k('ok', 'هذا الشهر', 'This month', tm ? tm.nw : 0, esc(ncMonth(now))) + k('', 'الشهر الماضي', 'Last month', pm ? pm.nw : 0, esc(ncMonth(lm))) +
+        k('', 'المتوسط الشهري', 'Monthly average', avg, LB('آخر 12 شهراً', 'last 12 months')) + k('', NCY === '*' ? 'كل السنوات' : 'سنة ' + NCY, NCY === '*' ? 'All years' : 'Year ' + NCY, sum('nw'), LB('عميل جديد', 'new customers')) +
+        k('gd', 'كل العملاء', 'All customers', NC.customers, NC.buyers + ' ' + LB('لهم طلبات', 'with orders')) + '</div>';
+      var max = Math.max.apply(null, L.map(function (x) { return x.nw; }).concat([1]));
+      $('ncTab').innerHTML = !L.length ? '<div class="dvnone">—</div>' : '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt nct"><thead><tr><th>' + LB('الشهر', 'Month') + '</th><th class="c">' + LB('عملاء جدد', 'New customers') + '</th><th></th>' +
+        '<th class="c">' + LB('عملاء عائدون', 'Returning') + '</th><th class="c">' + LB('عملاء طلبوا', 'Customers who ordered') + '</th><th class="c">' + LB('الطلبات', 'Orders') + '</th><th class="c">' + LB('أضيفوا', 'Added (InvProject)') + '</th></tr></thead><tbody>' +
+        L.map(function (x) {
+          return '<tr class="ncr' + (NCO === x.m ? ' on' : '') + '" data-ncm="' + x.m + '"><td><b>' + esc(ncMonth(x.m)) + '</b> <span class="fbx">' + (NCO === x.m ? '▾' : '▸') + '</span></td><td class="c big">' + x.nw + '</td>' +
+            '<td><div class="ncbw"><div class="ncbar" style="width:' + Math.round(x.nw / max * 100) + '%"></div></div></td><td class="c">' + x.ret + '</td><td class="c">' + x.act + '</td><td class="c">' + x.orders + '</td><td class="c muted">' + x.reg + '</td></tr>' +
+            (NCO === x.m ? ncList(x.m) : '');
+        }).join('') + '</tbody><tfoot><tr><td>' + LB('المجموع', 'Total') + '</td><td class="c">' + sum('nw') + '</td><td></td><td class="c">' + sum('ret') + '</td><td></td><td class="c">' + sum('orders') + '</td><td class="c">' + sum('reg') + '</td></tr></tfoot></table></div>';
+    }
+    function ncList(m) {
+      var A = (NC.list && NC.list[m]) || [];
+      return '<tr class="ncd"><td colspan="7"><div class="ncl"><b>' + LB('العملاء الجدد', 'New customers') + ' · ' + esc(ncMonth(m)) + ' · ' + A.length + '</b>' +
+        (A.length ? '<table><thead><tr><th>#</th><th>' + LB('رقم العميل', 'Customer no') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th><th>' + LB('أول طلب', 'First order') + '</th><th>' + LB('التاريخ', 'Date') + '</th><th class="c">' + LB('كل طلباته', 'All his orders') + '</th></tr></thead><tbody>' +
+          A.map(function (c, i) { return '<tr><td class="muted">' + (i + 1) + '</td><td>' + esc(c[0]) + '</td><td class="ar"><b>' + esc(c[1]) + '</b></td><td dir="ltr">' + esc(c[2]) + '</td><td><b>' + esc(c[3]) + '</b></td><td>' + esc(dvD(c[4])) + '</td><td class="c">' + c[5] + '</td></tr>'; }).join('') + '</tbody></table>' : '') + '</div></td></tr>';
+    }
+    function ncPrint() {
+      if (!NC) return;
+      var L = ncRows(), now = new Date(Date.now() + 3 * 3600e3).toISOString(), sum = function (k) { return L.reduce(function (t, x) { return t + x[k]; }, 0); };
+      var h = '<!doctype html><html><head><meta charset="utf-8"><title>New customers ' + esc(NCY === '*' ? 'all' : NCY) + '</title><style>@page{size:A4;margin:12mm}body{font:14px/1.45 system-ui,Arial,sans-serif;color:#111;margin:0}' +
+        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}' +
+        'table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff;font-size:13px;text-align:left;padding:7px}td{padding:7px;border-bottom:1px solid #d6e0ee}tr:nth-child(even) td{background:#e8eef7}.c{text-align:center}tfoot td{background:#d6e0ee!important;font-weight:700}.b{font-weight:800;font-size:16px}</style></head><body>' +
+        '<div class="hd"><div><h1>JAMEEL AL HINDAM</h1><div style="font-weight:700">جميل الهندام للخياطة الرجالية</div></div><div style="text-align:right"><div style="font-size:18px"><b>New customers · العملاء الجدد</b></div><div>' + (NCY === '*' ? 'All years' : 'Year ' + esc(NCY)) + ' · InvProject</div><div>' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</div></div></div>' +
+        '<table><thead><tr><th>Month</th><th class="c">New customers</th><th class="c">Returning</th><th class="c">Customers who ordered</th><th class="c">Orders</th><th class="c">Added</th></tr></thead><tbody>' +
+        L.map(function (x) { return '<tr><td><b>' + esc(ncMonth(x.m)) + '</b></td><td class="c b">' + x.nw + '</td><td class="c">' + x.ret + '</td><td class="c">' + x.act + '</td><td class="c">' + x.orders + '</td><td class="c">' + x.reg + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td>Total</td><td class="c">' + sum('nw') + '</td><td class="c">' + sum('ret') + '</td><td></td><td class="c">' + sum('orders') + '</td><td class="c">' + sum('reg') + '</td></tr></tfoot></table>' +
+        '<p style="font-size:12px;color:#555">New customer = his first order in InvProject that month · Returning = ordered that month, first order earlier · Added = customers added to InvProject that month.</p></body></html>';
+      var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
+      var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
+      setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
+    }
+    $('ncBox').addEventListener('click', function (e) {
+      var y = e.target.closest('[data-ncy]'); if (y) { NCY = y.getAttribute('data-ncy'); NCO = ''; ncDraw(); return; }
+      var r = e.target.closest('[data-ncm]'); if (r) { var m = r.getAttribute('data-ncm'); NCO = NCO === m ? '' : m; ncDraw(); }
+    });
+    $('ncPrint').addEventListener('click', ncPrint);
+
     // ---- Deliveries → Fabric barcode: who took a fabric, not cut yet (or all)
     var FB = null, FBM = 'nc';
     function fbCut(no) {   // the order's cutting from the work list (open orders), like the Orders tab
@@ -2062,10 +2141,11 @@
       setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
     }
     document.querySelectorAll('[data-dvp]').forEach(function (b) { b.addEventListener('click', function () {
-      var f = b.getAttribute('data-dvp') === 'f';
+      var k = b.getAttribute('data-dvp'), f = k === 'f';
       document.querySelectorAll('[data-dvp]').forEach(function (x) { x.classList.toggle('on', x === b); });
-      $('fbBox').style.display = f ? '' : 'none'; $('dvBox').style.display = f ? 'none' : '';
+      $('fbBox').style.display = f ? '' : 'none'; $('dvBox').style.display = k === 'd' ? '' : 'none'; $('ncBox').style.display = k === 'c' ? '' : 'none';
       if (f) { setTimeout(function () { $('fbQ').focus(); }, 50); fbDraw(); }
+      if (k === 'c') ncLoad();
     }); });
     $('fbGo').addEventListener('click', function () { fbSearch(false); });
     $('fbQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') fbSearch(false); });

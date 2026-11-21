@@ -1165,6 +1165,31 @@ async function aFabric(key, pin, code, ord) {
     return { ok: true, byOrder: on, code: '', fabric: '', fabrics: x ? x.all.length : 0, list }; }
   return { ok: true, code: String(code || '').trim(), byName, fabric: names.slice(0, 3).join(' · ') || (list[0] && list[0].fabric) || '', fabrics: names.length, list };
 }
+// Admin → Deliveries → New customers: every month of InvProject – new customers (their first order that month), customers
+// added (InsertDate), orders, customers who ordered, returning ones; and who the new ones were (name, mobile, first order)
+async function aNewCustomers(key, pin) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const [cu, io] = await Promise.all(['i_customers', 'i_orders'].map(n => dsRows(n).catch(() => [])));
+  const mo = (d) => String(d || '').slice(0, 7), M = {}, first = {}, cnt = {};
+  const month = (m) => M[m] = M[m] || { m, nw: 0, reg: 0, orders: 0, act: new Set(), sales: 0 };
+  io.forEach(o => {
+    const c = String(o.CustomerID ?? '').trim(), d = String(o.OrderDate || '').slice(0, 10);
+    if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    cnt[c] = (cnt[c] || 0) + 1;
+    const f = first[c]; if (!f || d < f.d || (d === f.d && Number(o.OrderId) < Number(f.o))) first[c] = { d, o: o.OrderId };
+    const x = month(mo(d)); x.orders++; x.act.add(c); x.sales += Number(o.NetTotal) || 0;
+  });
+  Object.values(first).forEach(f => { month(mo(f.d)).nw++; });
+  cu.forEach(c => { const d = String(c.InsertDate || '').slice(0, 10); if (/^\d{4}-\d{2}-\d{2}$/.test(d)) month(mo(d)).reg++; });
+  const months = Object.values(M).sort((a, b) => b.m.localeCompare(a.m))
+    .map(x => ({ m: x.m, nw: x.nw, reg: x.reg, orders: x.orders, act: x.act.size, ret: Math.max(0, x.act.size - x.nw), sales: Math.round(x.sales) }));
+  const CU = new Map(cu.map(c => [String(c.CustomerID), c])), list = {};
+  Object.keys(first).forEach(c => { const f = first[c], k = CU.get(c) || {};
+    (list[mo(f.d)] = list[mo(f.d)] || []).push([c, String(k.CustomerNameAr || ''), String(k.Mobile1 || ''), String(f.o), f.d, cnt[c]]); });
+  Object.values(list).forEach(a => a.sort((x, y) => x[4].localeCompare(y[4]) || Number(x[3]) - Number(y[3])));
+  return { ok: true, months, list, customers: cu.length, buyers: Object.keys(first).length };
+}
 // a shop's order page: its open orders (not all delivered) with where they are
 async function oFactory(key, pin, br) {
   const r = await root('ok', key, pin);
@@ -1234,6 +1259,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aFactory, aFabric, oFactory, oFactorySet, aWorkTime,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aFactory, aFabric, aNewCustomers, oFactory, oFactorySet, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };
