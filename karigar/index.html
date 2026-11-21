@@ -176,7 +176,7 @@ async function loadOrders() {   // customer name + delivery date from the shop d
     orders = m;
   } catch (e) { }
   // cutting master: summer / winter thobes of each order (صيفي / شتوي of its fabric lines in InvProject – ShopSync data set i_osrv)
-  if (me && me.kinds.includes('CUT')) try {
+  if (me && (me.kinds.includes('CUT') || me.kinds.includes('STITCH'))) try {
     const s = await getDocs(collection(db, 'ds', 'i_osrv', 'c')), m = {};
     s.forEach(x => { try { JSON.parse(x.data().v).forEach(v => { const q = Number(v.qty) || 0, n = String(v.season ?? v.name ?? ''), k = /صيف|summer/i.test(n) ? 0 : /شت|winter/i.test(n) ? 1 : -1;
       if (q && k >= 0) (m[String(v.OrderId)] = m[String(v.OrderId)] || [0, 0])[k] += q; }); } catch (e) { } });
@@ -187,9 +187,9 @@ async function loadOrders() {   // customer name + delivery date from the shop d
   } catch (e) { }
   try { const p = await getDoc(doc(db, 'sys', 'prio')); const o = p.exists() ? String(p.data().o || '') : ''; PRIO = {}; o.split(',').forEach((k, i) => { if (k) PRIO[k] = i; }); } catch (e) { }
 }
-let SEASON = {}, CUTSW = {}, doneMsg = '';   // order → [summer, winter] thobes · what is cut of each (jcut/{order}) – cutting master only
+let SEASON = {}, CUTSW = {}, doneMsg = '';   // order → [summer, winter] thobes · what is cut of each (jcut/{order}) – cutting master and tailors
 function seasonLine(o) {
-  const v = kind === 'CUT' && SEASON[String(o)]; if (!v || !(v[0] + v[1])) return null;
+  const v = (kind === 'CUT' || kind === 'STITCH') && SEASON[String(o)]; if (!v || !(v[0] + v[1])) return null;
   const c = CUTSW[String(o)] || [0, 0];
   const pill = (cls, ic, ar, en, n, d) => n ? el('span', { class: cls + (d >= n ? ' dn' : ''), text: ic + ' ' + L(ar, en) + ' ' + n + (d ? ' · ✂ ' + Math.min(d, n) + '/' + n + (d >= n ? ' ✔' : '') : '') }) : null;
   return el('div', { class: 'swl' }, [pill('s', '☀️', 'صيفي', 'Summer', v[0], c[0]), pill('w', '❄️', 'شتوي', 'Winter', v[1], c[1])]);
@@ -427,7 +427,7 @@ function drawMine(main) {
   mine.slice().sort((x, y) => (dueOf(x.o) || '9999').localeCompare(dueOf(y.o) || '9999')).forEach(w => {
     const due = dueOf(w.o), late = due && due < today(), n = w.q + (w.fit ? 1 : 0), m = el('p', { class: 'msg' });
     box.appendChild(el('div', { class: 'g' }, [el('div', { class: 'top' }, [el('span', { class: 'num', text: '#' + w.o }), due ? el('span', { class: 'due' + (late ? ' late' : ''), text: dmy(due) }) : null]),
-      el('div', { style: 'font-weight:600;margin-top:4px', text: [orderLine(w.o), (w.half ? '½' : n) + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : ''), rate(w.kind) ? sar(rate(w.kind) * n) : ''].filter(Boolean).join(' · ') }),
+      seasonLine(w.o), el('div', { style: 'font-weight:600;margin-top:4px', text: [orderLine(w.o), (w.half ? '½' : n) + ' ' + L('قطعة', 'pcs') + (w.half ? ' 🤝' : '') + (w.fit ? ' (' + L('مع البروفة', 'with fitting') + ')' : ''), rate(w.kind) ? sar(rate(w.kind) * n) : ''].filter(Boolean).join(' · ') }),
       el('div', { class: 'row', style: 'margin-top:8px' }, [
         el('button', { class: 'btn ok grow', type: 'button', text: '✓ ' + L('انتهى العمل – أضف إلى حسابي', 'Finished – add to my account'), onclick: async (e) => {
           if (!confirm(L('انتهى عمل ' + n + ' قطعة في الطلب ' + w.o + '؟', 'Finished ' + n + ' pcs of order ' + w.o + '?'))) return;
