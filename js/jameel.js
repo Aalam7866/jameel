@@ -1143,10 +1143,18 @@ async function aFabric(key, pin, code) {
   jl.forEach(l => { if (String(l.source) !== 'IN') return; const c = String(l.code ?? '').trim().toLowerCase(), it = String(l.item || '');
     if (!(c === q || (byName && it.toLowerCase().includes(q)))) return; const o = String(l.order_no); if (by[o] && !by[o].j) return;
     const x = by[o] = by[o] || { o, qty: 0, fabric: it, code: String(l.code ?? ''), t: new Set(), j: true }; x.qty += Number(l.qty) || 0; });
-  const seas = {}; sv.forEach(v => { const o = String(v.OrderId); if (by[o] && by[o].t.has(String(v.TextId))) { const n = String(v.season ?? ''), k = /صيف/.test(n) ? 's' : /شت/.test(n) ? 'w' : ''; if (k) (seas[o] = seas[o] || { s: 0, w: 0 })[k] += Number(v.qty) || 0; } });
+  const seas = {}, sOf = {}; sv.forEach(v => { const o = String(v.OrderId); if (!by[o]) return; const n = String(v.season ?? ''), k = /صيف/.test(n) ? 's' : /شت/.test(n) ? 'w' : '';
+    if (k) sOf[o + ':' + v.TextId] = k;
+    if (k && by[o].t.has(String(v.TextId))) (seas[o] = seas[o] || { s: 0, w: 0 })[k] += Number(v.qty) || 0; });
+  // every fabric of each order found (click on the order): name, barcode, thobes, summer / winter, customer's own fabric
+  const allF = {};
+  fb.forEach(f => { const o = String(f.OrderId); if (!by[o] || by[o].j) return; const t = String(f.TextId);
+    (allF[o] = allF[o] || []).push({ name: String(f.name || ''), code: codeOf.get(t) || '', qty: Number(f.qty) || 0, season: sOf[o + ':' + t] || '', own: Number(f.Source) === 2, hit: ids.has(t) }); });
+  jl.forEach(l => { const o = String(l.order_no); if (!by[o] || !by[o].j || !['IN', 'OUT'].includes(String(l.source))) return; const c = String(l.code ?? '').trim();
+    (allF[o] = allF[o] || []).push({ name: String(l.item || ''), code: String(l.source) === 'IN' ? c : '', qty: Number(l.qty) || 0, season: '', own: String(l.source) === 'OUT', hit: c.toLowerCase() === q }); });
   const JO = new Map(jo.map(x => [String(x.order_no), x])), IO = new Map(io.map(x => [String(x.OrderId), x])), d10 = (v) => String(v || '').slice(0, 10);
   const list = Object.values(by).map(x => { const j = JO.get(x.o), i = IO.get(x.o);
-    return { o: x.o, qty: x.qty, fabric: x.fabric, code: x.code, season: seas[x.o] || null, name: j ? j.customer_name : i ? i.CustomerNameAr : '', mobile: j ? j.mobile : i ? i.Mobile1 : '',
+    return { o: x.o, qty: x.qty, fabric: x.fabric, code: x.code, season: seas[x.o] || null, all: allF[x.o] || [], name: j ? j.customer_name : i ? i.CustomerNameAr : '', mobile: j ? j.mobile : i ? i.Mobile1 : '',
              booked: d10(j ? j.booking_date : i && i.OrderDate), delivery: d10(j ? j.delivery_date : i && i.ApptDate), pcs: j ? Number(j.pcs) || 0 : 0, given: j ? Number(j.delivered_qty) || 0 : 0,
              ready: j ? Number(j.ready) || 0 : 0, branch: j ? String(j.branch || '') : '', jameel: !!j }; });
   const names = [...new Set([...ids.values()].filter(Boolean))];
