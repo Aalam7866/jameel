@@ -555,10 +555,14 @@
         <div class="card dvh">
           <div class="dvtop">
             <div><h3 style="margin:0">بحث بالقماش<small>Fabric barcode</small></h3>
-              <div class="muted dvsub"><span>اكتب أو امسح باركود القماش: كل من أخذه ولم يُقص بعد<small>Type or scan a fabric barcode: everyone who took it and is not cut yet</small></span></div></div>
+              <div class="muted dvsub"><span>رقم الطلب: كل أقمشته · الباركود: كل من أخذه ولم يُقص بعد<small>Order no: all its fabrics · Barcode: everyone who took it and is not cut yet</small></span></div></div>
             <div class="dvtr"><button type="button" id="fbPrint" class="dvbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>طباعة<small>Print</small></span></button></div>
           </div>
           <div class="dvctl">
+            <label class="fbin"><span>رقم الطلب<small>Order no</small></span><input id="fbO" inputmode="numeric" autocomplete="off" placeholder="1250"></label>
+            <button type="button" id="fbOGo" class="dvbtn"><span>🔎 بحث<small>Search</small></span></button>
+          </div>
+          <div class="dvctl" style="margin-top:10px">
             <label class="fbin"><span>الباركود<small>Barcode</small></span><input id="fbQ" inputmode="search" autocomplete="off" placeholder="1245"></label>
             <button type="button" id="fbGo" class="dvbtn"><span>🔎 بحث<small>Search</small></span></button>
             <div class="dvq" role="group"><button type="button" data-fb="nc" class="on"><span>لم يُقص<small>Not cut</small></span></button><button type="button" data-fb="all"><span>الكل<small>All</small></span></button></div>
@@ -1986,7 +1990,7 @@
     function fbRows() {
       if (!FB) return [];
       return FB.list.map(function (x) { return { x: x, st: fbState(x) }; })
-        .filter(function (y) { return FBM === 'all' || y.st.k === 'nc' || y.st.k === 'pt'; })
+        .filter(function (y) { return FB.byOrder || FBM === 'all' || y.st.k === 'nc' || y.st.k === 'pt'; })
         .sort(function (a, b) { return (a.x.delivery || '9999').localeCompare(b.x.delivery || '9999') || Number(a.x.o) - Number(b.x.o); });
     }
     function fbDraw() {
@@ -1995,10 +1999,17 @@
       var nc = FB.list.filter(function (x, i) { return all[i].k === 'nc' || all[i].k === 'pt'; });
       var pcs = function (a) { return a.reduce(function (t, x) { return t + (Number(x.qty) || 0); }, 0); };
       var k = function (cls, ar, en, v, sub) { return '<div class="' + cls + '"><div class="lbx">' + LB(ar, en) + '</div><b>' + v + '</b><em>' + (sub || '') + '</em></div>'; };
+      if (FB.byOrder) {   // searched by order number: the order and all its fabrics
+        var X = FB.list[0], st = X ? all[0] : null;
+        $('fbSum').innerHTML = !X ? '' : '<div class="dvk" style="margin-bottom:12px">' + k('', 'الطلب', 'Order', esc(X.branch ? X.branch + '-' + X.o : X.o), '<span class="ar">' + esc(X.name) + '</span>') +
+          k('', 'الأقمشة', 'Fabrics', (X.all || []).length, '') + k('', 'ثياب', 'Thobes', (X.all || []).reduce(function (t, f) { return t + (Number(f.qty) || 0); }, 0), '') +
+          k('', 'التسليم', 'Delivery', '<span style="font-size:20px">' + esc(dvD(X.delivery)) + '</span>', '') + k('', 'الحالة', 'Status', '<span class="fbst ' + st.k + '" style="font-size:14px">' + st.t + '</span>', '') + '</div>';
+        if (!X) { $('fbTab').innerHTML = '<div class="dvnone">' + LB('لا توجد أقمشة لهذا الطلب', 'No fabrics found for this order') + ' (' + esc(FB.byOrder) + ')</div>'; return; }
+      } else
       $('fbSum').innerHTML = '<div class="dvk" style="margin-bottom:12px">' + k('', 'القماش', 'Fabric', '<span style="font-size:18px">' + esc(FB.fabric || '—') + '</span>', esc(FB.code) + (FB.fabrics > 1 ? ' · ' + FB.fabrics + ' fabrics' : '')) +
         k('bd', 'لم يُقص', 'Not cut', nc.length, pcs(nc) + ' ' + LB('ثوب', 'thobes')) + k('', 'كل الطلبات', 'All orders', FB.list.length, pcs(FB.list) + ' ' + LB('ثوب', 'thobes')) +
         k('ok', 'مقصوص', 'Cut', all.filter(function (s) { return s.k === 'ct'; }).length, '') + k('gd', 'سُلّم / مغلق', 'Delivered / closed', all.filter(function (s) { return s.k === 'dl'; }).length, '') + '</div>';
-      if (!L.length) { $('fbTab').innerHTML = '<div class="dvnone">' + (FB.list.length ? LB('كل من أخذ هذا القماش تم قصه', 'Everyone with this fabric is cut') + ' – <a href="#" data-fb="all">' + LB('عرض الكل', 'Show all') + '</a>' : LB('لا يوجد طلب بهذا الباركود', 'No order with this barcode')) + '</div>'; return; }
+      if (FB.byOrder) { } else if (!L.length) { $('fbTab').innerHTML = '<div class="dvnone">' + (FB.list.length ? LB('كل من أخذ هذا القماش تم قصه', 'Everyone with this fabric is cut') + ' – <a href="#" data-fb="all">' + LB('عرض الكل', 'Show all') + '</a>' : LB('لا يوجد طلب بهذا الباركود', 'No order with this barcode')) + '</div>'; return; }
       $('fbTab').innerHTML = '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt"><thead><tr><th>#</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th><th>' + LB('القماش', 'Fabric') + '</th>' +
         '<th class="c">' + LB('من هذا القماش', 'This fabric') + '</th><th class="swc">' + LB('صيفي / شتوي', 'Summer / Winter') + '</th><th class="c">' + LB('قطع الطلب', 'Order pcs') + '</th><th>' + LB('التسليم', 'Delivery') + '</th><th>' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
         L.map(function (y, i) { var x = y.x, late = x.delivery && x.delivery < dvToday() && (y.st.k === 'nc' || y.st.k === 'pt');
@@ -2010,17 +2021,33 @@
     }
     function dvToday() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); }
     function dvD(d) { return d ? String(d).slice(0, 10).split('-').reverse().join('-') : ''; }
-    function fbSearch() {
-      var q = $('fbQ').value.trim(); if (!q) { $('fbQ').focus(); return; }
+    function fbSearch(byOrder) {
+      var q = (byOrder ? $('fbO') : $('fbQ')).value.trim(); if (!q) { (byOrder ? $('fbO') : $('fbQ')).focus(); return; }
+      (byOrder ? $('fbQ') : $('fbO')).value = '';
       $('fbTab').innerHTML = '<div class="dvnone">…</div>'; $('fbSum').innerHTML = '';
       if (!ALL_RAW.length) loadOrders();
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.ok) { FB = null; $('fbTab').innerHTML = '<div class="dvnone">' + esc(r ? r.msg : 'Error') + '</div>'; return; }
-        FB = r; FBO = r.list.length === 1 ? r.list[0].o : ''; fbDraw(); $('fbQ').select();
-      }).aFabric(KEY, PIN, q);
+        FB = r; FBO = r.list.length === 1 ? r.list[0].o : ''; fbDraw(); (byOrder ? $('fbO') : $('fbQ')).select();
+      }).aFabric(KEY, PIN, q, !!byOrder);
+    }
+    function fbPrintOrder() {   // searched by order number: the order's fabrics on one page
+      var X = FB.list[0]; if (!X) return;
+      var now = new Date(Date.now() + 3 * 3600e3).toISOString(), A = X.all || [];
+      var h = '<!doctype html><html><head><meta charset="utf-8"><title>Order ' + esc(X.o) + ' fabrics</title><style>@page{size:A4;margin:12mm}body{font:15px/1.45 system-ui,Arial,sans-serif;color:#111;margin:0}' +
+        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}' +
+        'table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff;font-size:13px;text-align:left;padding:8px}td{padding:9px 8px;border-bottom:1px solid #d6e0ee}tr:nth-child(even) td{background:#e8eef7}.c{text-align:center}tfoot td{background:#d6e0ee!important;font-weight:700}</style></head><body>' +
+        '<div class="hd"><div><h1>JAMEEL AL HINDAM</h1><div style="font-weight:700">جميل الهندام للخياطة الرجالية</div></div><div style="text-align:right"><div style="font-size:20px"><b>Order ' + esc(X.branch ? X.branch + '-' + X.o : X.o) + '</b></div><div style="font-size:17px"><b>' + esc(X.name) + '</b></div><div>Delivery ' + esc(dvD(X.delivery)) + ' · ' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</div></div></div>' +
+        '<table><thead><tr><th>#</th><th style="text-align:right">Fabric · القماش</th><th>Barcode</th><th class="c">Thobes</th><th class="c">Summer / Winter</th></tr></thead><tbody>' +
+        A.map(function (f, i) { return '<tr><td>' + (i + 1) + '</td><td style="text-align:right"><b>' + esc(f.name) + '</b>' + (f.own ? ' (customer\'s fabric · قماش العميل)' : '') + '</td><td><b>' + esc(f.code || '—') + '</b></td><td class="c"><b>' + (f.qty || '') + '</b></td><td class="c">' + (f.season === 's' ? '☀ Summer · صيفي' : f.season === 'w' ? '❄ Winter · شتوي' : '') + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td></td><td colspan="2">Total · ' + A.length + ' fabrics</td><td class="c">' + A.reduce(function (t, f) { return t + (Number(f.qty) || 0); }, 0) + '</td><td></td></tr></tfoot></table></body></html>';
+      var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
+      var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
+      setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
     }
     function fbPrint() {
       if (!FB) return;
+      if (FB.byOrder) return fbPrintOrder();
       var L = fbRows(), now = new Date(Date.now() + 3 * 3600e3).toISOString();
       var h = '<!doctype html><html><head><meta charset="utf-8"><title>Fabric ' + esc(FB.code) + '</title><style>@page{size:A4;margin:12mm}body{font:14px/1.45 system-ui,Arial,sans-serif;color:#111;margin:0}' +
         '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}' +
@@ -2040,11 +2067,13 @@
       $('fbBox').style.display = f ? '' : 'none'; $('dvBox').style.display = f ? 'none' : '';
       if (f) { setTimeout(function () { $('fbQ').focus(); }, 50); fbDraw(); }
     }); });
-    $('fbGo').addEventListener('click', fbSearch);
-    $('fbQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') fbSearch(); });
+    $('fbGo').addEventListener('click', function () { fbSearch(false); });
+    $('fbQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') fbSearch(false); });
+    $('fbOGo').addEventListener('click', function () { fbSearch(true); });
+    $('fbO').addEventListener('keydown', function (e) { if (e.key === 'Enter') fbSearch(true); });
     $('fbPrint').addEventListener('click', fbPrint);
     $('fbBox').addEventListener('click', function (e) {
-      var q = e.target.closest('[data-fbq]'); if (q) { e.preventDefault(); $('fbQ').value = q.getAttribute('data-fbq'); FBO = ''; fbSearch(); return; }
+      var q = e.target.closest('[data-fbq]'); if (q) { e.preventDefault(); $('fbQ').value = q.getAttribute('data-fbq'); FBO = ''; fbSearch(false); return; }
       var r = e.target.closest('[data-fbo]'); if (r) { var o = r.getAttribute('data-fbo'); FBO = FBO === o ? '' : o; fbDraw(); return; }
       var b = e.target.closest('[data-fb]'); if (!b) return; e.preventDefault(); FBM = b.getAttribute('data-fb');
       document.querySelectorAll('#fbBox .dvq [data-fb]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-fb') === FBM); }); fbDraw(); });

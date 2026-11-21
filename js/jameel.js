@@ -1126,10 +1126,13 @@ async function aFactory(key, pin, nos, st, by) {
 }
 // Admin → Deliveries → Fabric: every order that has a fabric (its barcode = InvProject TextCode, or a part of its name):
 // InvProject's fabric lines (i_fabrics + i_textures), Jameel's order lines for orders made only in Jameel; customer from Jameel / InvProject
-async function aFabric(key, pin, code) {
+async function aFabric(key, pin, code, ord) {
   const r = await root('ak', key, pin);
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
-  const q = String(code || '').trim().toLowerCase(), digits = /^\d+$/.test(q);
+  // ord: search by order number instead (B2-1250 → 1250): that order with all its fabrics
+  const on = ord ? String(code || '').trim().replace(/^.*-/, '').replace(/\D/g, '').replace(/^0+/, '') : '';
+  if (ord && !on) return { ok: false, msg: 'اكتب رقم الطلب – Type the order number' };
+  const q = ord ? '\u0000' : String(code || '').trim().toLowerCase(), digits = /^\d+$/.test(q);
   if (!q) return { ok: false, msg: 'اكتب الباركود – Type the barcode' };
   const [tx, fb, jl, jo, io, sv] = await Promise.all(['i_textures', 'i_fabrics', 'j_lines', 'j_orders', 'i_orders', 'i_osrv'].map(n => dsRows(n).catch(() => [])));
   const ids = new Map();   // TextId → fabric name
@@ -1138,10 +1141,10 @@ async function aFabric(key, pin, code) {
   if (!ids.size && !digits && q.length >= 3) { byName = true; tx.forEach(t => { if (String(t.DescAr || '').toLowerCase().includes(q)) ids.set(String(t.TextId), String(t.DescAr || '')); }); }
   const codeOf = new Map(tx.map(t => [String(t.TextId), String(t.TextCode ?? '').trim()]));
   const by = {};
-  fb.forEach(f => { const t = String(f.TextId); if (!ids.has(t)) return; const o = String(f.OrderId);
+  fb.forEach(f => { const t = String(f.TextId); if (ord ? String(f.OrderId) !== on : !ids.has(t)) return; const o = String(f.OrderId);
     const x = by[o] = by[o] || { o, qty: 0, fabric: String(f.name || ids.get(t)), code: codeOf.get(t) || '', t: new Set() }; x.qty += Number(f.qty) || 0; x.t.add(t); });
   jl.forEach(l => { if (String(l.source) !== 'IN') return; const c = String(l.code ?? '').trim().toLowerCase(), it = String(l.item || '');
-    if (!(c === q || (byName && it.toLowerCase().includes(q)))) return; const o = String(l.order_no); if (by[o] && !by[o].j) return;
+    if (ord ? String(l.order_no) !== on : !(c === q || (byName && it.toLowerCase().includes(q)))) return; const o = String(l.order_no); if (by[o] && !by[o].j) return;
     const x = by[o] = by[o] || { o, qty: 0, fabric: it, code: String(l.code ?? ''), t: new Set(), j: true }; x.qty += Number(l.qty) || 0; });
   const seas = {}, sOf = {}; sv.forEach(v => { const o = String(v.OrderId); if (!by[o]) return; const n = String(v.season ?? ''), k = /صيف/.test(n) ? 's' : /شت/.test(n) ? 'w' : '';
     if (k) sOf[o + ':' + v.TextId] = k;
@@ -1158,6 +1161,8 @@ async function aFabric(key, pin, code) {
              booked: d10(j ? j.booking_date : i && i.OrderDate), delivery: d10(j ? j.delivery_date : i && i.ApptDate), pcs: j ? Number(j.pcs) || 0 : 0, given: j ? Number(j.delivered_qty) || 0 : 0,
              ready: j ? Number(j.ready) || 0 : 0, branch: j ? String(j.branch || '') : '', jameel: !!j }; });
   const names = [...new Set([...ids.values()].filter(Boolean))];
+  if (ord) { const x = list[0] || null; if (x) { x.fabric = x.all.map(f => f.name).filter(Boolean).join(' · '); x.code = ''; }
+    return { ok: true, byOrder: on, code: '', fabric: '', fabrics: x ? x.all.length : 0, list }; }
   return { ok: true, code: String(code || '').trim(), byName, fabric: names.slice(0, 3).join(' · ') || (list[0] && list[0].fabric) || '', fabrics: names.length, list };
 }
 // a shop's order page: its open orders (not all delivered) with where they are
