@@ -315,7 +315,7 @@
   .dv { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
   .dvh { padding: 16px 18px !important; }
   .dvtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .dv h3 small, .dv .lbx small, .dvctl label small, .dvq small, .dvbtn small, .dvsub small, .dvday small, .dvk small, .dvt th small { font-size: inherit; color: inherit; font-weight: inherit; margin: 0; margin-inline-start: .35em; display: inline; }
+  .dvpg small, .dv h3 small, .dv .lbx small, .dvctl label small, .dvq small, .dvbtn small, .dvsub small, .dvday small, .dvk small, .dvt th small { font-size: inherit; color: inherit; font-weight: inherit; margin: 0; margin-inline-start: .35em; display: inline; }
   .dvsub { font-size: 12.5px; margin-top: 2px; }
   .dvtr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .dvsw { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; user-select: none; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; background: #fff; }
@@ -333,6 +333,15 @@
   .dvctl { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
   .dvctl label { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; flex: 0 1 170px; }
   .dvctl input { margin: 0; font-size: 15px; height: 40px; text-transform: none; letter-spacing: 0; }
+  .dvpg { display: inline-flex; gap: 4px; background: #e6e9ef; border-radius: 12px; padding: 4px; margin: 0 0 12px; }
+  .dvpg button { border: 0; background: transparent; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 14px; color: var(--mute); cursor: pointer; }
+  .dvpg button.on { background: #0d1b2e; color: #fff; }
+  .fbin input { min-width: 220px; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+  .fbt th { white-space: normal; padding: 9px 8px; vertical-align: bottom; } .fbt td { white-space: nowrap; padding: 10px 8px; } .fbt td.ar { white-space: normal; min-width: 120px; }
+  .fbt th small { display: block !important; margin: 2px 0 0 !important; }
+  .fbst { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+  .fbst.nc { background: var(--badbg, #fde8e8); color: var(--bad); } .fbst.pt { background: #fff4d6; color: #8a5a00; } .fbst.ct { background: #e3f4ea; color: var(--ok); }
+  .fbst.dl { background: #eef1f5; color: var(--mute); } .fbst.old { background: #f1f1f1; color: #888; }
   .dvq { display: inline-flex; flex-wrap: wrap; background: #eef1f5; border-radius: 10px; padding: 3px; gap: 2px; }
   .dvq button { border: 0; background: transparent; border-radius: 8px; padding: 8px 13px; font-weight: 600; font-size: 13px; color: var(--mute); cursor: pointer; }
   .dvq button.on { background: #fff; color: #0d1b2e; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
@@ -537,6 +546,23 @@
       </div>
     </div>
     <div id="p12" style="display:none">
+      <div class="dvpg" role="tablist"><button type="button" data-dvp="d" class="on"><span>التسليمات<small>Deliveries</small></span></button><button type="button" data-dvp="f"><span>🔎 بحث بالقماش<small>Fabric barcode</small></span></button></div>
+      <div class="dv" id="fbBox" style="display:none">
+        <div class="card dvh">
+          <div class="dvtop">
+            <div><h3 style="margin:0">بحث بالقماش<small>Fabric barcode</small></h3>
+              <div class="muted dvsub"><span>اكتب أو امسح باركود القماش: كل من أخذه ولم يُقص بعد<small>Type or scan a fabric barcode: everyone who took it and is not cut yet</small></span></div></div>
+            <div class="dvtr"><button type="button" id="fbPrint" class="dvbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>طباعة<small>Print</small></span></button></div>
+          </div>
+          <div class="dvctl">
+            <label class="fbin"><span>الباركود<small>Barcode</small></span><input id="fbQ" inputmode="search" autocomplete="off" placeholder="1245"></label>
+            <button type="button" id="fbGo" class="dvbtn"><span>🔎 بحث<small>Search</small></span></button>
+            <div class="dvq" role="group"><button type="button" data-fb="nc" class="on"><span>لم يُقص<small>Not cut</small></span></button><button type="button" data-fb="all"><span>الكل<small>All</small></span></button></div>
+          </div>
+        </div>
+        <div id="fbSum"></div>
+        <div id="fbTab"></div>
+      </div>
       <div class="dv" id="dvBox">
         <div class="card dvh">
           <div class="dvtop">
@@ -1923,6 +1949,86 @@
     }, true);
     $('dvTab').addEventListener('click', function (ev) { if (!ev.target.closest || !ev.target.closest('.pv')) return; ev.stopPropagation(); var b = ev.target.closest('.pmv'); if (!b || b.disabled) return; movePrio(b.getAttribute('data-d'), b.getAttribute('data-o'), Number(b.getAttribute('data-mv'))); }, true);
     $('dvF').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvT').addEventListener('change', function () { dvChip(''); renderDeliv(); }); $('dvPrint').addEventListener('click', printDeliv);
+
+    // ---- Deliveries → Fabric barcode: who took a fabric, not cut yet (or all)
+    var FB = null, FBM = 'nc';
+    function fbCut(no) {   // the order's cutting from the work list (open orders), like the Orders tab
+      var r = fbRow(no); if (!r) return null;
+      var P = Number(r[5]) || 0, p = PEND[r[0]] || {}, sti = Math.min(P, (Number(r[7]) || 0) + (Number(p.STITCH) || 0));
+      return { P: P, cut: Math.min(P, Math.max((Number(r[6]) || 0) + (Number(p.CUT) || 0), sti)), booked: String(r[3] || '').slice(0, 10) };
+    }
+    function fbRow(no) { for (var i = 0; i < ALL_RAW.length; i++) if (String(ALL_RAW[i][0]) === String(no)) return ALL_RAW[i]; return null; }
+    function fbState(x) {
+      var w = fbRow(x.o); if (w) { if (!x.name) x.name = w[1]; if (!x.mobile) x.mobile = w[2]; if (!x.delivery) x.delivery = String(w[4] || '').slice(0, 10); if (!x.booked) x.booked = String(w[3] || '').slice(0, 10); }
+      var c = fbCut(x.o);
+      if (!c) return x.jameel && x.pcs && x.given >= x.pcs ? { k: 'dl', t: LB('سُلّم', 'Delivered'), e: 'Delivered · سُلّم' } : { k: 'dl', t: LB('مغلق', 'Closed'), e: 'Closed · مغلق' };
+      if (c.booked && c.booked < '2026-10-01') return { k: 'old', t: LB('قديم', 'Old'), e: 'Old · قديم', c: c };
+      if (c.cut >= c.P && c.P) return { k: 'ct', t: LB('مقصوص', 'Cut') + ' ✔', e: 'Cut ✔ · مقصوص', c: c };
+      if (c.cut > 0) return { k: 'pt', t: LB('مقصوص', 'Cut') + ' ' + c.cut + '/' + c.P, e: 'Cut ' + c.cut + '/' + c.P, c: c };
+      return { k: 'nc', t: LB('لم يُقص', 'Not cut'), e: 'Not cut · لم يُقص', c: c };
+    }
+    function fbSeason(x) { var v = x.season; if (!v || !(v.s + v.w)) return ''; return (v.s ? '<span class="sw s">☀️ ' + v.s + '</span>' : '') + (v.w ? '<span class="sw w">❄️ ' + v.w + '</span>' : ''); }
+    function fbRows() {
+      if (!FB) return [];
+      return FB.list.map(function (x) { return { x: x, st: fbState(x) }; })
+        .filter(function (y) { return FBM === 'all' || y.st.k === 'nc' || y.st.k === 'pt'; })
+        .sort(function (a, b) { return (a.x.delivery || '9999').localeCompare(b.x.delivery || '9999') || Number(a.x.o) - Number(b.x.o); });
+    }
+    function fbDraw() {
+      if (!FB) { $('fbSum').innerHTML = ''; $('fbTab').innerHTML = ''; return; }
+      var L = fbRows(), all = FB.list.map(function (x) { return fbState(x); });
+      var nc = FB.list.filter(function (x, i) { return all[i].k === 'nc' || all[i].k === 'pt'; });
+      var pcs = function (a) { return a.reduce(function (t, x) { return t + (Number(x.qty) || 0); }, 0); };
+      var k = function (cls, ar, en, v, sub) { return '<div class="' + cls + '"><div class="lbx">' + LB(ar, en) + '</div><b>' + v + '</b><em>' + (sub || '') + '</em></div>'; };
+      $('fbSum').innerHTML = '<div class="dvk" style="margin-bottom:12px">' + k('', 'القماش', 'Fabric', '<span style="font-size:18px">' + esc(FB.fabric || '—') + '</span>', esc(FB.code) + (FB.fabrics > 1 ? ' · ' + FB.fabrics + ' fabrics' : '')) +
+        k('bd', 'لم يُقص', 'Not cut', nc.length, pcs(nc) + ' ' + LB('ثوب', 'thobes')) + k('', 'كل الطلبات', 'All orders', FB.list.length, pcs(FB.list) + ' ' + LB('ثوب', 'thobes')) +
+        k('ok', 'مقصوص', 'Cut', all.filter(function (s) { return s.k === 'ct'; }).length, '') + k('gd', 'سُلّم / مغلق', 'Delivered / closed', all.filter(function (s) { return s.k === 'dl'; }).length, '') + '</div>';
+      if (!L.length) { $('fbTab').innerHTML = '<div class="dvnone">' + (FB.list.length ? LB('كل من أخذ هذا القماش تم قصه', 'Everyone with this fabric is cut') + ' – <a href="#" data-fb="all">' + LB('عرض الكل', 'Show all') + '</a>' : LB('لا يوجد طلب بهذا الباركود', 'No order with this barcode')) + '</div>'; return; }
+      $('fbTab').innerHTML = '<div class="card" style="padding:0;overflow-x:auto"><table class="dvt fbt"><thead><tr><th>#</th><th>' + LB('الطلب', 'Order') + '</th><th>' + LB('العميل', 'Customer') + '</th><th>' + LB('الجوال', 'Mobile') + '</th>' +
+        '<th class="c">' + LB('من هذا القماش', 'This fabric') + '</th><th class="swc">' + LB('صيفي / شتوي', 'Summer / Winter') + '</th><th class="c">' + LB('قطع الطلب', 'Order pcs') + '</th><th>' + LB('الحجز', 'Booked') + '</th><th>' + LB('التسليم', 'Delivery') + '</th><th>' + LB('الحالة', 'Status') + '</th></tr></thead><tbody>' +
+        L.map(function (y, i) { var x = y.x, late = x.delivery && x.delivery < dvToday() && (y.st.k === 'nc' || y.st.k === 'pt');
+          return '<tr><td class="muted">' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b>' + (FB.fabrics > 1 ? '<div class="muted" style="font-size:12px">' + esc(x.fabric) + '</div>' : '') + '</td><td class="ar"><b>' + esc(x.name) + '</b></td><td dir="ltr">' + esc(x.mobile) + '</td>' +
+            '<td class="c"><b>' + (Number(x.qty) || 0) + '</b></td><td class="swc">' + fbSeason(x) + '</td><td class="c">' + (y.st.c ? y.st.c.P : x.pcs || '') + '</td><td>' + esc(dvD(x.booked)) + '</td><td' + (late ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + esc(dvD(x.delivery)) + '</td>' +
+            '<td><span class="fbst ' + y.st.k + '">' + y.st.t + '</span></td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td></td><td colspan="3">' + L.length + ' ' + LB('طلب', 'orders') + '</td><td class="c">' + pcs(L.map(function (y) { return y.x; })) + '</td><td colspan="5"></td></tr></tfoot></table></div>';
+    }
+    function dvToday() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); }
+    function dvD(d) { return d ? String(d).slice(0, 10).split('-').reverse().join('-') : ''; }
+    function fbSearch() {
+      var q = $('fbQ').value.trim(); if (!q) { $('fbQ').focus(); return; }
+      $('fbTab').innerHTML = '<div class="dvnone">…</div>'; $('fbSum').innerHTML = '';
+      if (!ALL_RAW.length) loadOrders();
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.ok) { FB = null; $('fbTab').innerHTML = '<div class="dvnone">' + esc(r ? r.msg : 'Error') + '</div>'; return; }
+        FB = r; fbDraw(); $('fbQ').select();
+      }).aFabric(KEY, PIN, q);
+    }
+    function fbPrint() {
+      if (!FB) return;
+      var L = fbRows(), now = new Date(Date.now() + 3 * 3600e3).toISOString();
+      var h = '<!doctype html><html><head><meta charset="utf-8"><title>Fabric ' + esc(FB.code) + '</title><style>@page{size:A4;margin:12mm}body{font:14px/1.45 system-ui,Arial,sans-serif;color:#111;margin:0}' +
+        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f3a5f;padding-bottom:8px;margin-bottom:12px}.hd h1{margin:0;font-size:22px;letter-spacing:.06em;color:#1f3a5f}' +
+        'table{width:100%;border-collapse:collapse}th{background:#1f3a5f;color:#fff;font-size:13px;text-align:left;padding:7px}td{padding:7px;border-bottom:1px solid #d6e0ee;font-size:14px}tr:nth-child(even) td{background:#e8eef7}.c{text-align:center}td.x{width:34px}td.x i{display:inline-block;width:16px;height:16px;border:1.5px solid #333;border-radius:3px}tfoot td{background:#d6e0ee!important;font-weight:700}</style></head><body>' +
+        '<div class="hd"><div><h1>JAMEEL AL HINDAM</h1><div style="font-weight:700">جميل الهندام للخياطة الرجالية</div></div><div style="text-align:right"><div style="font-size:18px"><b>' + esc(FB.fabric) + '</b></div><div>Barcode <b>' + esc(FB.code) + '</b> · ' + (FBM === 'all' ? 'All orders' : 'Not cut yet · لم يُقص') + '</div><div>' + now.slice(0, 10).split('-').reverse().join('-') + ' ' + now.slice(11, 16) + '</div></div></div>' +
+        '<table><thead><tr><th>#</th><th>Order No.</th><th style="text-align:right">Name</th><th class="c">This fabric</th><th class="c">Summer / Winter</th><th>Delivery</th><th>Status</th><th>✓</th></tr></thead><tbody>' +
+        L.map(function (y, i) { var x = y.x, v = x.season; return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.branch ? x.branch + '-' + x.o : x.o) + '</b></td><td style="text-align:right"><b>' + esc(x.name) + '</b></td><td class="c"><b>' + (Number(x.qty) || 0) + '</b></td>' +
+          '<td class="c">' + (v && v.s + v.w ? (v.s ? '☀ ' + v.s : '') + (v.s && v.w ? ' · ' : '') + (v.w ? '❄ ' + v.w : '') : '') + '</td><td>' + esc(dvD(x.delivery)) + '</td><td style="white-space:nowrap">' + esc(y.st.e) + '</td><td class="x"><i></i></td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td></td><td colspan="2">Total · ' + L.length + ' orders</td><td class="c">' + L.reduce(function (t, y) { return t + (Number(y.x.qty) || 0); }, 0) + '</td><td colspan="4"></td></tr></tfoot></table></body></html>';
+      var fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
+      var w = fr.contentWindow; w.document.open(); w.document.write(h); w.document.close();
+      setTimeout(function () { w.focus(); w.print(); setTimeout(function () { fr.remove(); }, 60000); }, 300);
+    }
+    document.querySelectorAll('[data-dvp]').forEach(function (b) { b.addEventListener('click', function () {
+      var f = b.getAttribute('data-dvp') === 'f';
+      document.querySelectorAll('[data-dvp]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      $('fbBox').style.display = f ? '' : 'none'; $('dvBox').style.display = f ? 'none' : '';
+      if (f) { setTimeout(function () { $('fbQ').focus(); }, 50); fbDraw(); }
+    }); });
+    $('fbGo').addEventListener('click', fbSearch);
+    $('fbQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') fbSearch(); });
+    $('fbPrint').addEventListener('click', fbPrint);
+    $('fbBox').addEventListener('click', function (e) { var b = e.target.closest('[data-fb]'); if (!b) return; e.preventDefault(); FBM = b.getAttribute('data-fb');
+      document.querySelectorAll('#fbBox .dvq [data-fb]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-fb') === FBM); }); fbDraw(); });
     $('dvFx').checked = FXON; $('dvBox').classList.toggle('nofx', !FXON);
     $('dvFx').addEventListener('change', function () { FXON = this.checked; try { localStorage.setItem('jadm-fxon', FXON ? '1' : '0'); } catch (e) { } $('dvBox').classList.toggle('nofx', !FXON); });
     Array.prototype.forEach.call(document.querySelectorAll('.dvq button[data-dv]'), function (b) { b.addEventListener('click', function () { dvDay(Number(b.getAttribute('data-dv'))); renderDeliv(); }); });

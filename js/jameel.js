@@ -1124,6 +1124,34 @@ async function aFactory(key, pin, nos, st, by) {
   if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
   return fxSet(nos, st, by || 'Admin', await brOfOrders());
 }
+// Admin → Deliveries → Fabric: every order that has a fabric (its barcode = InvProject TextCode, or a part of its name):
+// InvProject's fabric lines (i_fabrics + i_textures), Jameel's order lines for orders made only in Jameel; customer from Jameel / InvProject
+async function aFabric(key, pin, code) {
+  const r = await root('ak', key, pin);
+  if (!r) return { ok: false, msg: 'الرقم السري غير صحيح – Wrong PIN', pin: true };
+  const q = String(code || '').trim().toLowerCase(), digits = /^\d+$/.test(q);
+  if (!q) return { ok: false, msg: 'اكتب الباركود – Type the barcode' };
+  const [tx, fb, jl, jo, io, sv] = await Promise.all(['i_textures', 'i_fabrics', 'j_lines', 'j_orders', 'i_orders', 'i_osrv'].map(n => dsRows(n).catch(() => [])));
+  const ids = new Map();   // TextId → fabric name
+  tx.forEach(t => { if (String(t.TextCode ?? '').trim().toLowerCase() === q) ids.set(String(t.TextId), String(t.DescAr || '')); });
+  let byName = false;
+  if (!ids.size && !digits && q.length >= 3) { byName = true; tx.forEach(t => { if (String(t.DescAr || '').toLowerCase().includes(q)) ids.set(String(t.TextId), String(t.DescAr || '')); }); }
+  const codeOf = new Map(tx.map(t => [String(t.TextId), String(t.TextCode ?? '').trim()]));
+  const by = {};
+  fb.forEach(f => { const t = String(f.TextId); if (!ids.has(t)) return; const o = String(f.OrderId);
+    const x = by[o] = by[o] || { o, qty: 0, fabric: String(f.name || ids.get(t)), code: codeOf.get(t) || '', t: new Set() }; x.qty += Number(f.qty) || 0; x.t.add(t); });
+  jl.forEach(l => { if (String(l.source) !== 'IN') return; const c = String(l.code ?? '').trim().toLowerCase(), it = String(l.item || '');
+    if (!(c === q || (byName && it.toLowerCase().includes(q)))) return; const o = String(l.order_no); if (by[o] && !by[o].j) return;
+    const x = by[o] = by[o] || { o, qty: 0, fabric: it, code: String(l.code ?? ''), t: new Set(), j: true }; x.qty += Number(l.qty) || 0; });
+  const seas = {}; sv.forEach(v => { const o = String(v.OrderId); if (by[o] && by[o].t.has(String(v.TextId))) { const n = String(v.season ?? ''), k = /صيف/.test(n) ? 's' : /شت/.test(n) ? 'w' : ''; if (k) (seas[o] = seas[o] || { s: 0, w: 0 })[k] += Number(v.qty) || 0; } });
+  const JO = new Map(jo.map(x => [String(x.order_no), x])), IO = new Map(io.map(x => [String(x.OrderId), x])), d10 = (v) => String(v || '').slice(0, 10);
+  const list = Object.values(by).map(x => { const j = JO.get(x.o), i = IO.get(x.o);
+    return { o: x.o, qty: x.qty, fabric: x.fabric, code: x.code, season: seas[x.o] || null, name: j ? j.customer_name : i ? i.CustomerNameAr : '', mobile: j ? j.mobile : i ? i.Mobile1 : '',
+             booked: d10(j ? j.booking_date : i && i.OrderDate), delivery: d10(j ? j.delivery_date : i && i.ApptDate), pcs: j ? Number(j.pcs) || 0 : 0, given: j ? Number(j.delivered_qty) || 0 : 0,
+             ready: j ? Number(j.ready) || 0 : 0, branch: j ? String(j.branch || '') : '', jameel: !!j }; });
+  const names = [...new Set([...ids.values()].filter(Boolean))];
+  return { ok: true, code: String(code || '').trim(), byName, fabric: names.slice(0, 3).join(' · ') || (list[0] && list[0].fabric) || '', fabrics: names.length, list };
+}
 // a shop's order page: its open orders (not all delivered) with where they are
 async function oFactory(key, pin, br) {
   const r = await root('ok', key, pin);
@@ -1193,6 +1221,6 @@ async function aWorkLog(key, pin) {
 export const SERVER = {
   orderInfo, myToday, waiting, myStats, submit,
   oInit, oImage, oPics, oSearch, oCustomer, oMine, oSubmit, oDelete,
-  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aFactory, oFactory, oFactorySet, aWorkTime,
+  aFeed, aOrders, aSearch, aAct, aRates, aSetRates, aCapacity, aSetCapacity, aWorkLog, aDuty, aSetDuty, aPrio, aSetPrio, aBranches, aSetBranches, aFactory, aFabric, oFactory, oFactorySet, aWorkTime,
   aWorkers, aAddWorker, aDelWorker, aWorkersAll, aWorkerSave, aDedAdd, aDedDel, aWaReady, aDueDate, aFitSet, aOrderInfo, aShareAdd, aJob, aOrderWip, aOrderWork, aShopEmployees,
 };
